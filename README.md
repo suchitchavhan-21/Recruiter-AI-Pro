@@ -2,6 +2,10 @@
 
 An interactive, full-stack Technical Recruiter and Interview Practice Coach powered by **Google Gemini AI**. This platform simulates highly realistic behavioral and technical interviews, evaluates candidate responses with extreme precision, provides custom coaching, and includes a comprehensive administrative portal with live diagnostics and automated test suites.
 
+### 🌐 Live Deployment Links
+*   **Production / Shared App**: [https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
+*   **Development Sandbox**: [https://ais-dev-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-dev-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
+
 ---
 
 ## 🎨 Visual Identity & Architecture
