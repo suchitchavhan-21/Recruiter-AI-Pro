@@ -37,9 +37,9 @@ interface UserActivity {
 // Initial Seeds
 let users: UserProfile[] = [
   {
-    id: "user-suchit",
-    name: "Suchit Chavhan",
-    email: "suchitchavhan889@gmail.com",
+    id: "user-candidate",
+    name: "Anonymous Candidate",
+    email: "candidate@example.com",
     roleTitle: "Systems Architect & Tech Lead",
     joinedAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
     avatarEmoji: "⚡"
@@ -65,9 +65,9 @@ let users: UserProfile[] = [
 let activities: UserActivity[] = [
   {
     id: "act-1",
-    userId: "user-suchit",
-    userName: "Suchit Chavhan",
-    userEmail: "suchitchavhan889@gmail.com",
+    userId: "user-candidate",
+    userName: "Anonymous Candidate",
+    userEmail: "candidate@example.com",
     type: "profile_created",
     timestamp: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
     details: "Registered customized Candidate Profile as Systems Architect & Tech Lead."
@@ -92,9 +92,9 @@ let activities: UserActivity[] = [
   },
   {
     id: "act-4",
-    userId: "user-suchit",
-    userName: "Suchit Chavhan",
-    userEmail: "suchitchavhan889@gmail.com",
+    userId: "user-candidate",
+    userName: "Anonymous Candidate",
+    userEmail: "candidate@example.com",
     type: "job_applied",
     timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
     details: "Applied for Fast-Track Referral Slot (Priority A) for Software Engineer (AI & LLM Infrastructure) at Google."
@@ -196,9 +196,9 @@ app.delete("/api/users/:id", (req, res) => {
 app.post("/api/admin/reset", (req, res) => {
   users = [
     {
-      id: "user-suchit",
-      name: "Suchit Chavhan",
-      email: "suchitchavhan889@gmail.com",
+      id: "user-candidate",
+      name: "Anonymous Candidate",
+      email: "candidate@example.com",
       roleTitle: "Systems Architect & Tech Lead",
       joinedAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
       avatarEmoji: "⚡"
@@ -224,9 +224,9 @@ app.post("/api/admin/reset", (req, res) => {
   activities = [
     {
       id: "act-1",
-      userId: "user-suchit",
-      userName: "Suchit Chavhan",
-      userEmail: "suchitchavhan889@gmail.com",
+      userId: "user-candidate",
+      userName: "Anonymous Candidate",
+      userEmail: "candidate@example.com",
       type: "profile_created",
       timestamp: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
       details: "Registered customized Candidate Profile as Systems Architect & Tech Lead."

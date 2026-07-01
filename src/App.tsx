@@ -62,8 +62,8 @@ const DEFAULT_APPLICATIONS: JobApplication[] = [
     companyName: "Google",
     roleTitle: "Software Engineer (AI & LLM Infrastructure)",
     roleCategory: "Engineering",
-    applicantName: "Suchit Chavhan",
-    applicantEmail: "suchitchavhan889@gmail.com",
+    applicantName: "Anonymous Candidate",
+    applicantEmail: "candidate@example.com",
     appliedSlot: "Fast-Track Referral Slot (Priority A)",
     coverLetter: "Highly motivated infrastructure engineer with core experience in high-performance computing, JAX optimization, and low-latency pipeline engineering. Ready to tackle scale issues.",
     status: "Interview Scheduled",
@@ -77,8 +77,8 @@ const DEFAULT_APPLICATIONS: JobApplication[] = [
     companyName: "Stripe",
     roleTitle: "Infrastructure Security Engineer",
     roleCategory: "Security",
-    applicantName: "Suchit Chavhan",
-    applicantEmail: "suchitchavhan889@gmail.com",
+    applicantName: "Anonymous Candidate",
+    applicantEmail: "candidate@example.com",
     appliedSlot: "Standard Direct Application Slot",
     coverLetter: "Focused on zero-trust architectures, TLS protocol layers, and hardware security modules (HSMs). Practice metrics show strong preparedness.",
     status: "Screening",
@@ -116,8 +116,8 @@ export default function App() {
   const [passcodeInput, setPasscodeInput] = useState("");
 
   // Form registration states
-  const [newProfileName, setNewProfileName] = useState("Suchit Chavhan");
-  const [newProfileEmail, setNewProfileEmail] = useState("suchitchavhan889@gmail.com");
+  const [newProfileName, setNewProfileName] = useState("Anonymous Candidate");
+  const [newProfileEmail, setNewProfileEmail] = useState("candidate@example.com");
   const [newProfileRole, setNewProfileRole] = useState("Systems Architect & Tech Lead");
   const [newProfileEmoji, setNewProfileEmoji] = useState("⚡");
 
@@ -126,8 +126,8 @@ export default function App() {
   const [isApplyingModalOpen, setIsApplyingModalOpen] = useState(false);
   const [applyingCompany, setApplyingCompany] = useState<{ id: string; name: string; logoColor: string; industry: string } | null>(null);
   const [applyingRole, setApplyingRole] = useState<{ title: string; category: "Engineering" | "Product" | "Security" | "Systems" | "Design"; text: string } | null>(null);
-  const [appCandidateName, setAppCandidateName] = useState("Suchit Chavhan");
-  const [appCandidateEmail, setAppCandidateEmail] = useState("suchitchavhan889@gmail.com");
+  const [appCandidateName, setAppCandidateName] = useState("Anonymous Candidate");
+  const [appCandidateEmail, setAppCandidateEmail] = useState("candidate@example.com");
   const [appSelectedSlot, setAppSelectedSlot] = useState("");
   const [appSelectedStoryId, setAppSelectedStoryId] = useState("custom");
   const [appCoverLetter, setAppCoverLetter] = useState("");
@@ -141,8 +141,8 @@ export default function App() {
         const uData: UserProfile[] = await resUsers.json();
         setAllUsers(uData);
         
-        // Match default active user from local storage or use pre-seeded Suchit Chavhan
-        const storedEmail = localStorage.getItem("recruiter_active_user_email") || "suchitchavhan889@gmail.com";
+        // Match default active user from local storage or use pre-seeded anonymous candidate
+        const storedEmail = localStorage.getItem("recruiter_active_user_email") || "candidate@example.com";
         const found = uData.find(u => u.email.toLowerCase() === storedEmail.toLowerCase());
         if (found) {
           setCurrentUser(found);
