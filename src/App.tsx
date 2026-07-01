@@ -1196,8 +1196,8 @@ Requirements:
             <button
               id="active-user-profile-btn"
               onClick={() => {
-                setNewProfileName(currentUser?.name || "Suchit Chavhan");
-                setNewProfileEmail(currentUser?.email || "suchitchavhan889@gmail.com");
+                setNewProfileName(currentUser?.name || "Anonymous Candidate");
+                setNewProfileEmail(currentUser?.email || "candidate@example.com");
                 setNewProfileRole(currentUser?.roleTitle || "Systems Architect & Tech Lead");
                 setNewProfileEmoji(currentUser?.avatarEmoji || "⚡");
                 setIsProfileModalOpen(true);
@@ -1216,7 +1216,7 @@ Requirements:
           </div>
 
           {/* Admin Monitor Toggle */}
-          {(currentUser?.email.toLowerCase() === "suchitchavhan889@gmail.com" || isAdminMode) && (
+          {(currentUser?.email.toLowerCase() === "admin@example.com" || isAdminMode) && (
             <button
               id="admin-monitor-toggle-btn"
               onClick={() => {
@@ -1225,7 +1225,7 @@ Requirements:
                   showNotification("Returned to Candidate Practice Workspace.", "success");
                 } else {
                   // Verify if the active user profile is the pre-authorized master administrator
-                  if (currentUser?.email.toLowerCase() === "suchitchavhan889@gmail.com") {
+                  if (currentUser?.email.toLowerCase() === "admin@example.com") {
                     setIsAdminMode(true);
                     showNotification("Switched to Admin System Monitor Portal! Viewing active candidate logs.", "success");
                   } else {
@@ -1509,7 +1509,7 @@ Requirements:
                     id="modal-profile-email"
                     type="email"
                     required
-                    placeholder="suchitchavhan889@gmail.com"
+                    placeholder="candidate@example.com"
                     value={newProfileEmail}
                     onChange={(e) => setNewProfileEmail(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"

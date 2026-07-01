@@ -39,7 +39,7 @@ A dedicated workspace for preparing high-impact behavioral answers. Candidates i
 
 ### 4. Administrative System & Operations Monitor (`AdminPortal`)
 A protected dashboard designed for recruiters, SREs, and platform managers to monitor live platform activity:
-*   **Gated Entry**: Restricts access automatically to the pre-authorized master administrator email (`suchitchavhan889@gmail.com`) or falls back to secure local passcode credentials.
+*   **Gated Entry**: Restricts access automatically to the pre-authorized master administrator email (`admin@example.com`) or falls back to secure local passcode credentials.
 *   **System Counters**: Real-time counts of database records (users, active sessions, and event ledger logs).
 *   **Live Activity Ledger**: An active terminal stream of platform operations (e.g., mock interview submissions, STAR creations). Includes advanced filters by Candidate, Event Type, and search keywords.
 *   **Integration Test Suite (Automated Diagnostics)**: Contains executable unit-and-integration verification subroutines:
