@@ -1216,37 +1216,29 @@ Requirements:
           </div>
 
           {/* Admin Monitor Toggle */}
-          {(currentUser?.email.toLowerCase() === "admin@example.com" || isAdminMode) && (
-            <button
-              id="admin-monitor-toggle-btn"
-              onClick={() => {
-                if (isAdminMode) {
-                  setIsAdminMode(false);
-                  showNotification("Returned to Candidate Practice Workspace.", "success");
-                } else {
-                  // Verify if the active user profile is the pre-authorized master administrator
-                  if (currentUser?.email.toLowerCase() === "admin@example.com") {
-                    setIsAdminMode(true);
-                    showNotification("Switched to Admin System Monitor Portal! Viewing active candidate logs.", "success");
-                  } else {
-                    setPasscodeInput("");
-                    setIsPasscodeModalOpen(true);
-                  }
-                }
-              }}
-              className={`px-3 py-1.5 rounded-full border text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none ${
-                isAdminMode 
-                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25" 
-                  : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-300 hover:bg-slate-850"
-              }`}
-            >
-              <Users className="h-3.5 w-3.5" />
-              <span>Admin Portal</span>
-              {isAdminMode && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              )}
-            </button>
-          )}
+          <button
+            id="admin-monitor-toggle-btn"
+            onClick={() => {
+              if (isAdminMode) {
+                setIsAdminMode(false);
+                showNotification("Returned to Candidate Practice Workspace.", "success");
+              } else {
+                setPasscodeInput("");
+                setIsPasscodeModalOpen(true);
+              }
+            }}
+            className={`px-3 py-1.5 rounded-full border text-[11px] font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none ${
+              isAdminMode 
+                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25" 
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-300 hover:bg-slate-850"
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>Admin Portal</span>
+            {isAdminMode && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            )}
+          </button>
 
           {/* Active Phase Badge */}
           <div className="bg-slate-900 border border-slate-850 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm">
