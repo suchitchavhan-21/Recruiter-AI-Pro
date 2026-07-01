@@ -1929,7 +1929,7 @@ Requirements:
                   Supercharge your interview game.
                 </h2>
                 <p className="mt-3 text-slate-400 text-sm md:text-base leading-relaxed">
-                  Provide a target Job Description. My server-side intelligence will execute Google Web Search on modern industry standard tracks, map the ideal candidate persona, and spin up an interactive voice-friendly behavioral and technical exam.
+                  Provide a target Job Description. My server-side intelligence will execute Web Search on modern industry standard tracks, map the ideal candidate persona, and spin up an interactive voice-friendly behavioral and technical exam.
                 </p>
               </div>
             </div>
@@ -4255,7 +4255,7 @@ Requirements:
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/90 py-6 px-6 text-center text-xs text-slate-500 font-mono flex flex-col sm:flex-row justify-between items-center gap-4 max-w-7xl w-full mx-auto">
-        <p>© 2026 Recruiter AI Coach. Grounded with Live Google Search Technology.</p>
+        <p>© 2026 Recruiter AI Coach. Grounded by suchit chavhan</p>
         <p className="text-[10px] uppercase tracking-wider text-indigo-500/80">Offline State Persistence Configured</p>
       </footer>
     </div>
