@@ -65,6 +65,48 @@ export default function AdminMonitor({
   const [searchQuery, setSearchQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Passcode Settings states
+  const [currentPasscode, setCurrentPasscode] = useState("");
+  const [newPasscode, setNewPasscode] = useState("");
+  const [securityStatus, setSecurityStatus] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
+  const [showPasscodes, setShowPasscodes] = useState(false);
+
+  const handleUpdatePasscode = async () => {
+    setSecurityStatus({ type: null, message: "" });
+    if (!currentPasscode.trim() || !newPasscode.trim()) {
+      setSecurityStatus({ type: "error", message: "Both current and new passcodes are required." });
+      return;
+    }
+    if (newPasscode.trim().length < 6) {
+      setSecurityStatus({ type: "error", message: "New passcode must be at least 6 characters long." });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/passcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPasscode: currentPasscode.trim(),
+          newPasscode: newPasscode.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSecurityStatus({ type: "success", message: "Passcode updated successfully!" });
+        setCurrentPasscode("");
+        setNewPasscode("");
+        appendDebugLog("Security Update: Admin dashboard entry passcode was updated.");
+        await onRefresh();
+      } else {
+        setSecurityStatus({ type: "error", message: data.error || "Failed to update passcode." });
+      }
+    } catch (e: any) {
+      setSecurityStatus({ type: "error", message: `Network error: ${e.message}` });
+    }
+  };
+
   // Diagnostics and Testing states
   const [activeTab, setActiveTab] = useState<"monitor" | "diagnostics">("monitor");
   const [expandedTest, setExpandedTest] = useState<string | null>(null);
@@ -683,6 +725,68 @@ export default function AdminMonitor({
                   </div>
                 );
               })}
+            </div>
+
+            {/* System Security & Admin Passcode Card */}
+            <div className="border-t border-slate-800 pt-4 mt-2 space-y-3">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase font-display tracking-wider flex items-center gap-1.5">
+                  <span className="text-rose-500">🛡️</span> Passcode Security Settings
+                </h4>
+                <p className="text-[10px] text-slate-500 font-mono mt-0.5">Secure the admin dashboard entry</p>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-500 uppercase font-mono mb-1">Current Passcode</label>
+                  <input
+                    type={showPasscodes ? "text" : "password"}
+                    value={currentPasscode}
+                    onChange={(e) => setCurrentPasscode(e.target.value)}
+                    placeholder="Enter current passcode"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono placeholder:text-slate-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-500 uppercase font-mono mb-1">New Passcode</label>
+                  <input
+                    type={showPasscodes ? "text" : "password"}
+                    value={newPasscode}
+                    onChange={(e) => setNewPasscode(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono placeholder:text-slate-700"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscodes(!showPasscodes)}
+                    className="text-[10px] text-slate-500 hover:text-slate-300 font-mono cursor-pointer bg-transparent border-none"
+                  >
+                    {showPasscodes ? "Hide Characters" : "Show Characters"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleUpdatePasscode}
+                    className="px-4 py-1.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-400 hover:text-white rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
+                  >
+                    Update Passcode
+                  </button>
+                </div>
+
+                {securityStatus.type && (
+                  <div className={`p-2.5 rounded-lg text-[10px] font-mono leading-relaxed mt-2 ${
+                    securityStatus.type === "success" 
+                      ? "bg-emerald-950/20 border border-emerald-900/30 text-emerald-400" 
+                      : "bg-rose-950/20 border border-rose-900/30 text-rose-400"
+                  }`}>
+                    {securityStatus.message}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

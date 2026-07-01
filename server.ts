@@ -254,6 +254,48 @@ app.post("/api/admin/reset", (req, res) => {
   res.json({ success: true, message: "Database re-seeded to default stable records." });
 });
 
+// Server-side Admin Passcode state (default "admin123")
+let adminPasscode = "admin123";
+
+app.post("/api/admin/verify", (req, res) => {
+  const { passcode } = req.body;
+  if (!passcode) {
+    return res.status(400).json({ error: "Passcode is required." });
+  }
+  if (passcode === adminPasscode) {
+    return res.json({ success: true, message: "Verification successful." });
+  } else {
+    return res.status(401).json({ success: false, error: "Invalid admin passcode." });
+  }
+});
+
+app.post("/api/admin/passcode", (req, res) => {
+  const { currentPasscode, newPasscode } = req.body;
+  if (!currentPasscode || !newPasscode) {
+    return res.status(400).json({ error: "Both current and new passcodes are required." });
+  }
+  if (currentPasscode !== adminPasscode) {
+    return res.status(401).json({ error: "Incorrect current passcode." });
+  }
+  if (newPasscode.trim().length < 6) {
+    return res.status(400).json({ error: "New passcode must be at least 6 characters long." });
+  }
+  adminPasscode = newPasscode.trim();
+  
+  // Log security update
+  activities.unshift({
+    id: "act-" + Date.now(),
+    userId: "admin",
+    userName: "System Administrator",
+    userEmail: "admin@system.local",
+    type: "security_update",
+    timestamp: new Date().toISOString(),
+    details: `Administrative Action: Admin dashboard passcode updated successfully.`
+  });
+
+  res.json({ success: true, message: "Admin passcode updated successfully." });
+});
+
 // Lazy init GoogleGenAI
 let ai: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {

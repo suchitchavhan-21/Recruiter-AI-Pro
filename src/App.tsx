@@ -114,6 +114,7 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
+  const [isVerifyingPasscode, setIsVerifyingPasscode] = useState(false);
 
   // Form registration states
   const [newProfileName, setNewProfileName] = useState("Anonymous Candidate");
@@ -181,6 +182,33 @@ export default function App() {
       }
     } catch (e) {
       console.error("Activity logging failed on server: ", e);
+    }
+  };
+
+  const handleVerifyPasscode = async () => {
+    if (!passcodeInput.trim()) {
+      showNotification("Please enter the passcode.", "error");
+      return;
+    }
+    setIsVerifyingPasscode(true);
+    try {
+      const res = await fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: passcodeInput.trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAdminMode(true);
+        setIsPasscodeModalOpen(false);
+        showNotification("Verification successful! Welcome to the System Admin portal.", "success");
+      } else {
+        showNotification(data.error || "Incorrect passcode. System access denied.", "error");
+      }
+    } catch (e: any) {
+      showNotification(`Verification failed: ${e.message}`, "error");
+    } finally {
+      setIsVerifyingPasscode(false);
     }
   };
 
@@ -1594,17 +1622,12 @@ Requirements:
                     onChange={(e) => setPasscodeInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        if (passcodeInput === "admin123") {
-                          setIsAdminMode(true);
-                          setIsPasscodeModalOpen(false);
-                          showNotification("Verification successful! Welcome to the System Admin portal.", "success");
-                        } else {
-                          showNotification("Incorrect passcode. System access denied.", "error");
-                        }
+                        handleVerifyPasscode();
                       }
                     }}
                     className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 px-3.5 text-xs text-slate-200 text-center tracking-widest font-mono focus:outline-none focus:border-emerald-500"
                     autoFocus
+                    disabled={isVerifyingPasscode}
                   />
                 </div>
               </div>
@@ -1613,22 +1636,19 @@ Requirements:
                 <button
                   onClick={() => setIsPasscodeModalOpen(false)}
                   className="flex-grow py-2 bg-slate-950 hover:bg-slate-900 border border-slate-850 text-slate-400 rounded-xl text-xs font-semibold cursor-pointer text-center"
+                  disabled={isVerifyingPasscode}
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    if (passcodeInput === "admin123") {
-                      setIsAdminMode(true);
-                      setIsPasscodeModalOpen(false);
-                      showNotification("Verification successful! Welcome to the System Admin portal.", "success");
-                    } else {
-                      showNotification("Incorrect passcode. System access denied.", "error");
-                    }
-                  }}
-                  className="flex-grow py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow shadow-emerald-600/15 cursor-pointer text-center"
+                  onClick={handleVerifyPasscode}
+                  className="flex-grow py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow shadow-emerald-600/15 cursor-pointer text-center flex items-center justify-center gap-1.5"
+                  disabled={isVerifyingPasscode}
                 >
-                  Verify Code
+                  {isVerifyingPasscode ? (
+                    <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : null}
+                  <span>Verify Code</span>
                 </button>
               </div>
             </motion.div>
