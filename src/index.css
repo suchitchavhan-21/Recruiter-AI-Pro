@@ -9,6 +9,1090 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #09090B;
+  color: #F4F4F5;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* ==========================================================================
+   THEME 1: EMERALD MATRIX (Cyber Dark)
+   ========================================================================== */
+.theme-emerald-matrix {
+  --bg-app: #01120c !important;
+  --text-main: #34d399 !important;
+  background-color: #021a12 !important;
+  color: #a7f3d0 !important;
+}
+
+.theme-emerald-matrix body {
+  background-color: #021a12 !important;
+}
+
+/* Backgrounds */
+.theme-emerald-matrix .bg-\[\#09090B\],
+.theme-emerald-matrix .bg-slate-950,
+.theme-emerald-matrix .bg-slate-950\/60,
+.theme-emerald-matrix .bg-slate-950\/50,
+.theme-emerald-matrix .bg-\[\#09090B\]\/60,
+.theme-emerald-matrix .bg-\[\#09090B\]\/85,
+.theme-emerald-matrix .bg-\[\#050507\],
+.theme-emerald-matrix .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #01120c !important;
+}
+
+.theme-emerald-matrix .bg-\[\#111827\],
+.theme-emerald-matrix .bg-slate-900,
+.theme-emerald-matrix .bg-slate-900\/50,
+.theme-emerald-matrix aside,
+.theme-emerald-matrix header {
+  background-color: #042f21 !important;
+}
+
+/* Borders */
+.theme-emerald-matrix .border-\[\#27272A\],
+.theme-emerald-matrix .border-\[\#27272A\]\/60,
+.theme-emerald-matrix .border-\[\#27272A\]\/80,
+.theme-emerald-matrix .border-\[\#27272A\]\/40,
+.theme-emerald-matrix .border-slate-800,
+.theme-emerald-matrix .border-slate-200,
+.theme-emerald-matrix .border-slate-100,
+.theme-emerald-matrix aside,
+.theme-emerald-matrix header {
+  border-color: #0f766e !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-emerald-matrix aside .text-white,
+.theme-emerald-matrix header .text-white,
+.theme-emerald-matrix aside h2,
+.theme-emerald-matrix aside h4 {
+  color: #a7f3d0 !important;
+}
+
+/* Text */
+.theme-emerald-matrix .text-slate-100,
+.theme-emerald-matrix .text-slate-200,
+.theme-emerald-matrix .text-slate-300,
+.theme-emerald-matrix h1,
+.theme-emerald-matrix h2,
+.theme-emerald-matrix h3,
+.theme-emerald-matrix h4 {
+  color: #34d399 !important;
+}
+
+.theme-emerald-matrix .text-slate-400,
+.theme-emerald-matrix .text-slate-500,
+.theme-emerald-matrix .text-slate-600 {
+  color: #059669 !important;
+}
+
+/* Accents */
+.theme-emerald-matrix .text-\[\#6D5EF8\],
+.theme-emerald-matrix .text-indigo-400 {
+  color: #10b981 !important;
+}
+
+.theme-emerald-matrix .bg-\[\#6D5EF8\] {
+  background-color: #10b981 !important;
+  color: #01120c !important;
+}
+.theme-emerald-matrix .bg-\[\#6D5EF8\]:hover {
+  background-color: #059669 !important;
+}
+.theme-emerald-matrix .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-emerald-matrix input,
+.theme-emerald-matrix textarea,
+.theme-emerald-matrix select {
+  color: #34d399 !important;
+  background-color: #01120c !important;
+  border-color: #0f766e !important;
+}
+
+/* ==========================================================================
+   THEME 2: NORDIC SLATE (Clean Light)
+   ========================================================================== */
+.theme-nordic-slate {
+  --bg-app: #f1f5f9 !important;
+  --text-main: #1e293b !important;
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+.theme-nordic-slate body {
+  background-color: #f1f5f9 !important;
+}
+
+/* Backgrounds */
+.theme-nordic-slate .bg-\[\#09090B\],
+.theme-nordic-slate .bg-slate-950,
+.theme-nordic-slate .bg-slate-950\/60,
+.theme-nordic-slate .bg-slate-950\/50,
+.theme-nordic-slate .bg-\[\#09090B\]\/60,
+.theme-nordic-slate .bg-\[\#09090B\]\/85,
+.theme-nordic-slate .bg-\[\#050507\],
+.theme-nordic-slate .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #e2e8f0 !important;
+}
+
+.theme-nordic-slate .bg-\[\#111827\],
+.theme-nordic-slate .bg-slate-900,
+.theme-nordic-slate .bg-slate-900\/50,
+.theme-nordic-slate aside,
+.theme-nordic-slate header {
+  background-color: #ffffff !important;
+}
+
+/* Borders */
+.theme-nordic-slate .border-\[\#27272A\],
+.theme-nordic-slate .border-\[\#27272A\]\/60,
+.theme-nordic-slate .border-\[\#27272A\]\/80,
+.theme-nordic-slate .border-\[\#27272A\]\/40,
+.theme-nordic-slate .border-slate-800,
+.theme-nordic-slate .border-slate-200,
+.theme-nordic-slate .border-slate-100,
+.theme-nordic-slate aside,
+.theme-nordic-slate header {
+  border-color: #cbd5e1 !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-nordic-slate aside .text-white,
+.theme-nordic-slate header .text-white,
+.theme-nordic-slate aside h2,
+.theme-nordic-slate aside h4 {
+  color: #0f172a !important;
+}
+
+/* Text */
+.theme-nordic-slate .text-slate-100,
+.theme-nordic-slate .text-slate-200,
+.theme-nordic-slate .text-slate-300,
+.theme-nordic-slate h1,
+.theme-nordic-slate h2,
+.theme-nordic-slate h3,
+.theme-nordic-slate h4 {
+  color: #0f172a !important;
+}
+
+.theme-nordic-slate .text-slate-400,
+.theme-nordic-slate .text-slate-500,
+.theme-nordic-slate .text-slate-600 {
+  color: #64748b !important;
+}
+
+/* Accents with Nordic Sky Blue */
+.theme-nordic-slate .text-\[\#6D5EF8\],
+.theme-nordic-slate .text-indigo-400 {
+  color: #0284c7 !important;
+}
+
+.theme-nordic-slate .bg-\[\#6D5EF8\] {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+.theme-nordic-slate .bg-\[\#6D5EF8\]:hover {
+  background-color: #0369a1 !important;
+}
+.theme-nordic-slate .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(2, 132, 199, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-nordic-slate input,
+.theme-nordic-slate textarea,
+.theme-nordic-slate select {
+  color: #0f172a !important;
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* ==========================================================================
+   THEME 3: WARM EDITORIAL (Bookish Cream)
+   ========================================================================== */
+.theme-warm-editorial {
+  --bg-app: #fdfaf2 !important;
+  --text-main: #2b1f1d !important;
+  background-color: #fdfaf2 !important;
+  color: #3b2f2f !important;
+}
+
+.theme-warm-editorial body {
+  background-color: #fdfaf2 !important;
+}
+
+/* Backgrounds */
+.theme-warm-editorial .bg-\[\#09090B\],
+.theme-warm-editorial .bg-slate-950,
+.theme-warm-editorial .bg-slate-950\/60,
+.theme-warm-editorial .bg-slate-950\/50,
+.theme-warm-editorial .bg-\[\#09090B\]\/60,
+.theme-warm-editorial .bg-\[\#09090B\]\/85,
+.theme-warm-editorial .bg-\[\#050507\],
+.theme-warm-editorial .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #f3edd7 !important;
+}
+
+.theme-warm-editorial .bg-\[\#111827\],
+.theme-warm-editorial .bg-slate-900,
+.theme-warm-editorial .bg-slate-900\/50,
+.theme-warm-editorial aside,
+.theme-warm-editorial header {
+  background-color: #FAF6EE !important;
+}
+
+/* Borders */
+.theme-warm-editorial .border-\[\#27272A\],
+.theme-warm-editorial .border-\[\#27272A\]\/60,
+.theme-warm-editorial .border-\[\#27272A\]\/80,
+.theme-warm-editorial .border-\[\#27272A\]\/40,
+.theme-warm-editorial .border-slate-800,
+.theme-warm-editorial .border-slate-200,
+.theme-warm-editorial .border-slate-100,
+.theme-warm-editorial aside,
+.theme-warm-editorial header {
+  border-color: #d8c3a5 !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-warm-editorial aside .text-white,
+.theme-warm-editorial header .text-white,
+.theme-warm-editorial aside h2,
+.theme-warm-editorial aside h4 {
+  color: #2b1f1d !important;
+}
+
+/* Text */
+.theme-warm-editorial .text-slate-100,
+.theme-warm-editorial .text-slate-200,
+.theme-warm-editorial .text-slate-300,
+.theme-warm-editorial h1,
+.theme-warm-editorial h2,
+.theme-warm-editorial h3,
+.theme-warm-editorial h4 {
+  color: #2b1f1d !important;
+}
+
+.theme-warm-editorial .text-slate-400,
+.theme-warm-editorial .text-slate-500,
+.theme-warm-editorial .text-slate-600 {
+  color: #8c7a6b !important;
+}
+
+/* Accents with Warm Amber */
+.theme-warm-editorial .text-\[\#6D5EF8\],
+.theme-warm-editorial .text-indigo-400 {
+  color: #b45309 !important;
+}
+
+.theme-warm-editorial .bg-\[\#6D5EF8\] {
+  background-color: #b45309 !important;
+  color: #ffffff !important;
+}
+.theme-warm-editorial .bg-\[\#6D5EF8\]:hover {
+  background-color: #92400E !important;
+}
+.theme-warm-editorial .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(180, 83, 9, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-warm-editorial input,
+.theme-warm-editorial textarea,
+.theme-warm-editorial select {
+  color: #2b1f1d !important;
+  background-color: #fdfaf2 !important;
+  border-color: #d8c3a5 !important;
+}
+
+
+/* ==========================================================================
+   THEME 4: MIDNIGHT NEON (Cyberpunk Dark)
+   ========================================================================== */
+.theme-midnight-neon {
+  --bg-app: #060214 !important;
+  --text-main: #e0e7ff !important;
+  background-color: #0c0721 !important;
+  color: #e0e7ff !important;
+}
+
+.theme-midnight-neon body {
+  background-color: #0c0721 !important;
+}
+
+/* Backgrounds */
+.theme-midnight-neon .bg-\[\#09090B\],
+.theme-midnight-neon .bg-slate-950,
+.theme-midnight-neon .bg-slate-950\/60,
+.theme-midnight-neon .bg-slate-950\/50,
+.theme-midnight-neon .bg-\[\#09090B\]\/60,
+.theme-midnight-neon .bg-\[\#09090B\]\/85,
+.theme-midnight-neon .bg-\[\#050507\],
+.theme-midnight-neon .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #060214 !important;
+}
+
+.theme-midnight-neon .bg-\[\#111827\],
+.theme-midnight-neon .bg-slate-900,
+.theme-midnight-neon .bg-slate-900\/50,
+.theme-midnight-neon aside,
+.theme-midnight-neon header {
+  background-color: #140c3c !important;
+}
+
+/* Borders */
+.theme-midnight-neon .border-\[\#27272A\],
+.theme-midnight-neon .border-\[\#27272A\]\/60,
+.theme-midnight-neon .border-\[\#27272A\]\/80,
+.theme-midnight-neon .border-\[\#27272A\]\/40,
+.theme-midnight-neon .border-slate-800,
+.theme-midnight-neon .border-slate-200,
+.theme-midnight-neon .border-slate-100,
+.theme-midnight-neon aside,
+.theme-midnight-neon header {
+  border-color: #c084fc !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-midnight-neon aside .text-white,
+.theme-midnight-neon header .text-white,
+.theme-midnight-neon aside h2,
+.theme-midnight-neon aside h4 {
+  color: #00f0ff !important;
+}
+
+/* Text */
+.theme-midnight-neon .text-slate-100,
+.theme-midnight-neon .text-slate-200,
+.theme-midnight-neon .text-slate-300,
+.theme-midnight-neon h1,
+.theme-midnight-neon h2,
+.theme-midnight-neon h3,
+.theme-midnight-neon h4 {
+  color: #ff007f !important;
+}
+
+.theme-midnight-neon .text-slate-400,
+.theme-midnight-neon .text-slate-500,
+.theme-midnight-neon .text-slate-600 {
+  color: #a78bfa !important;
+}
+
+/* Accents with Cyber Pink */
+.theme-midnight-neon .text-\[\#6D5EF8\],
+.theme-midnight-neon .text-indigo-400 {
+  color: #00f0ff !important;
+}
+
+.theme-midnight-neon .bg-\[\#6D5EF8\] {
+  background-color: #ff007f !important;
+  color: #ffffff !important;
+}
+.theme-midnight-neon .bg-\[\#6D5EF8\]:hover {
+  background-color: #db2777 !important;
+}
+.theme-midnight-neon .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(255, 0, 127, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-midnight-neon input,
+.theme-midnight-neon textarea,
+.theme-midnight-neon select {
+  color: #e0e7ff !important;
+  background-color: #060214 !important;
+  border-color: #c084fc !important;
+}
+
+
+/* ==========================================================================
+   THEME 5: SUNSET LAVENDER (Cozy Indigo)
+   ========================================================================== */
+.theme-sunset-lavender {
+  --bg-app: #0a071d !important;
+  --text-main: #f3f4f6 !important;
+  background-color: #120e2e !important;
+  color: #f3f4f6 !important;
+}
+
+.theme-sunset-lavender body {
+  background-color: #120e2e !important;
+}
+
+/* Backgrounds */
+.theme-sunset-lavender .bg-\[\#09090B\],
+.theme-sunset-lavender .bg-slate-950,
+.theme-sunset-lavender .bg-slate-950\/60,
+.theme-sunset-lavender .bg-slate-950\/50,
+.theme-sunset-lavender .bg-\[\#09090B\]\/60,
+.theme-sunset-lavender .bg-\[\#09090B\]\/85,
+.theme-sunset-lavender .bg-\[\#050507\],
+.theme-sunset-lavender .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #0a071d !important;
+}
+
+.theme-sunset-lavender .bg-\[\#111827\],
+.theme-sunset-lavender .bg-slate-900,
+.theme-sunset-lavender .bg-slate-900\/50,
+.theme-sunset-lavender aside,
+.theme-sunset-lavender header {
+  background-color: #1e1b4b !important;
+}
+
+/* Borders */
+.theme-sunset-lavender .border-\[\#27272A\],
+.theme-sunset-lavender .border-\[\#27272A\]\/60,
+.theme-sunset-lavender .border-\[\#27272A\]\/80,
+.theme-sunset-lavender .border-\[\#27272A\]\/40,
+.theme-sunset-lavender .border-slate-800,
+.theme-sunset-lavender .border-slate-200,
+.theme-sunset-lavender .border-slate-100,
+.theme-sunset-lavender aside,
+.theme-sunset-lavender header {
+  border-color: #4f46e5 !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-sunset-lavender aside .text-white,
+.theme-sunset-lavender header .text-white,
+.theme-sunset-lavender aside h2,
+.theme-sunset-lavender aside h4 {
+  color: #fda4af !important;
+}
+
+/* Text */
+.theme-sunset-lavender .text-slate-100,
+.theme-sunset-lavender .text-slate-200,
+.theme-sunset-lavender .text-slate-300,
+.theme-sunset-lavender h1,
+.theme-sunset-lavender h2,
+.theme-sunset-lavender h3,
+.theme-sunset-lavender h4 {
+  color: #f43f5e !important;
+}
+
+.theme-sunset-lavender .text-slate-400,
+.theme-sunset-lavender .text-slate-500,
+.theme-sunset-lavender .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+/* Accents with Indigo */
+.theme-sunset-lavender .text-\[\#6D5EF8\],
+.theme-sunset-lavender .text-indigo-400 {
+  color: #a78bfa !important;
+}
+
+.theme-sunset-lavender .bg-\[\#6D5EF8\] {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+}
+.theme-sunset-lavender .bg-\[\#6D5EF8\]:hover {
+  background-color: #4f46e5 !important;
+}
+.theme-sunset-lavender .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-sunset-lavender input,
+.theme-sunset-lavender textarea,
+.theme-sunset-lavender select {
+  color: #f3f4f6 !important;
+  background-color: #0a071d !important;
+  border-color: #4f46e5 !important;
+}
+
+
+/* ==========================================================================
+   THEME 6: FOREST MOSS (Organic Calm)
+   ========================================================================== */
+.theme-forest-moss {
+  --bg-app: #060907 !important;
+  --text-main: #ecfdf5 !important;
+  background-color: #0d1310 !important;
+  color: #ecfdf5 !important;
+}
+
+.theme-forest-moss body {
+  background-color: #0d1310 !important;
+}
+
+/* Backgrounds */
+.theme-forest-moss .bg-\[\#09090B\],
+.theme-forest-moss .bg-slate-950,
+.theme-forest-moss .bg-slate-950\/60,
+.theme-forest-moss .bg-slate-950\/50,
+.theme-forest-moss .bg-\[\#09090B\]\/60,
+.theme-forest-moss .bg-\[\#09090B\]\/85,
+.theme-forest-moss .bg-\[\#050507\],
+.theme-forest-moss .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #060907 !important;
+}
+
+.theme-forest-moss .bg-\[\#111827\],
+.theme-forest-moss .bg-slate-900,
+.theme-forest-moss .bg-slate-900\/50,
+.theme-forest-moss aside,
+.theme-forest-moss header {
+  background-color: #14221a !important;
+}
+
+/* Borders */
+.theme-forest-moss .border-\[\#27272A\],
+.theme-forest-moss .border-\[\#27272A\]\/60,
+.theme-forest-moss .border-\[\#27272A\]\/80,
+.theme-forest-moss .border-\[\#27272A\]\/40,
+.theme-forest-moss .border-slate-800,
+.theme-forest-moss .border-slate-200,
+.theme-forest-moss .border-slate-100,
+.theme-forest-moss aside,
+.theme-forest-moss header {
+  border-color: #0f766e !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-forest-moss aside .text-white,
+.theme-forest-moss header .text-white,
+.theme-forest-moss aside h2,
+.theme-forest-moss aside h4 {
+  color: #6ee7b7 !important;
+}
+
+/* Text */
+.theme-forest-moss .text-slate-100,
+.theme-forest-moss .text-slate-200,
+.theme-forest-moss .text-slate-300,
+.theme-forest-moss h1,
+.theme-forest-moss h2,
+.theme-forest-moss h3,
+.theme-forest-moss h4 {
+  color: #34d399 !important;
+}
+
+.theme-forest-moss .text-slate-400,
+.theme-forest-moss .text-slate-500,
+.theme-forest-moss .text-slate-600 {
+  color: #059669 !important;
+}
+
+/* Accents with Gold */
+.theme-forest-moss .text-\[\#6D5EF8\],
+.theme-forest-moss .text-indigo-400 {
+  color: #fbbf24 !important;
+}
+
+.theme-forest-moss .bg-\[\#6D5EF8\] {
+  background-color: #10b981 !important;
+  color: #060907 !important;
+}
+.theme-forest-moss .bg-\[\#6D5EF8\]:hover {
+  background-color: #059669 !important;
+}
+.theme-forest-moss .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-forest-moss input,
+.theme-forest-moss textarea,
+.theme-forest-moss select {
+  color: #ecfdf5 !important;
+  background-color: #060907 !important;
+  border-color: #0f766e !important;
+}
+
+
+/* ==========================================================================
+   THEME 7: GOOGLE GEMINI (Elite Cyber Gradient)
+   ========================================================================== */
+.theme-google-gemini {
+  --bg-app: #080b11 !important;
+  --text-main: #f1f5f9 !important;
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+.theme-google-gemini body {
+  background-color: #0b0f19 !important;
+}
+
+/* Backgrounds */
+.theme-google-gemini .bg-\[\#09090B\],
+.theme-google-gemini .bg-slate-950,
+.theme-google-gemini .bg-slate-950\/60,
+.theme-google-gemini .bg-slate-950\/50,
+.theme-google-gemini .bg-\[\#09090B\]\/60,
+.theme-google-gemini .bg-\[\#09090B\]\/85,
+.theme-google-gemini .bg-\[\#050507\],
+.theme-google-gemini .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #080b11 !important;
+}
+
+.theme-google-gemini .bg-\[\#111827\],
+.theme-google-gemini .bg-slate-900,
+.theme-google-gemini .bg-slate-900\/50,
+.theme-google-gemini aside,
+.theme-google-gemini header {
+  background-color: #111625 !important;
+}
+
+/* Borders with extremely fine slate border */
+.theme-google-gemini .border-\[\#27272A\],
+.theme-google-gemini .border-\[\#27272A\]\/60,
+.theme-google-gemini .border-\[\#27272A\]\/80,
+.theme-google-gemini .border-\[\#27272A\]\/40,
+.theme-google-gemini .border-slate-800,
+.theme-google-gemini .border-slate-200,
+.theme-google-gemini .border-slate-100,
+.theme-google-gemini aside,
+.theme-google-gemini header {
+  border-color: #1e293b !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-google-gemini aside .text-white,
+.theme-google-gemini header .text-white,
+.theme-google-gemini aside h2,
+.theme-google-gemini aside h4 {
+  color: #ffffff !important;
+}
+
+/* Text - Clean Soft Slate-White */
+.theme-google-gemini .text-slate-100,
+.theme-google-gemini .text-slate-200,
+.theme-google-gemini .text-slate-300,
+.theme-google-gemini h1,
+.theme-google-gemini h2,
+.theme-google-gemini h3,
+.theme-google-gemini h4 {
+  color: #f8fafc !important;
+}
+
+.theme-google-gemini .text-slate-400,
+.theme-google-gemini .text-slate-500,
+.theme-google-gemini .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+/* Accents with Gemini multi-color glow */
+.theme-google-gemini .text-\[\#6D5EF8\],
+.theme-google-gemini .text-indigo-400 {
+  color: #a78bfa !important; /* fallback */
+  background: linear-gradient(to right, #4285f4, #9b72cb, #d96570);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.theme-google-gemini .bg-\[\#6D5EF8\] {
+  background: linear-gradient(135deg, #1a73e8, #8ab4f8) !important;
+  color: #ffffff !important;
+}
+.theme-google-gemini .bg-\[\#6D5EF8\]:hover {
+  background: linear-gradient(135deg, #1557b0, #669df6) !important;
+}
+.theme-google-gemini .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(66, 133, 244, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-google-gemini input,
+.theme-google-gemini textarea,
+.theme-google-gemini select {
+  color: #f1f5f9 !important;
+  background-color: #080b11 !important;
+  border-color: #1e293b !important;
+}
+
+
+/* ==========================================================================
+   THEME 8: OPENAI CHAT (Ultra-Minimalist Dark)
+   ========================================================================== */
+.theme-openai-chat {
+  --bg-app: #0d0d0d !important;
+  --text-main: #ececec !important;
+  background-color: #171717 !important;
+  color: #ececec !important;
+}
+
+.theme-openai-chat body {
+  background-color: #171717 !important;
+}
+
+/* Backgrounds */
+.theme-openai-chat .bg-\[\#09090B\],
+.theme-openai-chat .bg-slate-950,
+.theme-openai-chat .bg-slate-950\/60,
+.theme-openai-chat .bg-slate-950\/50,
+.theme-openai-chat .bg-\[\#09090B\]\/60,
+.theme-openai-chat .bg-\[\#09090B\]\/85,
+.theme-openai-chat .bg-\[\#050507\],
+.theme-openai-chat .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #0d0d0d !important;
+}
+
+.theme-openai-chat .bg-\[\#111827\],
+.theme-openai-chat .bg-slate-900,
+.theme-openai-chat .bg-slate-900\/50,
+.theme-openai-chat aside,
+.theme-openai-chat header {
+  background-color: #171717 !important;
+}
+
+/* Borders with extremely fine line */
+.theme-openai-chat .border-\[\#27272A\],
+.theme-openai-chat .border-\[\#27272A\]\/60,
+.theme-openai-chat .border-\[\#27272A\]\/80,
+.theme-openai-chat .border-\[\#27272A\]\/40,
+.theme-openai-chat .border-slate-800,
+.theme-openai-chat .border-slate-200,
+.theme-openai-chat .border-slate-100,
+.theme-openai-chat aside,
+.theme-openai-chat header {
+  border-color: #2f2f2f !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-openai-chat aside .text-white,
+.theme-openai-chat header .text-white,
+.theme-openai-chat aside h2,
+.theme-openai-chat aside h4 {
+  color: #ffffff !important;
+}
+
+/* Text - Crisp White & Muted Gray */
+.theme-openai-chat .text-slate-100,
+.theme-openai-chat .text-slate-200,
+.theme-openai-chat .text-slate-300,
+.theme-openai-chat h1,
+.theme-openai-chat h2,
+.theme-openai-chat h3,
+.theme-openai-chat h4 {
+  color: #ffffff !important;
+}
+
+.theme-openai-chat .text-slate-400,
+.theme-openai-chat .text-slate-500,
+.theme-openai-chat .text-slate-600 {
+  color: #b4b4b4 !important;
+}
+
+/* Accents with ChatGPT Iconic Green */
+.theme-openai-chat .text-\[\#6D5EF8\],
+.theme-openai-chat .text-indigo-400 {
+  color: #10a37f !important;
+}
+
+.theme-openai-chat .bg-\[\#6D5EF8\] {
+  background-color: #10a37f !important;
+  color: #ffffff !important;
+}
+.theme-openai-chat .bg-\[\#6D5EF8\]:hover {
+  background-color: #1a7f64 !important;
+}
+.theme-openai-chat .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(16, 163, 127, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-openai-chat input,
+.theme-openai-chat textarea,
+.theme-openai-chat select {
+  color: #ffffff !important;
+  background-color: #0d0d0d !important;
+  border-color: #2f2f2f !important;
+}
+
+
+/* ==========================================================================
+   THEME 9: META LLAMA (Horizon Cyber Deep)
+   ========================================================================== */
+.theme-meta-llama {
+  --bg-app: #020712 !important;
+  --text-main: #e2e8f0 !important;
+  background-color: #050d1a !important;
+  color: #e2e8f0 !important;
+}
+
+.theme-meta-llama body {
+  background-color: #050d1a !important;
+}
+
+/* Backgrounds */
+.theme-meta-llama .bg-\[\#09090B\],
+.theme-meta-llama .bg-slate-950,
+.theme-meta-llama .bg-slate-950\/60,
+.theme-meta-llama .bg-slate-950\/50,
+.theme-meta-llama .bg-\[\#09090B\]\/60,
+.theme-meta-llama .bg-\[\#09090B\]\/85,
+.theme-meta-llama .bg-\[\#050507\],
+.theme-meta-llama .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #020712 !important;
+}
+
+.theme-meta-llama .bg-\[\#111827\],
+.theme-meta-llama .bg-slate-900,
+.theme-meta-llama .bg-slate-900\/50,
+.theme-meta-llama aside,
+.theme-meta-llama header {
+  background-color: #091326 !important;
+}
+
+/* Borders */
+.theme-meta-llama .border-\[\#27272A\],
+.theme-meta-llama .border-\[\#27272A\]\/60,
+.theme-meta-llama .border-\[\#27272A\]\/80,
+.theme-meta-llama .border-\[\#27272A\]\/40,
+.theme-meta-llama .border-slate-800,
+.theme-meta-llama .border-slate-200,
+.theme-meta-llama .border-slate-100,
+.theme-meta-llama aside,
+.theme-meta-llama header {
+  border-color: #1e2e4a !important;
+}
+
+/* Specific Sidebar / Header Text adjustments */
+.theme-meta-llama aside .text-white,
+.theme-meta-llama header .text-white,
+.theme-meta-llama aside h2,
+.theme-meta-llama aside h4 {
+  color: #00f0ff !important;
+}
+
+/* Text */
+.theme-meta-llama .text-slate-100,
+.theme-meta-llama .text-slate-200,
+.theme-meta-llama .text-slate-300,
+.theme-meta-llama h1,
+.theme-meta-llama h2,
+.theme-meta-llama h3,
+.theme-meta-llama h4 {
+  color: #ffffff !important;
+}
+
+.theme-meta-llama .text-slate-400,
+.theme-meta-llama .text-slate-500,
+.theme-meta-llama .text-slate-600 {
+  color: #64748b !important;
+}
+
+/* Accents with electric Meta Cyan & Indigo */
+.theme-meta-llama .text-\[\#6D5EF8\],
+.theme-meta-llama .text-indigo-400 {
+  color: #00f0ff !important;
+}
+
+.theme-meta-llama .bg-\[\#6D5EF8\] {
+  background-color: #0066ff !important;
+  color: #ffffff !important;
+}
+.theme-meta-llama .bg-\[\#6D5EF8\]:hover {
+  background-color: #0052cc !important;
+}
+.theme-meta-llama .bg-\[\#6D5EF8\]\/5 {
+  background-color: rgba(0, 102, 255, 0.08) !important;
+}
+
+/* Inputs and Selects */
+.theme-meta-llama input,
+.theme-meta-llama textarea,
+.theme-meta-llama select {
+  color: #e2e8f0 !important;
+  background-color: #020712 !important;
+  border-color: #1e2e4a !important;
+}
+
+/* ==========================================================================
+   ADVANCED UNIFIED THEMING: LIGHT MODE ("nordic-slate") & DARK MODE ("cosmic-dark")
+   ========================================================================== */
+
+/* 1. PRESENT DARK THEME ("cosmic-dark") - Highly Legible & Bright Text Overrides */
+.theme-cosmic-dark {
+  --bg-app: #09090B !important;
+  --text-main: #FFFFFF !important;
+  background-color: #09090B !important;
+  color: #FFFFFF !important;
+}
+
+.theme-cosmic-dark body {
+  background-color: #09090B !important;
+  color: #FFFFFF !important;
+}
+
+/* Force all headers and bold titles to be super bright and crisp */
+.theme-cosmic-dark h1,
+.theme-cosmic-dark h2,
+.theme-cosmic-dark h3,
+.theme-cosmic-dark h4,
+.theme-cosmic-dark h5,
+.theme-cosmic-dark h6,
+.theme-cosmic-dark strong,
+.theme-cosmic-dark b,
+.theme-cosmic-dark .text-white {
+  color: #FFFFFF !important;
+}
+
+/* Boost readability of primary content texts (from muted slate/zinc to clear white/soft white) */
+.theme-cosmic-dark .text-\[\#F4F4F5\],
+.theme-cosmic-dark .text-slate-100,
+.theme-cosmic-dark .text-slate-200,
+.theme-cosmic-dark .text-slate-300,
+.theme-cosmic-dark .text-zinc-100,
+.theme-cosmic-dark .text-zinc-200,
+.theme-cosmic-dark .text-zinc-300,
+.theme-cosmic-dark .text-gray-100,
+.theme-cosmic-dark .text-gray-200,
+.theme-cosmic-dark .text-gray-300 {
+  color: #FAFAFA !important;
+}
+
+/* Lift secondary / descriptor texts to a much lighter, crisp gray */
+.theme-cosmic-dark .text-slate-400,
+.theme-cosmic-dark .text-zinc-400,
+.theme-cosmic-dark .text-gray-400 {
+  color: #E4E4E7 !important; /* Elegant Light Gray */
+}
+
+/* Lift third-level muted text (like instructions or details) to be clearly legible */
+.theme-cosmic-dark .text-slate-500,
+.theme-cosmic-dark .text-zinc-500,
+.theme-cosmic-dark .text-gray-500,
+.theme-cosmic-dark .text-slate-600 {
+  color: #A1A1AA !important; /* Higher brightness soft gray */
+}
+
+
+/* 2. LIGHT MODE ("nordic-slate") - Dynamic Color Support for All Backgrounds & Text */
+.theme-nordic-slate {
+  --bg-app: #F1F5F9 !important;
+  --text-main: #0F172A !important;
+}
+
+/* Broad text color support for all headers, list items, paragraphs, and active elements */
+.theme-nordic-slate h1,
+.theme-nordic-slate h2,
+.theme-nordic-slate h3,
+.theme-nordic-slate h4,
+.theme-nordic-slate h5,
+.theme-nordic-slate h6,
+.theme-nordic-slate p,
+.theme-nordic-slate li,
+.theme-nordic-slate strong,
+.theme-nordic-slate b {
+  color: #0F172A !important;
+}
+
+/* Target and swap bright/light dark-mode text classes to crisp slate-900 in light mode */
+.theme-nordic-slate .text-\[\#F4F4F5\],
+.theme-nordic-slate .text-slate-100,
+.theme-nordic-slate .text-slate-200,
+.theme-nordic-slate .text-slate-300,
+.theme-nordic-slate .text-zinc-100,
+.theme-nordic-slate .text-zinc-200,
+.theme-nordic-slate .text-zinc-300,
+.theme-nordic-slate .text-gray-100,
+.theme-nordic-slate .text-gray-200,
+.theme-nordic-slate .text-gray-300,
+.theme-nordic-slate .text-zinc-50,
+.theme-nordic-slate .text-slate-50 {
+  color: #0F172A !important;
+}
+
+/* Make sure text-white doesn't render invisible on light backgrounds (except inside primary filled buttons/badges) */
+.theme-nordic-slate .text-white:not(button):not(button *):not(.bg-\[\#6D5EF8\] *):not(.bg-emerald-500 *):not(.bg-amber-500 *):not(.bg-indigo-500 *):not(.bg-violet-600 *):not(.bg-rose-500 *):not(.bg-indigo-600 *):not(.bg-slate-900 *):not(.bg-zinc-900 *) {
+  color: #0F172A !important;
+}
+
+/* Convert default secondary dark-mode gray text to clean slate-600 */
+.theme-nordic-slate .text-slate-400,
+.theme-nordic-slate .text-zinc-400,
+.theme-nordic-slate .text-gray-400 {
+  color: #334155 !important;
+}
+
+/* Convert default muted grays to clear slate-400 / slate-500 */
+.theme-nordic-slate .text-slate-500,
+.theme-nordic-slate .text-zinc-500,
+.theme-nordic-slate .text-gray-500,
+.theme-nordic-slate .text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Comprehensive dark-to-light container background mappings */
+.theme-nordic-slate .bg-\[\#09090B\],
+.theme-nordic-slate .bg-slate-950,
+.theme-nordic-slate .bg-zinc-950,
+.theme-nordic-slate .bg-gray-950,
+.theme-nordic-slate .bg-black,
+.theme-nordic-slate .bg-slate-950\/60,
+.theme-nordic-slate .bg-slate-950\/50,
+.theme-nordic-slate .bg-\[\#09090B\]\/60,
+.theme-nordic-slate .bg-\[\#09090B\]\/85,
+.theme-nordic-slate .bg-\[\#050507\],
+.theme-nordic-slate .bg-\[var\(--bg-app\,\#09090B\)\] {
+  background-color: #F1F5F9 !important; /* Clean sky-gray background */
+}
+
+/* Turn dark sidebar, header, and card backgrounds into solid bright white */
+.theme-nordic-slate .bg-slate-900,
+.theme-nordic-slate .bg-zinc-900,
+.theme-nordic-slate .bg-gray-900,
+.theme-nordic-slate .bg-\[\#18181B\],
+.theme-nordic-slate .bg-slate-900\/50,
+.theme-nordic-slate .bg-slate-900\/90,
+.theme-nordic-slate .bg-slate-900\/60,
+.theme-nordic-slate .bg-zinc-900\/90,
+.theme-nordic-slate .bg-zinc-900\/50,
+.theme-nordic-slate .bg-slate-800\/40,
+.theme-nordic-slate .bg-slate-900\/40,
+.theme-nordic-slate .bg-slate-950\/40,
+.theme-nordic-slate aside,
+.theme-nordic-slate header,
+.theme-nordic-slate .bg-\[\#111827\] {
+  background-color: #FFFFFF !important; /* Perfect high-end light card */
+}
+
+/* Soft inline badges / elements */
+.theme-nordic-slate .bg-slate-900\/30,
+.theme-nordic-slate .bg-zinc-900\/10,
+.theme-nordic-slate .bg-slate-950\/10 {
+  background-color: #E2E8F0 !important;
+}
+
+/* Seamless light-mode border overrides */
+.theme-nordic-slate .border-\[\#27272A\],
+.theme-nordic-slate .border-\[\#27272A\]\/60,
+.theme-nordic-slate .border-\[\#27272A\]\/80,
+.theme-nordic-slate .border-\[\#27272A\]\/40,
+.theme-nordic-slate .border-slate-800,
+.theme-nordic-slate .border-slate-800\/80,
+.theme-nordic-slate .border-zinc-800,
+.theme-nordic-slate .border-zinc-700,
+.theme-nordic-slate .border-slate-700,
+.theme-nordic-slate .border-slate-200,
+.theme-nordic-slate .border-slate-100,
+.theme-nordic-slate aside,
+.theme-nordic-slate header,
+.theme-nordic-slate div {
+  border-color: #E2E8F0 !important; /* Crisp, low-contrast clean borders */
+}
+
+/* Override input labels, text area inputs, and drop downs */
+.theme-nordic-slate input,
+.theme-nordic-slate textarea,
+.theme-nordic-slate select {
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Correct icon color matching */
+.theme-nordic-slate .text-slate-300,
+.theme-nordic-slate .text-zinc-300 {
+  color: #334155 !important;
+}
+
+

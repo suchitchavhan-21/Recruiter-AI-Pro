@@ -1,5 +1,5 @@
 {
-  "name": "Interview Coach AI",
+  "name": "Recruiter AI Pro",
   "description": "An interactive Technical Recruiter and Interview Coach AI that conducts realistic interviews, researches industry standards using Google Search, and provides detailed performance reports.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

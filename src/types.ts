@@ -56,6 +56,11 @@ export interface SavedSTARStory {
   action: string;
   result: string;
   expertStory: string;
+  // Optional extension fields for redesigned layout
+  title?: string;
+  createdAt?: string;
+  coachingNotes?: string;
+  modelAnswer?: string;
 }
 
 export interface InterviewSession {
@@ -85,6 +90,15 @@ export interface JobApplication {
   appliedSlot: string;
   screeningFeedback: string;
   matchScore: number;
+  jdFullText?: string;
+  skillsRequired?: string[];
+  location?: string;
+  salaryRange?: string;
+  remoteBadge?: boolean;
+  difficultyBadge?: string;
+  category?: string;
+  industryContext?: string;
+  department?: string;
 }
 
 export interface UserProfile {
@@ -94,6 +108,9 @@ export interface UserProfile {
   roleTitle: string;
   joinedAt: string;
   avatarEmoji: string;
+  role?: "candidate" | "admin";
+  profilePhoto?: string;
+  phoneNumber?: string;
 }
 
 export interface UserActivity {

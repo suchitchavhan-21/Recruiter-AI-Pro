@@ -34,10 +34,10 @@ export default function Header({ phase }: HeaderProps) {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold tracking-tight text-slate-900">
-              Recruiter AI
+              Recruiter AI Pro
             </h1>
             <p className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">
-              Interview Coach
+              Expert Interview Coach
             </p>
           </div>
         </div>
