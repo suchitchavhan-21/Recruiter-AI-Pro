@@ -52,7 +52,7 @@ export default function HomeDashboard({
       {/* Decorative Brand Top Badge */}
       <div className="relative z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-full text-[10px] font-mono tracking-wider text-slate-300 shadow-sm backdrop-blur-md">
         <Sparkles className="h-3.5 w-3.5 text-[#6D5EF8] animate-pulse" />
-        <span>RECRUITER AI ENGINE • HIGH-FIDELITY ACTIVE</span>
+        <span>RECRUITER AI • YOUR SMART INTERVIEW PRACTICE PARTNER</span>
       </div>
 
       {/* Hero & Modern Tech Typography */}
@@ -60,12 +60,12 @@ export default function HomeDashboard({
         <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1] font-sans">
           Practice Real Interviews <br />
           <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent drop-shadow-sm font-sans">
-            engineered by Recruiter AI
+            with friendly Recruiter AI coaching
           </span>
         </h1>
         
         <p className="text-slate-400 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-medium">
-          Deploying state-of-the-art AI coaching telemetry to prepare for highly technical interview pipelines at **Google, OpenAI, Microsoft, and Meta**.
+          Get real-time, expert coaching to help you prepare for technical interviews at top companies like Google, OpenAI, Microsoft, and Meta.
         </p>
 
         {/* Big Action Buttons */}
@@ -76,7 +76,7 @@ export default function HomeDashboard({
             id="btn-start-simulation"
           >
             <Mic className="h-4 w-4" />
-            <span>Launch Simulation</span>
+            <span>Start Practice Interview</span>
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
           </button>
           
@@ -86,7 +86,7 @@ export default function HomeDashboard({
             id="btn-explore-companies"
           >
             <Briefcase className="h-4 w-4 text-slate-400" />
-            <span>Explore Partner Portals</span>
+            <span>Explore Roles & Jobs</span>
           </button>
         </div>
       </div>
@@ -98,17 +98,17 @@ export default function HomeDashboard({
         <div className="bg-slate-950/60 backdrop-blur-md border border-slate-800/70 p-5 rounded-2xl flex flex-col justify-between hover:border-[#6D5EF8]/40 transition-all duration-300 group">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#6D5EF8] font-mono tracking-wider uppercase">Voice Telemetry</span>
+              <span className="text-[10px] font-bold text-[#6D5EF8] font-mono tracking-wider uppercase">Speech Analysis</span>
               <Activity className="h-4 w-4 text-[#6D5EF8] animate-pulse" />
             </div>
-            <h3 className="text-xs font-bold text-white">Advanced Voice Calibrator</h3>
+            <h3 className="text-xs font-bold text-white">Speech & Flow Analysis</h3>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Analyzes speech pace (WPM), noise floor, and tone with millisecond precision to simulate real partner evaluation.
+              Tracks your speaking speed and pauses during practice to give you friendly feedback on filler words and conversational flow.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
             <span>Status: Ready</span>
-            <span className="text-emerald-400">● Live Capture</span>
+            <span className="text-emerald-400">● Voice Practice</span>
           </div>
         </div>
 
@@ -116,12 +116,12 @@ export default function HomeDashboard({
         <div className="bg-slate-950/60 backdrop-blur-md border border-slate-800/70 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/40 transition-all duration-300 group">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-emerald-400 font-mono tracking-wider uppercase">Flexible Tracks</span>
+              <span className="text-[10px] font-bold text-emerald-400 font-mono tracking-wider uppercase">Targeted Prep</span>
               <Cpu className="h-4 w-4 text-emerald-400" />
             </div>
-            <h3 className="text-xs font-bold text-white">Targeted JD Evaluation</h3>
+            <h3 className="text-xs font-bold text-white">Custom Job Focus</h3>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Upload custom job descriptions or choose curated tech-giant pipelines to tailor the AI agent's questions.
+              Upload any job description or choose one of our preset paths to customize your practice questions.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
@@ -134,12 +134,12 @@ export default function HomeDashboard({
         <div className="bg-slate-950/60 backdrop-blur-md border border-slate-800/70 p-5 rounded-2xl flex flex-col justify-between hover:border-blue-500/40 transition-all duration-300 group">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-blue-400 font-mono tracking-wider uppercase">ATS Metrics</span>
+              <span className="text-[10px] font-bold text-blue-400 font-mono tracking-wider uppercase">Scorecards</span>
               <TrendingUp className="h-4 w-4 text-blue-400" />
             </div>
-            <h3 className="text-xs font-bold text-white">Instant Scorecard Audit</h3>
+            <h3 className="text-xs font-bold text-white">Detailed Feedback</h3>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Provides visual score breakdown, strong / weak answer indicators, and missing industry keywords.
+              Shows clear score breakdowns, helpful tips on your answers, and suggestions for highlighting key skills.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
@@ -153,7 +153,7 @@ export default function HomeDashboard({
       {/* Curated Company Logos Row with High-Tech styling */}
       <div className="relative z-10 w-full border-t border-slate-800/50 pt-8 mt-12">
         <p className="text-center text-[9px] font-mono tracking-wider text-slate-500 uppercase font-semibold mb-4">
-          curated interview patterns optimized for elite pipelines
+          curated interview patterns for top-tier companies
         </p>
         <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-4 opacity-50 grayscale hover:opacity-95 transition-opacity duration-300">
           {targetCompanies.map((company, index) => (

@@ -251,8 +251,8 @@ export default function ActiveInterview({
         <div className="flex items-center gap-3">
           <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8] animate-ping" />
           <div>
-            <h3 className="text-xs font-bold text-white font-sans">{roleName} Simulation</h3>
-            <span className="text-[10px] text-slate-500 font-mono block">Employer: {companyName} • Style: {persona}</span>
+            <h3 className="text-xs font-bold text-white font-sans">{roleName} Practice Session</h3>
+            <span className="text-[10px] text-slate-500 font-mono block">Target: {companyName} • Coach Style: {persona === "architect" ? "Systems Expert" : persona === "product_leader" ? "Product Leader" : "Friendly Recruiter"}</span>
           </div>
         </div>
 
@@ -268,13 +268,13 @@ export default function ActiveInterview({
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
-            <span>Notepad: {notepadOpen ? "ON" : "OFF"}</span>
+            <span>Scratchpad: {notepadOpen ? "ON" : "OFF"}</span>
           </button>
 
           <div className="h-8 w-px bg-[#27272A]" />
 
           <div className="text-center sm:text-right">
-            <span className="text-[9px] font-mono text-slate-500 uppercase block">Simulation Time</span>
+            <span className="text-[9px] font-mono text-slate-500 uppercase block">Time Elapsed</span>
             <span className="text-xs font-bold font-mono text-white flex items-center gap-1">
               <Clock className="h-3.5 w-3.5 text-slate-400" />
               {formatTime(duration)}
@@ -282,9 +282,9 @@ export default function ActiveInterview({
           </div>
           <div className="h-8 w-px bg-[#27272A]" />
           <div className="text-center sm:text-right">
-            <span className="text-[9px] font-mono text-slate-500 uppercase block">Question Progression</span>
+            <span className="text-[9px] font-mono text-slate-500 uppercase block">Progress</span>
             <span className="text-xs font-bold text-indigo-400 font-sans">
-              {currentQuestionIndex + 1} of {questions.length}
+              Question {currentQuestionIndex + 1} of {questions.length}
             </span>
           </div>
         </div>
@@ -305,7 +305,7 @@ export default function ActiveInterview({
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-[#6D5EF8] font-mono uppercase">
-                  {persona === "architect" ? "Strict Systems Architect" : persona === "product_leader" ? "Product Director" : "Encouraging Recruiter Mentor"}
+                  {persona === "architect" ? "Systems Architect Coach" : persona === "product_leader" ? "Product Leader Coach" : "Friendly Recruiter Coach"}
                 </h4>
                 <button
                   onClick={() => speakText(currentQuestion.text)}
@@ -328,7 +328,7 @@ export default function ActiveInterview({
 
           {/* Expected Focus Point Indicator */}
           <div className="p-3 bg-[#6D5EF8]/5 rounded-xl border border-[#6D5EF8]/10 text-[10.5px] leading-relaxed text-slate-400 font-mono">
-            <strong className="text-[#6D5EF8]">Coaching focus:</strong> {currentQuestion.expectedFocus}
+            <strong className="text-[#6D5EF8]">Focus tip:</strong> {currentQuestion.expectedFocus}
           </div>
 
           {/* Voice and Audio Capture HUD */}
@@ -341,16 +341,16 @@ export default function ActiveInterview({
                     ? "bg-[#EF4444] text-white border-red-500 animate-pulse scale-[1.03]"
                     : "bg-[#111827] text-slate-300 border-[#27272A] hover:text-white"
                 }`}
-                title={isListening ? "Stop Microphone Capture" : "Trigger Microphone Capture"}
+                title={isListening ? "Stop voice capture" : "Start voice capture"}
               >
                 {isListening ? <MicOff className="h-4.5 w-4.5" /> : <Mic className="h-4.5 w-4.5" />}
               </button>
               <div>
                 <h4 className="text-xs font-bold text-white">
-                  {isListening ? "Microphone Active (Streaming)" : "Speech Capture Inactive"}
+                  {isListening ? "Listening..." : "Speech capture off"}
                 </h4>
                 <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                  {isListening ? "Transcribing your spoken sentences real-time..." : "Click microphone button to answer by voice"}
+                  {isListening ? "We are transcribing your spoken answer in real time..." : "Click the microphone button to answer using your voice"}
                 </p>
               </div>
             </div>
@@ -370,14 +370,14 @@ export default function ActiveInterview({
           {/* Response Input Form */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
-              <span>ANSWER COMPOSER (MIC TRANSCRIPT & EDITS)</span>
-              <span>{answerText.length} Characters</span>
+              <span>YOUR ANSWER</span>
+              <span>{answerText.length} characters</span>
             </div>
 
             <textarea
               id="candidate-response"
               rows={5}
-              placeholder="Your answer will automatically dictate here when using the mic, or you can type directly. You can also compose outline notes in the Notepad on the right..."
+              placeholder="Use the microphone button to speak your answer, or type your response directly here. Feel free to use the scratchpad on the right for outline ideas!"
               className="w-full bg-slate-950 border border-[#27272A] rounded-xl p-4 text-xs text-slate-200 placeholder-slate-650 leading-relaxed focus:outline-none focus:border-[#6D5EF8] font-sans"
               value={answerText}
               onChange={(e) => setAnswerText(e.target.value)}
@@ -392,7 +392,7 @@ export default function ActiveInterview({
                 className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-[#27272A] rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5 cursor-pointer"
               >
                 <Sliders className="h-3.5 w-3.5" />
-                <span>Voice Synthesis Settings</span>
+                <span>Voice Settings</span>
               </button>
               <button
                 onClick={() => {
@@ -409,7 +409,7 @@ export default function ActiveInterview({
               onClick={handleAnswerSubmit}
               className="px-6 py-3 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#6D5EF8]/15"
             >
-              <span>{isLastQuestion ? "Submit Simulation for Grading" : "Submit Answer & Proceed"}</span>
+              <span>{isLastQuestion ? "Finish & Get Feedback" : "Next Question"}</span>
               <Send className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -417,10 +417,10 @@ export default function ActiveInterview({
           {/* Voice Customization Drawer */}
           {showVoiceSettings && (
             <div className="p-4 bg-slate-950 border border-[#27272A] rounded-xl space-y-4 animate-slide-up">
-              <h4 className="text-[10px] font-bold text-white uppercase font-mono tracking-wider">Voice Synthesis Tuner</h4>
+              <h4 className="text-[10px] font-bold text-white uppercase font-mono tracking-wider">Voice Settings</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Voice Engine Model</label>
+                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Interviewer Voice</label>
                   <select
                     value={selectedVoiceName}
                     onChange={(e) => setSelectedVoiceName(e.target.value)}
@@ -433,7 +433,7 @@ export default function ActiveInterview({
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Speech Rate ({voiceRate}x)</label>
+                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Speaking Speed ({voiceRate}x)</label>
                   <input
                     type="range"
                     min="0.7"
@@ -446,7 +446,7 @@ export default function ActiveInterview({
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Tone Pitch ({voicePitch})</label>
+                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Voice Pitch ({voicePitch})</label>
                   <input
                     type="range"
                     min="0.8"
@@ -462,19 +462,19 @@ export default function ActiveInterview({
           )}
         </div>
 
-        {/* RIGHT COLUMN: Persistent Scratchpad / Notepad */}
+        {/* RIGHT COLUMN: Persistent Scratchpad */}
         {notepadOpen && (
           <div className="lg:col-span-4 bg-[#111827] border border-[#27272A] rounded-[18px] p-5 space-y-4 flex flex-col h-full animate-fade-in">
             <div className="flex items-center justify-between border-b border-[#27272A] pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4.5 w-4.5 text-[#6D5EF8]" />
-                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider">Scratchpad / Notepad</h4>
+                <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider">My Scratchpad</h4>
               </div>
               <span className="text-[8px] text-slate-500 font-mono">Persists globally</span>
             </div>
 
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              Jot down hints, architectural blocks, or draft your STAR structural layout. Use the buttons below to easily clear or merge notes into your main answer.
+              Jot down ideas, bullet points, or structural notes here. You can easily add them to your response below.
             </p>
 
             <textarea
@@ -500,7 +500,7 @@ export default function ActiveInterview({
                 title="Append scratchpad contents to answer field"
               >
                 <Copy className="h-3.5 w-3.5" />
-                <span>Append to Ans</span>
+                <span>Add to Answer</span>
               </button>
 
               <button
@@ -513,7 +513,7 @@ export default function ActiveInterview({
                 className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-[#27272A] rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                <span>Clear Notes</span>
+                <span>Clear</span>
               </button>
             </div>
           </div>

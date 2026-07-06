@@ -55,23 +55,23 @@ interface EnterpriseResumeScannerProps {
 
 // 17 Stages in the AI Processing Pipeline
 const PIPELINE_STAGES = [
-  { key: "upload", label: "Uploading Resume Payload..." },
-  { key: "extract", label: "Extracting Raw Text Characters..." },
-  { key: "parse", label: "Parsing Resume Section Nodes..." },
-  { key: "ats", label: "Running ATS Compatibility Scan..." },
-  { key: "grammar", label: "Grammar & Spellchecking Analysis..." },
-  { key: "keyword", label: "Semantic Keyword Match & Density Check..." },
-  { key: "formatting", label: "Evaluating Layout & Font Formats..." },
-  { key: "experience", label: "Analyzing Work Experience (STAR Method)..." },
-  { key: "project", label: "Assessing Project Innovation & Business Value..." },
-  { key: "skills", label: "Grouping Technical & Soft Skills..." },
-  { key: "education", label: "Checking Education Credentials & Relevance..." },
-  { key: "recruiter", label: "Simulating Recruiter Assessment Screen..." },
-  { key: "suggestions", label: "Formulating Gemini AI Suggestions..." },
-  { key: "optimization", label: "Generating Resume Optimization Index..." },
-  { key: "comparison", label: "Compiling Before vs After Layouts..." },
-  { key: "reports", label: "Structuring Downloadable Reports..." },
-  { key: "downloadable", label: "Preparing Optimized Resume Output..." }
+  { key: "upload", label: "Uploading resume..." },
+  { key: "extract", label: "Reading text..." },
+  { key: "parse", label: "Analyzing resume sections..." },
+  { key: "ats", label: "Checking resume compatibility..." },
+  { key: "grammar", label: "Checking spelling and grammar..." },
+  { key: "keyword", label: "Finding key skills..." },
+  { key: "formatting", label: "Checking layout formatting..." },
+  { key: "experience", label: "Analyzing work history..." },
+  { key: "project", label: "Evaluating key projects..." },
+  { key: "skills", label: "Grouping technical skills..." },
+  { key: "education", label: "Verifying education details..." },
+  { key: "recruiter", label: "Getting recruiter feedback..." },
+  { key: "suggestions", label: "Creating customized suggestions..." },
+  { key: "optimization", label: "Calculating match score..." },
+  { key: "comparison", label: "Comparing layout versions..." },
+  { key: "reports", label: "Preparing report..." },
+  { key: "downloadable", label: "Finishing up your review..." }
 ];
 
 // Mock database to simulate DB storage requirements

@@ -68,15 +68,14 @@ export default function JDInputForm({ onSubmit, isLoading }: JDInputFormProps) {
       <div className="mb-8 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-6 text-white shadow-xl md:p-8">
         <div className="flex items-center space-x-2 rounded-full bg-white/10 px-3 py-1 text-slate-200 text-xs font-mono max-w-fit mb-4">
           <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-          <span>Professional Interview Simulator v1.4</span>
+          <span>Interview Practice Coach</span>
         </div>
         <h2 className="font-display text-2xl font-bold tracking-tight md:text-3.5xl">
-          Hi! I am your Technical Recruiter & Coach.
+          Ready to practice your next interview?
         </h2>
         <p className="mt-3 text-sm text-slate-300 leading-relaxed max-w-2xl">
-          Provide any Job Description below. I will search the web for recent industry standards,
-          analyze the required competencies, assess the target difficulty, and construct a realistic,
-          live interview session tailored specifically to that role and company.
+          Paste a job description below. We will search for industry trends, analyze key skills,
+          and build a customized, friendly practice session tailored specifically to that role and company.
         </p>
       </div>
 
@@ -108,14 +107,14 @@ export default function JDInputForm({ onSubmit, isLoading }: JDInputFormProps) {
             {/* Job Description Textarea */}
             <div>
               <label htmlFor="jd-textarea" className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                Paste Job Description (JD) *
+                Paste Job Description *
               </label>
               <div className="relative rounded-lg shadow-sm">
                 <textarea
                   id="jd-textarea"
                   rows={8}
                   className="block w-full rounded-lg border border-slate-200 p-4 font-sans text-sm leading-relaxed placeholder-slate-400 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800"
-                  placeholder="Paste the full job description text here, including requirements, responsibilities, and technologies..."
+                  placeholder="Paste the job description text here (including any key requirements or skills you want to practice)..."
                   value={jdText}
                   onChange={(e) => setJdText(e.target.value)}
                   disabled={isLoading}
@@ -134,12 +133,12 @@ export default function JDInputForm({ onSubmit, isLoading }: JDInputFormProps) {
               {isLoading ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span className="font-mono text-sm tracking-wider uppercase">Running Deep Search & Analysis...</span>
+                  <span className="font-mono text-sm tracking-wider uppercase">Analyzing job details...</span>
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  <span>Analyze JD & Build Interview Plan</span>
+                  <span>Create My Practice Session</span>
                 </>
               )}
             </button>
@@ -151,10 +150,10 @@ export default function JDInputForm({ onSubmit, isLoading }: JDInputFormProps) {
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
             <h3 className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
               <FileText className="h-4 w-4 text-slate-400" />
-              <span>Quick Test Templates</span>
+              <span>Try a Sample Job</span>
             </h3>
             <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-              Don't have a JD on hand? Click any template below to load real-world criteria automatically:
+              Don't have a job description ready? Click one of these examples to load standard criteria immediately:
             </p>
             <div className="space-y-3">
               {SAMPLE_JDS.map((sample, idx) => (
@@ -179,9 +178,9 @@ export default function JDInputForm({ onSubmit, isLoading }: JDInputFormProps) {
           <div className="rounded-xl border border-dashed border-slate-300 p-5 font-mono text-[11px] text-slate-500 leading-relaxed bg-slate-50/50">
             <div className="flex items-center space-x-1.5 mb-2 font-semibold text-slate-600 uppercase tracking-wider">
               <Terminal className="h-3.5 w-3.5" />
-              <span>Real-Time Engine</span>
+              <span>Smart Search</span>
             </div>
-            We utilize advanced Google Search grounding, mapping live company hiring profiles and stack changes to curate questions.
+            We use live search trends and company information to ask highly relevant, practical questions.
           </div>
         </div>
       </div>
