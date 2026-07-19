@@ -59,6 +59,12 @@ export interface InterviewHistory {
     overallFeedback: string;
     strengths: string[];
     improvements: string[];
+    mistakesMade?: string[];
+    idealAnswers?: string[];
+    hiringRecommendation?: string;
+    practicePlan?: string[];
+    panelFeedback?: any;
+    interviewerCount?: number;
   };
   createdAt: string;
 }

@@ -27,16 +27,39 @@ export interface QAHistory {
   answerText: string;
 }
 
+export interface PanelInterviewerFeedback {
+  score: number;
+  feedback: string;
+  strengths: string[];
+  weaknesses: string[];
+}
+
 export interface FeedbackReport {
   overallRating: "Strong Hire" | "Lean Hire" | "No Hire" | string;
   overallFeedback: string;
   strengths: string[];
   improvements: string[];
+  score?: number;
   questionBreakdown: {
     questionText: string;
     critique: string;
     modelAnswer: string;
+    questionId?: number;
+    score?: number;
+    feedback?: string;
+    modelAnswerSuggestion?: string;
   }[];
+  // AI Panel Simulator fields:
+  interviewerCount?: number;
+  panelFeedback?: {
+    hr?: PanelInterviewerFeedback;
+    technical?: PanelInterviewerFeedback;
+    hiringManager?: PanelInterviewerFeedback;
+  };
+  mistakesMade?: string[];
+  idealAnswers?: string[];
+  hiringRecommendation?: string;
+  practicePlan?: string[];
 }
 
 export interface CoachingData {
@@ -73,6 +96,7 @@ export interface InterviewSession {
   answers: QAHistory[];
   evaluation: FeedbackReport;
   score: number; // calculated overall rating score (e.g. 92) for charting
+  interviewerCount?: number;
 }
 
 export interface JobApplication {
@@ -123,5 +147,6 @@ export interface UserActivity {
   details: string;
   metadata?: any;
 }
+
 
 

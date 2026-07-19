@@ -91,6 +91,7 @@ export default function App() {
   const [activeInterviewerPersona, setActiveInterviewerPersona] = useState<InterviewerPersona>("mentor");
   const [activeCompany, setActiveCompany] = useState("");
   const [activeRole, setActiveRole] = useState("");
+  const [activeInterviewerCount, setActiveInterviewerCount] = useState<number>(1);
 
   // Post-Interview Evaluation states
   const [isEvaluationLoading, setIsEvaluationLoading] = useState(false);
@@ -250,11 +251,14 @@ export default function App() {
     style: "technical" | "behavioral" | "hybrid";
     difficulty: "Entry" | "Mid" | "Senior" | "Expert";
     persona: "mentor" | "architect" | "product_leader";
+    interviewerCount?: number;
   }) => {
     setIsWizardAnalyzing(true);
     setActiveCompany(config.company);
     setActiveRole(config.role);
     setActiveInterviewerPersona(config.persona);
+    const count = config.interviewerCount !== undefined ? config.interviewerCount : 1;
+    setActiveInterviewerCount(count);
 
     try {
       const res = await apiFetch("/api/analyze-jd", {
@@ -263,7 +267,8 @@ export default function App() {
         body: JSON.stringify({ 
           jd: config.jdText, 
           companyName: config.company,
-          persona: config.persona
+          persona: config.persona,
+          interviewerCount: count
         })
       });
 
@@ -328,7 +333,8 @@ export default function App() {
           jd: activeAnalysis?.skills?.join(", ") || activeRole || "Software Engineer",
           companyName: activeCompany,
           qaList: finalAnswers,
-          persona: activeInterviewerPersona
+          persona: activeInterviewerPersona,
+          interviewerCount: activeInterviewerCount
         })
       });
 
@@ -339,7 +345,7 @@ export default function App() {
 
       const isStrong = report.overallRating.toLowerCase().includes("strong");
       const isLean = report.overallRating.toLowerCase().includes("lean");
-      const computedScore = isStrong ? 93 : isLean ? 76 : 52;
+      const computedScore = report.score !== undefined ? report.score : (isStrong ? 93 : isLean ? 76 : 52);
 
       // Persist as a historical drill
       const newSession: InterviewSession = {
@@ -351,7 +357,8 @@ export default function App() {
         analysis: activeAnalysis || { difficulty: "Senior", skills: [], companyTrends: "", questions: [] },
         answers: finalAnswers,
         evaluation: report,
-        score: computedScore
+        score: computedScore,
+        interviewerCount: activeInterviewerCount
       };
       
       saveSessionsHistory([newSession, ...sessionsHistory]);
@@ -383,7 +390,8 @@ export default function App() {
         analysis: activeAnalysis || { difficulty: "Senior", skills: [], companyTrends: "", questions: [] },
         answers: finalAnswers,
         evaluation: fallbackReport,
-        score: 87
+        score: 87,
+        interviewerCount: activeInterviewerCount
       };
       saveSessionsHistory([newSession, ...sessionsHistory]);
     } finally {
@@ -590,6 +598,7 @@ export default function App() {
                   persona={activeInterviewerPersona} 
                   companyName={activeCompany} 
                   roleName={activeRole} 
+                  interviewerCount={activeInterviewerCount}
                 />
               )}
 
@@ -630,6 +639,10 @@ export default function App() {
               onStartInterview={() => setActiveTab("interview")}
               onDeleteSession={handleDeleteSession}
               onClearAllSessions={handleClearAllSessions}
+              onViewFeedback={(feedback) => {
+                setLatestFeedbackReport(feedback);
+                setActiveTab("interview");
+              }}
             />
           )}
 

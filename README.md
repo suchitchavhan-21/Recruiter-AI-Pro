@@ -67,7 +67,7 @@ An in-memory, sliding-window rate limiting system protects the container from br
 *   **AI Processing Routes (`/api/analyze-jd`, `/api/resumes`, etc.)**: Hard limit of **50 requests per minute**. Controls Gemini token consumption and blocks API key exhaustion attacks.
 *   **General API Endpoints (`/api/*`)**: Maximum threshold of **300 requests per minute**.
 
-### 2. Network Security Headers (OWASP Aligned)
+### 2. OWASP Aligned HTTP Security Headers
 Every server response is protected with robust HTTP headers custom-tailored to operate securely within embedded contexts like Google AI Studio:
 *   `X-Content-Type-Options: nosniff`: Mitigates MIME-type sniffing attacks, essential for preventing script injection from user-uploaded content.
 *   `X-Frame-Options: SAMEORIGIN`: Prevents Clickjacking while maintaining support for relaxed embedding in native workspace sandboxes.
@@ -102,20 +102,34 @@ Our lightweight runtime footprint is optimized for elastic scaling inside Google
 
 ## 🌟 Core Features & Modules
 
-### 1. Four-Phase Mock Interview Workspace
+### 1. AI Panel Interview Simulator (NEW) 👥
+An interactive multi-interviewer panel recruitment system that elevates mock interview realism to a standard-setting level:
+*   **Dynamic Panel Size Setup**: Candidates configure their practice loop with **1, 2, or 3 AI Interviewers** as part of the setup wizard step.
+*   **Distinct Recruiter Personas**: 
+    *   👩‍💼 **Sarah Jenkins (HR Manager)**: Probes communication, collaboration history, cultural fit, ownership values, and STAR behavioral framework compliance.
+    *   👨‍💻 **David Chen (Technical Expert)**: Drills down into database isolation, horizontal scalability limits, caching topologies, algorithmic complexities, and system architecture.
+    *   👨‍💼 **Marcus Brody (Hiring Manager)**: Probes leadership potential, team alignment challenges, prioritization conflicts, and high-scale organizational impact.
+*   **Rotating Speaker Schedule**: Automated speaker rotation during simulation. The active panel member "speaks" and highlights their avatar based on the current question context.
+*   **Comprehensive Consensus Scorecard**:
+    *   **Individual Scorecards**: Scoring and detailed feedback narratives from each active panel member (Sarah, David, and Marcus).
+    *   **Critical Mistakes Detected**: Direct highlight list pointing out conceptual errors or missing trade-off metrics.
+    *   **Principal Ideal Responses**: High-fidelity answers outlining how an expert or principal engineer would address each of the 5 interview prompts.
+    *   **Targeted Practice Roadmaps**: Tailored preparation plans containing 3 to 5 clear action items to patch identified gaps.
+
+### 2. Four-Phase Mock Interview Workspace
 An interactive workspace that guides users through a comprehensive, step-by-step mock recruitment cycle:
 *   **Phase 1 (JD Input & Research)**: Paste any Job Description and Target Company. Gemini acts as an expert headhunter, mapping targeted technical requirements, core skills, expected question lists, and industry expectations.
 *   **Phase 2 (Live Simulation)**: Run a voice-activated or typed technical interview. Supports browser-native Speech-to-Text SpeechRecognition APIs. Synthesizes real-time speech patterns to track verbal fillers (e.g., *"um"*, *"ah"*, *"like"*, *"you know"*).
 *   **Phase 3 (Feedback Scorecard)**: Submits interview answers for deep qualitative analysis. Returns high-impact scorecards outlining proficiency grades, technical gaps, and model responses.
 *   **Phase 4 (Behavioral Coach)**: An interactive open-chat module where users can ask custom coaching questions, request alternative interview prompts, or drill into specific architectural principles.
 
-### 2. Structured STAR Story Builder
+### 3. Structured STAR Story Builder
 A guided tool to structure behavioral interview answers under the **S**ituation, **T**ask, **A**ction, **R**esult methodology. Generates recruiter-optimized narratives and grades story impact instantly out of 100.
 
-### 3. Study & Preparation Hub
+### 4. Study & Preparation Hub
 An organized training dashboard grouping high-impact study materials by tracks. Tracks feature curated roadmaps, cheat-sheets, and verified links to official standards (e.g., *NVIDIA Megatron-LM Parallelism*, *PostgreSQL MVCC Isolation*, *NIST Zero Trust*, etc.) opening in new, secure browser tabs.
 
-### 4. Admin Diagnostic & Operations Portal
+### 5. Admin Diagnostic & Operations Portal
 A secure system control center reserved for system administrators (passcode protected):
 *   **Live Event Ledger**: A live, searchable terminal stream logging all user actions, registration events, and AI evaluations. Includes tag filtering.
 *   **System Diagnostics Module**: Run high-resolution latency probes on server paths, db reads/writes, user deletions, and real-time Gemini AI connection speeds using browser performance timers.

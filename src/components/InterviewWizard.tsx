@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { COMPANY_PRESETS, CompanyPreset, CompanyRolePreset } from "../data/companyRoles";
 
+const sarahImg = "/assets/sarah.png";
+const davidImg = "/assets/david.png";
+const marcusImg = "/assets/marcus.png";
+
 interface InterviewWizardProps {
   onStartSimulation: (config: {
     company: string;
@@ -27,13 +31,17 @@ interface InterviewWizardProps {
     style: "technical" | "behavioral" | "hybrid";
     difficulty: "Entry" | "Mid" | "Senior" | "Expert";
     persona: "mentor" | "architect" | "product_leader";
+    interviewerCount: number;
   }) => void;
   isAnalyzing: boolean;
 }
 
 export default function InterviewWizard({ onStartSimulation, isAnalyzing }: InterviewWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 7;
+  const totalSteps = 8;
+
+  // AI Panel Simulator state
+  const [interviewerCount, setInterviewerCount] = useState<number>(3);
 
   // UI Expanded Selection States
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("google");
@@ -219,7 +227,8 @@ Core Competencies Required:
       jdText: jdText,
       style: mappedStyle,
       difficulty: mappedDifficulty,
-      persona: mappedPersona
+      persona: mappedPersona,
+      interviewerCount: interviewerCount
     });
   };
 
@@ -237,8 +246,9 @@ Core Competencies Required:
             {currentStep === 3 && "Job Description Requirements"}
             {currentStep === 4 && "Interview Style & Format"}
             {currentStep === 5 && "Target Interview Difficulty"}
-            {currentStep === 6 && "Interviewer Persona Profile"}
-            {currentStep === 7 && "Launch Mock Simulator"}
+            {currentStep === 6 && "AI Interview Panel Size"}
+            {currentStep === 7 && "Interviewer Persona Profile"}
+            {currentStep === 8 && "Launch Mock Simulator"}
           </h2>
         </div>
 
@@ -557,11 +567,107 @@ Core Competencies Required:
             </div>
           )}
 
-          {/* STEP 6: INTERVIEWER PERSONALITY (7 Personas) */}
+          {/* STEP 6: AI INTERVIEW PANEL SIZE */}
           {currentStep === 6 && (
             <div className="space-y-6 animate-fade-in">
               <p className="text-xs text-slate-400 leading-normal max-w-xl">
-                Select your interviewer personality. Personality determines the follow-up prompt criteria, critique tone, and general strictness.
+                Select your preferred interview panel style. A larger panel creates a highly realistic, interactive experience with multiple voices and perspectives.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { id: 1, title: "Single AI Interviewer", icon: "👤", desc: "A 1-on-1 personalized conversation with your selected coach persona." },
+                  { id: 2, title: "Two AI Interviewers (Duo)", icon: "👥", desc: "Interactive session with two distinct recruiters focusing on Technical and Behavioral areas." },
+                  { id: 3, title: "Three AI Interviewers (Full Panel)", icon: "🏛️", desc: "A complete board-style interview with HR Manager, Technical Expert, and Hiring Manager." },
+                ].map((panel) => {
+                  const isSelected = interviewerCount === panel.id;
+                  return (
+                    <button
+                      key={panel.id}
+                      onClick={() => setInterviewerCount(panel.id)}
+                      className={`p-5 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-44 ${
+                        isSelected
+                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
+                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center w-full">
+                        <span className="text-2xl">{panel.icon}</span>
+                        {isSelected && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]" />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold text-white">{panel.title}</h4>
+                        <p className="text-[9.5px] text-slate-400 leading-relaxed">{panel.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Panel Members Preview Card */}
+              <div className="p-5 bg-slate-950/60 border border-[#27272A]/80 rounded-xl space-y-3">
+                <h4 className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider">Meet Your Panel Members</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(() => {
+                    const list = [
+                      { id: 0, name: "Sarah Jenkins", role: "HR Manager", focus: "Behavioral", img: sarahImg },
+                      { id: 1, name: "David Chen", role: "Principal Engineer", focus: "Technical", img: davidImg },
+                      { id: 2, name: "Marcus Brody", role: "Hiring Manager", focus: "Leadership", img: marcusImg }
+                    ];
+
+                    let mappedPersona = "mentor";
+                    if (selectedPersona === "mentor" || selectedPersona === "recruiter" || selectedPersona === "friendly_startup") {
+                      mappedPersona = "mentor";
+                    } else if (selectedPersona === "architect" || selectedPersona === "strict_faang") {
+                      mappedPersona = "architect";
+                    } else if (selectedPersona === "director" || selectedPersona === "executive") {
+                      mappedPersona = "product_leader";
+                    }
+
+                    let selectedList = [];
+                    if (!interviewerCount || interviewerCount === 1) {
+                      if (mappedPersona === "architect") {
+                        selectedList = [list[1]]; // David
+                      } else if (mappedPersona === "product_leader") {
+                        selectedList = [list[2]]; // Marcus
+                      } else {
+                        selectedList = [list[0]]; // Sarah
+                      }
+                    } else if (interviewerCount === 2) {
+                      selectedList = [list[0], list[1]]; // Sarah & David
+                    } else {
+                      selectedList = list.slice(0, interviewerCount);
+                    }
+
+                    return selectedList.map((member) => (
+                      <div key={member.id} className="flex items-center gap-3 p-2 bg-slate-900 border border-[#27272A] rounded-lg">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shadow-sm shrink-0">
+                          <img 
+                            src={member.img} 
+                            alt={member.name} 
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h5 className="text-[11px] font-bold text-white">{member.name}</h5>
+                          <p className="text-[9px] text-slate-400 font-mono">{member.role} ({member.focus})</p>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 7: INTERVIEWER PERSONALITY (7 Personas) */}
+          {currentStep === 7 && (
+            <div className="space-y-6 animate-fade-in">
+              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+                Select your lead interviewer's style profile. This affects their questioning demeanor, feedback tone, and prompt criteria.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -605,8 +711,8 @@ Core Competencies Required:
             </div>
           )}
 
-          {/* STEP 7: READY TO LAUNCH */}
-          {currentStep === 7 && (
+          {/* STEP 8: READY TO LAUNCH */}
+          {currentStep === 8 && (
             <div className="space-y-6 animate-fade-in max-w-xl mx-auto text-center">
               <div className="w-12 h-12 bg-[#6D5EF8]/10 border border-[#6D5EF8]/20 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-4">
                 🚀
@@ -645,6 +751,13 @@ Core Competencies Required:
                 <div className="flex justify-between">
                   <span className="text-slate-500">AI Personality:</span>
                   <span className="text-amber-400 font-bold uppercase">{selectedPersona}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Panel Size:</span>
+                  <span className="text-indigo-400 font-bold uppercase">
+                    {interviewerCount === 1 ? "1 (Single)" : interviewerCount === 2 ? "2 (Duo Panel)" : "3 (Full Panel)"}
+                  </span>
                 </div>
 
                 <div className="flex justify-between border-t border-[#27272A] pt-3 text-[10px] text-slate-500 leading-normal">

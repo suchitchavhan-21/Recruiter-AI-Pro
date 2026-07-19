@@ -77,6 +77,7 @@ interface AnalyticsViewProps {
   onStartInterview: () => void;
   onDeleteSession?: (id: string) => void;
   onClearAllSessions?: () => void;
+  onViewFeedback?: (feedback: any) => void;
 }
 
 export default function AnalyticsView({ 
@@ -84,7 +85,8 @@ export default function AnalyticsView({
   sessionsHistory, 
   onStartInterview,
   onDeleteSession,
-  onClearAllSessions
+  onClearAllSessions,
+  onViewFeedback
 }: AnalyticsViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "performance" | "ats">("overview");
   const [isScanning, setIsScanning] = useState(false);
@@ -821,35 +823,55 @@ export default function AnalyticsView({
               </div>
             ) : (
               <div className="divide-y divide-[#27272A]">
-                {sessionsHistory.map((s, idx) => (
-                  <div key={s.id || idx} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 border border-[#27272A] flex items-center justify-center text-xs text-[#6D5EF8] font-bold shrink-0">
-                        {idx + 1}
+                {sessionsHistory.map((s, idx) => {
+                  const hasFeedback = !!s.evaluation;
+                  return (
+                    <div 
+                      key={s.id || idx} 
+                      onClick={() => {
+                        if (hasFeedback && onViewFeedback) {
+                          onViewFeedback(s.evaluation);
+                        }
+                      }}
+                      className={`flex items-center justify-between py-3 px-3 rounded-xl transition-all ${
+                        hasFeedback 
+                          ? "cursor-pointer hover:bg-slate-900/60 hover:translate-x-1" 
+                          : ""
+                      } gap-4`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 border border-[#27272A] flex items-center justify-center text-xs text-[#6D5EF8] font-bold shrink-0">
+                          {idx + 1}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-white truncate">{s.role} at {s.company}</h4>
+                          <span className="text-[9px] text-slate-500 font-mono">
+                            Date: {new Date(s.timestamp).toLocaleDateString()} • {hasFeedback ? "Scorecard Unlocked" : "Active Practice"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-white truncate">{s.role} at {s.company}</h4>
-                        <span className="text-[9px] text-slate-500 font-mono">Date: {s.timestamp} • Status: {s.evaluation ? "Completed" : "Active"}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider font-mono ${
+                          (s.score || 85) >= 85 ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
+                        }`}>
+                          {s.score || 85}% Score
+                        </span>
+                        {onDeleteSession && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent launching scorecard when deleting
+                              onDeleteSession(s.id);
+                            }}
+                            className="p-1 hover:text-rose-400 text-slate-500 transition-colors cursor-pointer"
+                            title="Delete Session"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider font-mono ${
-                        (s.score || 85) >= 85 ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
-                      }`}>
-                        {s.score || 85}% Score
-                      </span>
-                      {onDeleteSession && (
-                        <button
-                          onClick={() => onDeleteSession(s.id)}
-                          className="p-1 hover:text-rose-400 text-slate-500 transition-colors cursor-pointer"
-                          title="Delete Session"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
