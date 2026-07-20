@@ -675,7 +675,7 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider">Profile Picture Avatar</label>
                     <div className="flex items-center gap-3 bg-[#09090B] border border-[#27272A] rounded-xl p-1.5">
-                      <img src={regPhoto} alt="Avatar" className="w-9 h-9 rounded-lg object-cover bg-slate-800" />
+                      <img src={regPhoto} alt="Avatar" className="w-9 h-9 rounded-lg object-cover bg-slate-800" referrerPolicy="no-referrer" />
                       <div className="flex gap-1.5 items-center flex-wrap">
                         {avatars.map((av, idx) => (
                           <button
@@ -684,7 +684,7 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                             onClick={() => setRegPhoto(av)}
                             className={`w-7.5 h-7.5 rounded-lg overflow-hidden border cursor-pointer transition-all ${regPhoto === av ? "border-violet-500 scale-105" : "border-[#27272A] hover:border-slate-500"}`}
                           >
-                            <img src={av} alt="" className="w-full h-full object-cover" />
+                            <img src={av} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </button>
                         ))}
                         <label className="w-7.5 h-7.5 rounded-lg border border-dashed border-violet-500 hover:border-violet-400 bg-violet-600/10 hover:bg-violet-600/20 flex items-center justify-center cursor-pointer transition-all shrink-0">

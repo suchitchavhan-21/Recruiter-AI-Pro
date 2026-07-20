@@ -568,14 +568,23 @@ export default function App() {
               </button>
             </div>
 
-            <span className="text-[10.5px] font-bold text-slate-300 font-mono bg-slate-900 border border-[#27272A] px-2.5 py-1 rounded-lg">
-              Candidate: {currentUser.name}
-            </span>
+            <div className="flex items-center gap-2 bg-slate-900 border border-[#27272A] px-2.5 py-1 rounded-lg">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0">
+                {currentUser?.profilePhoto ? (
+                  <img src={currentUser.profilePhoto} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="text-[10px]">{currentUser?.avatarEmoji || "🦊"}</span>
+                )}
+              </div>
+              <span className="text-[10.5px] font-bold text-slate-300 font-mono">
+                Candidate: {currentUser.name}
+              </span>
+            </div>
           </div>
         </header>
 
         {/* Workspace body */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 flex flex-col p-6 max-w-7xl w-full mx-auto space-y-6">
           
           {/* Toast Notification */}
           {notification && (
@@ -715,6 +724,18 @@ export default function App() {
           {/* TAB 8: VOICE CALIBRATOR */}
           {!isEvaluationLoading && activeTab === "calibrate" && (
             <VoiceCalibrator />
+          )}
+
+          {/* Copyright Footer */}
+          {activeTab === "profile" && (
+            <footer id="recruiter-footer" className="mt-auto pt-6 pb-2 border-t border-[#1F2937]/40 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 font-mono tracking-wide gap-2">
+              <span>&copy; {new Date().getFullYear()} Recruiter AI Pro. All rights reserved.</span>
+              <div className="flex gap-3 text-[10px] text-slate-600">
+                <span>Security Shield Active</span>
+                <span>•</span>
+                <span>v2.5 Production</span>
+              </div>
+            </footer>
           )}
 
         </main>

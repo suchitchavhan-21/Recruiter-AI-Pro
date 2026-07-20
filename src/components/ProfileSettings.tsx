@@ -176,7 +176,7 @@ export default function ProfileSettings({
               className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-[#6D5EF8] relative shrink-0 select-none shadow-lg hover:scale-105 hover:border-violet-400 active:scale-95 cursor-pointer transition-all duration-200 group/avatar bg-[#09090B]"
               title="Click to view full size"
             >
-              <img src={profilePhoto} alt="Candidate Avatar" className="w-full h-full object-cover transition-all duration-300 group-hover/avatar:scale-110" />
+              <img src={profilePhoto} alt="Candidate Avatar" className="w-full h-full object-cover transition-all duration-300 group-hover/avatar:scale-110" referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold tracking-wider uppercase transition-opacity duration-200">
                 <Camera className="h-4 w-4 mb-1 text-violet-400" />
                 View Large
@@ -311,7 +311,7 @@ export default function ProfileSettings({
                     className="w-14 h-14 rounded-xl overflow-hidden border border-[#27272A] hover:border-violet-400 cursor-pointer active:scale-95 transition-all relative group/preview shrink-0 bg-slate-900 shadow-inner"
                     title="Click to view full size"
                   >
-                    <img src={profilePhoto} alt="Selection Preview" className="w-full h-full object-cover transition-transform duration-250 group-hover/preview:scale-110" />
+                    <img src={profilePhoto} alt="Selection Preview" className="w-full h-full object-cover transition-transform duration-250 group-hover/preview:scale-110" referrerPolicy="no-referrer" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center transition-opacity duration-200">
                       <Camera className="h-4 w-4 text-white" />
                     </div>
@@ -324,7 +324,7 @@ export default function ProfileSettings({
                         onClick={() => setProfilePhoto(photo)}
                         className={`w-9 h-9 rounded-lg overflow-hidden border transition-all cursor-pointer ${profilePhoto === photo ? "border-violet-500 scale-105" : "border-[#27272A] hover:border-slate-500"}`}
                       >
-                        <img src={photo} alt="" className="w-full h-full object-cover" />
+                        <img src={photo} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </button>
                     ))}
                     <label className="w-9 h-9 rounded-lg border border-dashed border-violet-500 hover:border-violet-400 bg-violet-600/10 hover:bg-violet-600/20 flex items-center justify-center cursor-pointer transition-all shrink-0">
@@ -388,7 +388,7 @@ export default function ProfileSettings({
             </div>
             <div className="p-6 flex justify-center items-center bg-[#09090B]/30">
               <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl overflow-hidden border border-[#27272A] shadow-inner bg-slate-950">
-                <img src={profilePhoto} alt="Large Profile Pic" className="w-full h-full object-cover" />
+                <img src={profilePhoto} alt="Large Profile Pic" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
             </div>
             <div className="px-5 py-3 border-t border-[#27272A] bg-[#09090B]/60 text-center">

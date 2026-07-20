@@ -94,7 +94,7 @@ export default function Sidebar({
         >
           <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-900 border border-[#27272A] flex items-center justify-center text-sm shadow shrink-0">
             {currentUser?.profilePhoto ? (
-              <img src={currentUser.profilePhoto} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={currentUser.profilePhoto} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               currentUser?.avatarEmoji || "⚡"
             )}
