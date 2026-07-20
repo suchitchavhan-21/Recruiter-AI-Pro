@@ -7,7 +7,9 @@ import {
   BookOpen, 
   User, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Sliders
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -27,6 +29,8 @@ export default function Sidebar({
   const menuItems = [
     { id: "home", label: "Home", icon: LayoutDashboard },
     { id: "interview", label: "Interview", icon: Mic },
+    { id: "resume", label: "Resume Scanner", icon: FileText },
+    { id: "calibrate", label: "Voice Tuner", icon: Sliders },
     { id: "jobs", label: "Jobs", icon: Briefcase },
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "study", label: "Study Hub", icon: BookOpen },

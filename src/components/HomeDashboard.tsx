@@ -9,7 +9,8 @@ import {
   Cpu,
   BookmarkCheck,
   TrendingUp,
-  Sliders
+  Sliders,
+  FileText
 } from "lucide-react";
 import { UserProfile, InterviewSession } from "../types";
 
@@ -19,6 +20,8 @@ interface HomeDashboardProps {
   onStartInterview: () => void;
   onExploreCompanies?: () => void;
   onNavigateToStudy?: () => void;
+  onNavigateToResume?: () => void;
+  onNavigateToCalibrate?: () => void;
 }
 
 export default function HomeDashboard({ 
@@ -26,7 +29,9 @@ export default function HomeDashboard({
   sessionsHistory = [],
   onStartInterview,
   onExploreCompanies,
-  onNavigateToStudy
+  onNavigateToStudy,
+  onNavigateToResume,
+  onNavigateToCalibrate
 }: HomeDashboardProps) {
 
   const targetCompanies = [
@@ -56,37 +61,57 @@ export default function HomeDashboard({
       </div>
 
       {/* Hero & Modern Tech Typography */}
-      <div className="relative z-10 max-w-4xl text-center space-y-6 pt-12">
-        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1] font-sans">
-          Practice Real Interviews <br />
-          <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent drop-shadow-sm font-sans">
-            with friendly Recruiter AI coaching
+      <div className="relative z-10 max-w-4xl text-center space-y-6 pt-12 animate-fade-in">
+        <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.15] font-sans">
+          Prepare Like It's Real. <br />
+          <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent drop-shadow-sm font-sans">
+            Interview Like You Belong.
           </span>
         </h1>
         
-        <p className="text-slate-400 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto font-medium">
-          Get real-time, expert coaching to help you prepare for technical interviews at top companies like Google, OpenAI, Microsoft, and Meta.
+        <p className="text-[#6D5EF8] font-bold text-sm sm:text-base tracking-wide font-mono uppercase">
+          ✦ Powered by AI Human Recruiters ✦
+        </p>
+        
+        <p className="text-slate-400 text-xs sm:text-sm md:text-base leading-relaxed max-w-3xl mx-auto font-medium">
+          Step into our immersive virtual boardrooms where specialized HR, Technical, and Hiring Manager agents evaluate you naturally through speech, adaptive contextual lines of reasoning, and highly responsive simulated digital human avatars.
         </p>
 
         {/* Big Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
+        <div className="flex flex-wrap justify-center items-center gap-3.5 pt-4">
           <button
             onClick={onStartInterview}
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#6D5EF8]/25 flex items-center justify-center gap-2.5 cursor-pointer border border-[#6D5EF8]/30 group active:scale-[0.98]"
+            className="px-6 py-3 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#6D5EF8]/25 flex items-center justify-center gap-2 cursor-pointer border border-[#6D5EF8]/30 group active:scale-[0.98]"
             id="btn-start-simulation"
           >
             <Mic className="h-4 w-4" />
-            <span>Start Practice Interview</span>
+            <span>Practice Interview Simulator</span>
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          <button
+            onClick={onNavigateToResume}
+            className="px-6 py-3 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            <FileText className="h-4 w-4 text-indigo-400" />
+            <span>ATS Resume Scanner</span>
+          </button>
+
+          <button
+            onClick={onNavigateToCalibrate}
+            className="px-6 py-3 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            <Sliders className="h-4 w-4 text-emerald-400" />
+            <span>Voice & Audio Tuner</span>
           </button>
           
           <button
             onClick={onExploreCompanies}
-            className="w-full sm:w-auto px-8 py-3.5 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+            className="px-6 py-3 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
             id="btn-explore-companies"
           >
             <Briefcase className="h-4 w-4 text-slate-400" />
-            <span>Explore Roles & Jobs</span>
+            <span>Explore Jobs</span>
           </button>
         </div>
       </div>

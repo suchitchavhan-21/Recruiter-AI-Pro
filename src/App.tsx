@@ -71,10 +71,12 @@ import StudyHub from "./components/StudyHub";
 import ProfileSettings from "./components/ProfileSettings";
 import FeedbackReport from "./components/FeedbackReport";
 import AuthPage from "./components/AuthPage";
+import EnterpriseResumeScanner from "./components/EnterpriseResumeScanner";
+import VoiceCalibrator from "./components/VoiceCalibrator";
 
 export default function App() {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<"home" | "interview" | "jobs" | "dashboard" | "study" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "interview" | "jobs" | "dashboard" | "study" | "profile" | "resume" | "calibrate">("home");
   
   // Real Authentication states
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -314,12 +316,25 @@ export default function App() {
     if (!activeSessionQuestions) return;
 
     const currentQ = activeSessionQuestions[currentQuestionIndex];
-    const finalAnswers = [...activeAnswers, {
+    let finalAnswers = [...activeAnswers, {
       questionId: currentQ.id,
       questionText: currentQ.text,
       type: currentQ.type,
       answerText: answerText
     }];
+
+    // If we finished early (i.e. currentQuestionIndex is not the last index),
+    // append all remaining questions as "[Skipped/Ended interview early]" so they appear in the final report
+    if (currentQuestionIndex < activeSessionQuestions.length - 1) {
+      for (let i = currentQuestionIndex + 1; i < activeSessionQuestions.length; i++) {
+        finalAnswers.push({
+          questionId: activeSessionQuestions[i].id,
+          questionText: activeSessionQuestions[i].text,
+          type: activeSessionQuestions[i].type,
+          answerText: "[Skipped/Ended interview early]"
+        });
+      }
+    }
 
     setActiveAnswers(finalAnswers);
     setActiveSessionQuestions(null); // Exit active simulator
@@ -483,6 +498,28 @@ export default function App() {
     );
   }
 
+  if (currentUser && activeSessionQuestions) {
+    return (
+      <ActiveInterview 
+        questions={activeSessionQuestions} 
+        currentQuestionIndex={currentQuestionIndex} 
+        onNextQuestion={handleNextQuestion} 
+        onFinishInterview={handleFinishInterview} 
+        persona={activeInterviewerPersona} 
+        companyName={activeCompany} 
+        roleName={activeRole} 
+        interviewerCount={activeInterviewerCount}
+        currentUser={currentUser}
+        onExitSession={() => {
+          if (confirm("Are you sure you want to exit this live simulation? Your active responses will be lost.")) {
+            setActiveSessionQuestions(null);
+            setActiveTab("home");
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div className={`flex min-h-screen text-[var(--text-main,#F4F4F5)] font-sans theme-${theme} bg-[var(--bg-app,#09090B)]`}>
       
@@ -576,6 +613,8 @@ export default function App() {
               onStartInterview={() => setActiveTab("interview")}
               onExploreCompanies={() => setActiveTab("jobs")}
               onNavigateToStudy={() => setActiveTab("study")}
+              onNavigateToResume={() => setActiveTab("resume")}
+              onNavigateToCalibrate={() => setActiveTab("calibrate")}
             />
           )}
 
@@ -666,6 +705,16 @@ export default function App() {
               applications={applications}
               onLogout={handleLogout}
             />
+          )}
+
+          {/* TAB 7: ATS RESUME SCANNER */}
+          {!isEvaluationLoading && activeTab === "resume" && (
+            <EnterpriseResumeScanner currentUser={currentUser} />
+          )}
+
+          {/* TAB 8: VOICE CALIBRATOR */}
+          {!isEvaluationLoading && activeTab === "calibrate" && (
+            <VoiceCalibrator />
           )}
 
         </main>

@@ -5,7 +5,9 @@ import {
   Briefcase, 
   BarChart3, 
   BookOpen, 
-  User
+  User,
+  FileText,
+  Sliders
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -19,6 +21,8 @@ export default function BottomNav({ activeTab, setActiveTab, currentUser }: Bott
   const menuItems = [
     { id: "home", label: "Home", icon: LayoutDashboard },
     { id: "interview", label: "Interview", icon: Mic },
+    { id: "resume", label: "Resume", icon: FileText },
+    { id: "calibrate", label: "Tuner", icon: Sliders },
     { id: "jobs", label: "Jobs", icon: Briefcase },
     { id: "dashboard", label: "Analytics", icon: BarChart3 },
     { id: "study", label: "Study", icon: BookOpen },

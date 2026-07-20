@@ -1271,6 +1271,13 @@ First, research using Google Search to understand:
 2. Core competencies, coding standards, and system design, or domain-specific topics expected of candidates.
 3. The typical interview difficulty level (Entry, Mid, Senior, or Expert).
 
+CRITICAL VARIABILITY REQUIREMENT:
+To support repetitive candidate practice sessions, every single generated interview session MUST be dynamically unique. 
+Do NOT generate the same general or standard questions. Explore different technical subfields, alternative scenarios, microservice problems, error-recovery mechanisms, concurrency bottlenecks, or organizational trade-offs.
+Generate 5 entirely fresh questions that reflect a unique, realistic interview round.
+
+RANDOMIZATION SEED FOR UNIQUE GENERATION: [${Math.random().toString(36).substring(2, 10)}]
+
 Based on your search and the JD, generate a response adhering STRICTLY to the following JSON structure. You must output a single, valid JSON object, and absolutely nothing else. No conversational text, no preambles, and no postscripts.
 
 Expected JSON Structure:
@@ -1301,6 +1308,7 @@ Company Name (if provided): ${companyName || "N/A"}
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
+        temperature: 1.0,
         tools: [{ googleSearch: {} }]
       }
     });
@@ -1562,10 +1570,12 @@ ${personaContext}
 ${panelEvaluationPromptContext}
 Grade this candidate's mock interview answers for a role matching this target context: ${jd} ${companyPromptContext}.
 
-For each question, evaluate:
-1. Accuracy: Is their solution architecturally sound and compliant with standard engineering?
-2. PACE and Communication: Was their response structured cleanly (e.g. STAR formatting for behavioral)?
-3. High-impact terminology: Did they use key professional tools, frameworks, and trade-off metrics?
+CRITICAL GRADING PRINCIPLE - DETECT AND SEVERELY PENALIZE NONSENSE, GIBBERISH, AND KEYWORD-STUFFING:
+1. Coherence & Logic: Examine if each Candidate Response forms complete, grammatically coherent sentences that address the question directly.
+2. If a response consists of disconnected keywords (e.g. 'react redux scale index cluster', 'db postgres redis'), random words ('apple dog banana table'), short low-effort phrases, or nonsense letters, you MUST grade that question with a score of 0 to 10. Explain clearly in the feedback that listing disconnected tech keywords or typing gibberish is unacceptable and does not demonstrate understanding.
+3. If more than half of the responses are gibberish, keyword-stuffed, irrelevant, or extremely shallow, the 'overallRating' MUST be forced to 'No Hire' and individual scores must be failing (< 35).
+4. Do not reward the candidate just because they mentioned names of tools/frameworks. If they list 'Kafka' or 'Redis' without describing HOW they are used to solve the problem, penalize them for 'buzzword dumping' and flag it in the 'mistakesMade' array.
+5. Be highly rigorous, critical, and objective. Only award high scores (> 80) to answers that are truly professional, detailed, relevant, and well-structured (using STAR format for behavioral questions).
 
 You must output a single, valid JSON object, and absolutely nothing else.
 
@@ -1797,13 +1807,13 @@ ${qaPromptText}
     res.json(evaluationResult);
 
   } catch (error: any) {
-    console.log("Local coaching fallback processor initialized.");
+    console.log("Local coaching fallback processor initialized due to error:", error);
     
     const interviewerCountVal = parseInt(interviewerCount || "1", 10);
     
-    const allEmpty = qaList.every((qa: any) => {
-      const txt = qa.answerText || "";
-      const t = txt.trim().toLowerCase();
+    const isAnswerEmptyHeuristic = (textStr: string): boolean => {
+      if (!textStr) return true;
+      const t = textStr.trim().toLowerCase();
       return (
         t === "" ||
         t.includes("skip") ||
@@ -1812,81 +1822,128 @@ ${qaPromptText}
         t.includes("no written response") ||
         t.length < 5
       );
+    };
+
+    let totalWordCount = 0;
+    let nonSkippedCount = 0;
+
+    qaList.forEach((qa: any) => {
+      const txt = (qa.answerText || "").trim();
+      const words = txt.split(/\s+/).filter(w => w.length > 0);
+      if (words.length > 0 && !isAnswerEmptyHeuristic(txt)) {
+        nonSkippedCount++;
+        totalWordCount += words.length;
+      }
     });
 
-    let computedScore = 87;
-    let fallbackReport: any = {
-      overallRating: "Strong Hire",
-      overallFeedback: "Your answers are architecturally sound. You clearly understand scaling bottlenecks and transaction isolation levels. Minor detail enhancements suggested around connection pool size configurations.",
-      strengths: [
-        "Explicit use of STAR formatting in behavioral queries.",
-        "Demonstrated solid awareness of Saga and 2-Phase commits."
-      ],
-      improvements: [
-        "Detail your database indexing and query plan strategy explicitly."
-      ],
-      questionBreakdown: qaList.map((qa: any) => ({
+    const averageWordCount = nonSkippedCount > 0 ? (totalWordCount / nonSkippedCount) : 0;
+
+    let computedScore = 82;
+    let overallRating = "Strong Hire";
+    let overallFeedback = "Your answers are architecturally sound. You clearly understand scaling bottlenecks and transaction isolation levels. Minor detail enhancements suggested around connection pool size configurations.";
+    let strengths = [
+      "Explicit use of STAR formatting in behavioral queries.",
+      "Demonstrated solid awareness of Saga and 2-Phase commits."
+    ];
+    let improvements = [
+      "Detail your database indexing and query plan strategy explicitly."
+    ];
+    let mistakesMade = [
+      "Briefly omitted resource cleanup strategies during transaction rollbacks.",
+      "Could have specified exact indexing types (e.g., B-Tree vs Hash index) for high-performance scale."
+    ];
+    let practicePlan = [
+      "Revise database Isolation Levels (specifically Postgres MVCC and Read Committed vs Serializable).",
+      "Practice drawing transaction lifecycles under network partition failures.",
+      "Re-simulate behavioral stories with a focus on ownership metrics."
+    ];
+
+    if (nonSkippedCount === 0) {
+      computedScore = 0;
+      overallRating = "No Hire";
+      overallFeedback = "No answers were provided during this interview simulation. All questions were skipped or left blank. Please try again and record or type your answers to receive a calibrated professional feedback assessment.";
+      strengths = [];
+      improvements = ["Ensure you provide complete typed or recorded voice responses to questions."];
+      mistakesMade = ["No response submitted."];
+      practicePlan = ["Practice speaking and typing responses to standard interview questions."];
+    } else if (averageWordCount < 8) {
+      computedScore = 20;
+      overallRating = "No Hire";
+      overallFeedback = "The responses provided were extremely short, fragmented, or consisted of disconnected keywords. A professional interview requires well-structured sentences, explaining your architectural choices and/or using the STAR methodology for behavioral questions.";
+      strengths = ["Attempted to answer some questions"];
+      improvements = ["Write full, coherent sentences rather than listing isolated keywords or single words.", "Address the specific system architectural or behavioral scenarios requested."];
+      mistakesMade = ["Keyword stuffing / buzzword dumping without actual explanation or context.", "Responses are too short to form any meaningful technical evaluation."];
+      practicePlan = ["Revise key design patterns and practice explaining how they work step-by-step.", "Build a structured framework for your answers instead of typing brief keywords."];
+    } else if (averageWordCount < 20) {
+      computedScore = 52;
+      overallRating = "No Hire";
+      overallFeedback = "The responses provided were very brief and lacked professional depth. To secure a hire recommendation, you must elaborate on the technical trade-offs, specify tools, and structure your responses using the STAR format.";
+      strengths = ["Identified basic technologies and relevant concepts"];
+      improvements = ["Elaborate on specific architectural or leadership experiences.", "Explain the 'how' and 'why' rather than just 'what'."];
+      mistakesMade = ["Answers are shallow and skip detailed scaling limits or structural steps.", "Lack of metrics or concrete examples."];
+    } else if (averageWordCount < 40) {
+      computedScore = 72;
+      overallRating = "Lean Hire";
+      overallFeedback = "Your answers are structured but lack high-impact metric detail. You demonstrate standard understanding of the core concepts but should elaborate more on the exact scaling limits and database isolation scenarios.";
+    }
+
+    const questionBreakdown = qaList.map((qa: any) => {
+      const txt = (qa.answerText || "").trim();
+      const words = txt.split(/\s+/).filter(w => w.length > 0).length;
+      let qScore = 0;
+      let qFeedback = "This question was skipped.";
+
+      if (words > 0 && !isAnswerEmptyHeuristic(txt)) {
+        if (words < 8) {
+          qScore = 15;
+          qFeedback = "Response is extremely short or fragmented. Listing disconnected tech keywords does not demonstrate domain competence.";
+        } else if (words < 20) {
+          qScore = 55;
+          qFeedback = "Response provides a high-level mention but lacks depth and detailed architectural explanation.";
+        } else if (words < 40) {
+          qScore = 75;
+          qFeedback = "Good response with relevant points, but can be improved with specific metrics or STAR details.";
+        } else {
+          qScore = 88;
+          qFeedback = "Excellent, detailed response that successfully addresses the query.";
+        }
+      }
+
+      return {
         questionId: qa.questionId,
-        score: 85,
-        feedback: "Solid foundation shown. Response was clear and concise.",
-        modelAnswerSuggestion: "Excellent layout. Keep up the high standard."
-      })),
-      mistakesMade: [
-        "Briefly omitted resource cleanup strategies during transaction rollbacks.",
-        "Could have specified exact indexing types (e.g., B-Tree vs Hash index) for high-performance scale."
-      ],
+        score: qScore,
+        feedback: qFeedback,
+        modelAnswerSuggestion: `A principal engineer would outline a clear situation, technical trade-offs, and explicit metrics to address "${qa.questionText || 'this question'}".`
+      };
+    });
+
+    const fallbackReport: any = {
+      overallRating,
+      overallFeedback,
+      strengths,
+      improvements,
+      questionBreakdown,
+      mistakesMade,
       idealAnswers: qaList.map((qa: any) => `An expert response to "${qa.questionText || 'this question'}" would outline a concrete situation, clear technical trade-offs, and explicit metrics (e.g., 40% reduction in query latency, Saga orchestrator flow, etc.).`),
-      hiringRecommendation: "The candidate exhibits strong technical capabilities paired with exceptional communication skills. They would be an excellent senior/lead contributor to any fast-paced system engineering team.",
-      practicePlan: [
-        "Revise database Isolation Levels (specifically Postgres MVCC and Read Committed vs Serializable).",
-        "Practice drawing transaction lifecycles under network partition failures.",
-        "Re-simulate behavioral stories with a focus on ownership metrics."
-      ],
+      hiringRecommendation: overallRating === "No Hire" 
+        ? "The candidate's responses are insufficient to make a positive recommendation. Further practice is strongly advised."
+        : "The candidate shows potential but requires some refinement in detailed technical execution and structure.",
+      practicePlan,
       panelFeedback: {
         hr: {
-          score: 90,
-          feedback: "Great communication, clear professional delivery, structured responses nicely using the STAR methodology.",
-          strengths: ["STAR compliance", "Clear delivery"],
-          weaknesses: ["Omitted minor team collaboration details"]
+          score: computedScore >= 70 ? Math.min(100, computedScore + 5) : computedScore,
+          feedback: overallRating === "No Hire" ? "Responses lacked behavioral detail or communication structure." : "Solid communication style, but would benefit from more structured STAR formatting.",
+          strengths: computedScore >= 70 ? ["STAR compliance"] : [],
+          weaknesses: computedScore < 70 ? ["No behavioral details"] : []
         },
         technical: {
-          score: 84,
-          feedback: "Very strong understanding of system scaling, distributed transactions, and locking databases.",
-          strengths: ["Saga pattern", "Db isolation levels"],
-          weaknesses: ["Omitted index types"]
-        },
-        hiringManager: {
-          score: 88,
-          feedback: "Strong prioritization alignment, clear focus on business outcomes and scale metrics.",
-          strengths: ["Business metric focus", "Canary deploy awareness"],
-          weaknesses: ["Could emphasize team coaching more"]
+          score: computedScore,
+          feedback: overallRating === "No Hire" ? "Responses did not contain deep technical trade-offs or architectural correctness." : "Demonstrates technical awareness, but omitted deep dive details on locks or indexing.",
+          strengths: computedScore >= 70 ? ["Basic system awareness"] : [],
+          weaknesses: computedScore < 70 ? ["Omitted system design depth"] : []
         }
       }
     };
-
-    if (allEmpty) {
-      computedScore = 0;
-      fallbackReport = {
-        overallRating: "No Hire",
-        overallFeedback: "No answers were provided during this interview simulation. All questions were skipped or left blank. Please try again and record or type your answers to receive a calibrated professional feedback assessment.",
-        strengths: [],
-        improvements: ["Ensure you provide complete typed or recorded voice responses to questions."],
-        questionBreakdown: qaList.map((qa: any) => ({
-          questionId: qa.questionId,
-          score: 0,
-          feedback: "This question was skipped.",
-          modelAnswerSuggestion: "Prepare a solid STAR-structured or architectural solution response."
-        })),
-        mistakesMade: ["No response submitted."],
-        idealAnswers: qaList.map(() => "Refer to core domain engineering topics corresponding to the prompt context."),
-        hiringRecommendation: "Candidate opted to skip all questions during this round.",
-        practicePlan: ["Practice speaking and typing responses to standard interview questions."],
-        panelFeedback: {
-          hr: { score: 0, feedback: "Candidate did not respond.", strengths: [], weaknesses: ["No data"] },
-          technical: { score: 0, feedback: "Candidate did not respond.", strengths: [], weaknesses: ["No data"] }
-        }
-      };
-    }
 
     fallbackReport.score = computedScore;
 
@@ -1925,6 +1982,72 @@ ${qaPromptText}
     });
 
     res.json(fallbackReport);
+  }
+});
+
+// Generate dynamic draft answer to help candidate formulate responses
+app.post("/api/generate-draft-answer", requireAuth, async (req: AuthenticatedRequest, res) => {
+  const { questionText, expectedFocus, roleName, companyName, persona } = req.body;
+  if (!questionText) {
+    return res.status(400).json({ error: "questionText is required" });
+  }
+
+  try {
+    const client = getGeminiClient();
+
+    let toneContext = "";
+    if (persona === "architect") {
+      toneContext = "You are a lead system architect. Make the response highly detailed, specifying scaling metrics, precise tools (Redis, Kafka, PostgreSQL sharding), and concrete trade-offs.";
+    } else if (persona === "product_leader") {
+      toneContext = "You are a senior product leader. Focus on KPIs, RICE framework, customer value, and cross-functional alignment.";
+    } else {
+      toneContext = "You are an encouraging engineering manager. Keep the response balanced, using the STAR framework, highlighting team collaboration and structural delivery.";
+    }
+
+    const prompt = `
+${toneContext}
+Write an exemplary, high-scoring candidate answer for the following mock interview question:
+Question: "${questionText}"
+Expected focus areas: "${expectedFocus || "systems design / core behavioral principles"}"
+Target Role: "${roleName || "Software Engineer"}"
+Target Company: "${companyName || "Top Tier Tech"}"
+
+The answer should be written in the FIRST PERSON ("I", "my team") as if spoken or typed by an outstanding candidate in a real live interview. 
+Keep it concise, realistic, and highly professional (about 2-3 short, powerful paragraphs). Align with the STAR framework if behavioral. Avoid listing raw markdown headers, write it as a cohesive fluid statement.
+
+Output a single JSON object with this exact structure:
+{
+  "draftAnswer": "The drafted professional answer..."
+}
+`;
+
+    const response = await client.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            draftAnswer: { type: Type.STRING }
+          },
+          required: ["draftAnswer"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("No response content from Gemini.");
+    }
+
+    res.json(JSON.parse(text));
+
+  } catch (error: any) {
+    console.error("Draft generation endpoint error, returning smart fallback:", error);
+    // Dynamic local fallback if Gemini is offline
+    let fallbackText = `For this question about "${questionText}", a strong professional answer should apply the STAR technique. In my previous role at a high-growth tech company, we faced a similar challenge regarding ${expectedFocus || 'our core system scale'}. I designed and implemented a robust architecture using decoupled workers and local caching. This reduced latencies by 40% and successfully achieved our P99 SLA targets under peak loads.`;
+    res.json({ draftAnswer: fallbackText });
   }
 });
 
