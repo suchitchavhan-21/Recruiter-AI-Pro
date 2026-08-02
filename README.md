@@ -6,7 +6,6 @@ An enterprise-grade, high-performance Technical Recruiter and Interview Practice
 
 ### 🌐 Live Deployment & Preview
 *   **Production / Shared Platform**: [https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
-*   **Staging / Development Sandbox**: [https://ais-dev-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-dev-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
 
 ---
 
