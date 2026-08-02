@@ -25,34 +25,34 @@ export default function Header({ phase }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#09090B]/70 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
         {/* Brand Logo and Title */}
         <div className="flex items-center space-x-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
-            <Briefcase className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#6D5EF8] to-indigo-500 text-white shadow-lg shadow-[#6D5EF8]/20 ring-1 ring-white/20">
+            <Briefcase className="h-4.5 w-4.5" />
           </div>
           <div>
-            <h1 className="font-display text-lg font-bold tracking-tight text-slate-900">
+            <h1 className="font-display text-base font-bold tracking-tight text-white">
               Recruiter AI Pro
             </h1>
-            <p className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">
-              Expert Interview Coach
+            <p className="font-mono text-[9.5px] text-slate-400 uppercase tracking-widest">
+              Executive Interview Coach
             </p>
           </div>
         </div>
 
         {/* Live Step Badge & Signal */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
           {getStepText() && (
-            <span className="hidden rounded-full bg-slate-100 px-3 py-1 font-mono text-[11px] font-semibold text-slate-600 sm:inline-block">
+            <span className="hidden rounded-full bg-white/5 border border-white/10 px-3 py-1 font-mono text-[11px] font-semibold text-slate-300 backdrop-blur-md sm:inline-block">
               {getStepText()}
             </span>
           )}
           
-          <div className="flex items-center space-x-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700">
-            <Radio className="h-3.5 w-3.5 animate-pulse text-emerald-600" />
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider">
+          <div className="flex items-center space-x-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 backdrop-blur-md px-3 py-1 text-emerald-400">
+            <Radio className="h-3.5 w-3.5 animate-pulse text-emerald-400" />
+            <span className="font-mono text-[10.5px] font-semibold uppercase tracking-wider">
               Agent Connected
             </span>
           </div>

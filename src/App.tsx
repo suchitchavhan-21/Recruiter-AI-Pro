@@ -380,20 +380,95 @@ export default function App() {
       showNotification("Interview evaluation fully calibrated!", "success");
 
     } catch (err: any) {
-      showNotification("Evaluation feedback failed. Showing fallback score.", "error");
+      showNotification("Server evaluation timed out. Generating dynamic assessment report.", "error");
       
-      const fallbackReport: FeedbackType = {
-        overallRating: "Strong Hire",
-        overallFeedback: "Excellent structural systems engineering layout. You systematically explained scaling checkpoints, distributed caching configurations, and transaction rollbacks. Optimal communication skills.",
-        strengths: [
-          "Precise architectural choices described clearly.",
-          "Good STAR narrative detailing business value metrics."
-        ],
-        improvements: [
-          "Explain caching eviction and memory optimization more clearly."
-        ],
-        questionBreakdown: []
+      const isAnswerEmptyHeuristic = (textStr?: string): boolean => {
+        if (!textStr) return true;
+        const trimmed = textStr.trim().toLowerCase();
+        return (
+          trimmed === "" ||
+          trimmed === "skip" ||
+          trimmed === "skipped" ||
+          trimmed === "no answer" ||
+          trimmed === "n/a" ||
+          trimmed.startsWith("[skipped") ||
+          trimmed.includes("[skipped/ended interview early]") ||
+          trimmed.length < 5
+        );
       };
+
+      let nonSkipped = 0;
+      let totalWords = 0;
+      finalAnswers.forEach(qa => {
+        const txt = (qa.answerText || "").trim();
+        if (!isAnswerEmptyHeuristic(txt)) {
+          nonSkipped++;
+          totalWords += txt.split(/\s+/).filter(w => w.length > 0).length;
+        }
+      });
+
+      const avgWords = nonSkipped > 0 ? totalWords / nonSkipped : 0;
+      let computedScore = 82;
+      let rating = "Strong Hire";
+      let feedbackText = "Solid structural responses provided across the interview questions.";
+
+      if (nonSkipped === 0) {
+        computedScore = 0;
+        rating = "No Hire";
+        feedbackText = "No responses were provided during this interview simulation. All questions were skipped or left blank.";
+      } else if (avgWords < 10) {
+        computedScore = 20;
+        rating = "No Hire";
+        feedbackText = "Responses provided were extremely short or fragmented, lacking necessary depth and architectural context.";
+      } else if (avgWords < 25) {
+        computedScore = 55;
+        rating = "Lean Hire";
+        feedbackText = "Answers were brief but identified core concepts. Further elaboration on trade-offs and metrics is recommended.";
+      }
+
+      const questionBreakdown = finalAnswers.map((qa, idx) => {
+        const txt = (qa.answerText || "").trim();
+        const empty = isAnswerEmptyHeuristic(txt);
+        const words = txt.split(/\s+/).filter(w => w.length > 0).length;
+        let qScore = empty ? 0 : words < 10 ? 25 : words < 25 ? 60 : 85;
+        const critiqueText = empty ? "Skipped question." : words < 10 ? "Response was very brief." : "Good response covering key points.";
+        const modelText = `A principal engineer would outline a clear situation, technical trade-offs, and metrics for "${qa.questionText}".`;
+        return {
+          questionId: idx + 1,
+          questionText: qa.questionText || `Question ${idx + 1}`,
+          critique: critiqueText,
+          feedback: critiqueText,
+          score: qScore,
+          modelAnswer: modelText,
+          modelAnswerSuggestion: modelText
+        };
+      });
+
+      const fallbackReport: FeedbackType = {
+        overallRating: rating,
+        overallFeedback: feedbackText,
+        score: computedScore,
+        strengths: nonSkipped > 0 ? ["Attempted questions with relevant concepts.", "Good communication style."] : [],
+        improvements: ["Elaborate with specific metrics and STAR formatting.", "Detail architectural trade-offs."],
+        questionBreakdown,
+        mistakesMade: nonSkipped === 0 ? ["No responses provided."] : ["Could expand on operational metrics."],
+        practicePlan: ["Practice speaking and writing structured STAR responses."],
+        panelFeedback: {
+          hr: {
+            score: computedScore,
+            feedback: nonSkipped === 0 ? "No behavioral responses provided." : "Demonstrated baseline communication.",
+            strengths: nonSkipped > 0 ? ["Clear phrasing"] : [],
+            weaknesses: nonSkipped === 0 ? ["No response"] : ["Lacks STAR metrics"]
+          },
+          technical: {
+            score: computedScore,
+            feedback: nonSkipped === 0 ? "No technical answers provided." : "Showed domain familiarity.",
+            strengths: nonSkipped > 0 ? ["Tech awareness"] : [],
+            weaknesses: nonSkipped === 0 ? ["No response"] : ["Needs deeper system trade-offs"]
+          }
+        }
+      };
+
       setLatestFeedbackReport(fallbackReport);
 
       const newSession: InterviewSession = {
@@ -405,7 +480,7 @@ export default function App() {
         analysis: activeAnalysis || { difficulty: "Senior", skills: [], companyTrends: "", questions: [] },
         answers: finalAnswers,
         evaluation: fallbackReport,
-        score: 87,
+        score: computedScore,
         interviewerCount: activeInterviewerCount
       };
       saveSessionsHistory([newSession, ...sessionsHistory]);
@@ -535,21 +610,21 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
         
         {/* Top Header */}
-        <header className="sticky top-0 z-40 bg-[#09090B]/85 backdrop-blur-md border-b border-[#27272A] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider">Recruiter Agent Active</span>
+        <header className="sticky top-0 z-40 bg-[#09090B]/70 backdrop-blur-xl border-b border-white/10 px-6 py-3.5 flex items-center justify-between shadow-[0_4px_20px_0_rgba(0,0,0,0.3)]">
+          <div className="flex items-center gap-2 glass-pill px-3 py-1 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+            <span className="text-[10px] font-bold text-slate-300 uppercase font-mono tracking-wider">Recruiter Agent Active</span>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Elegant Sun / Moon Toggle Button */}
-            <div className="flex items-center gap-1 bg-slate-900/60 border border-[#27272A] p-1 rounded-lg">
+            <div className="flex items-center gap-1 glass-pill p-1 rounded-xl">
               <button
                 onClick={() => handleSetTheme("nordic-slate")}
                 title="Light Mode (Sun)"
-                className={`p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer ${
+                className={`p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
                   theme === "nordic-slate"
-                    ? "bg-amber-500/20 text-amber-500 border border-amber-500/30"
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -558,9 +633,9 @@ export default function App() {
               <button
                 onClick={() => handleSetTheme("cosmic-dark")}
                 title="Present Mode (Moon)"
-                className={`p-1.5 rounded-md transition-all flex items-center justify-center cursor-pointer ${
+                className={`p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
                   theme === "cosmic-dark"
-                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-sm"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -568,15 +643,15 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-900 border border-[#27272A] px-2.5 py-1 rounded-lg">
-              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2 glass-pill px-3 py-1 rounded-xl">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-800 border border-white/20 flex items-center justify-center shrink-0">
                 {currentUser?.profilePhoto ? (
                   <img src={currentUser.profilePhoto} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <span className="text-[10px]">{currentUser?.avatarEmoji || "🦊"}</span>
                 )}
               </div>
-              <span className="text-[10.5px] font-bold text-slate-300 font-mono">
+              <span className="text-[10.5px] font-bold text-slate-200 font-mono">
                 Candidate: {currentUser.name}
               </span>
             </div>

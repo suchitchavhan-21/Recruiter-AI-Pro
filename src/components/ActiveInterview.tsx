@@ -3102,7 +3102,10 @@ export default function ActiveInterview({
             })()}
 
             {sidebarType === "scorecard" && (() => {
-              const overallScore = 87;
+              const currentWords = answerText.trim().split(/\s+/).filter(w => w.length > 0).length;
+              const hasTypedAnswer = currentWords >= 5;
+              const completedCount = currentQuestionIndex;
+              const progressPct = Math.round(((completedCount + (hasTypedAnswer ? 0.5 : 0)) / questions.length) * 100);
               
               const ProgressRing = ({ percent, label, color }: { percent: number; label: string; color: string }) => {
                 const radius = 20;
@@ -3137,18 +3140,22 @@ export default function ActiveInterview({
                 <div className="space-y-4 flex-1 flex flex-col justify-between animate-fade-in overflow-y-auto max-h-[520px] pr-1">
                   <div className="space-y-4">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
-                        Executive Competency Evaluators
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                      <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider">
+                        Live Simulation Evaluation Criteria
                       </span>
                     </div>
 
                     {/* OVERALL SCORE DISPLAY CARD */}
                     <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between">
-                      <div className="text-left">
-                        <span className="text-[8px] font-bold font-mono text-slate-500 uppercase block tracking-wider">Estimated Match Score</span>
-                        <h4 className="text-xl font-extrabold text-white mt-1">87% <span className="text-[10px] text-emerald-400 font-mono font-medium">Excellent</span></h4>
-                        <p className="text-[8.5px] text-slate-400 leading-normal mt-1">Matches senior SaaS engineer target bar requirements.</p>
+                      <div className="text-left space-y-1">
+                        <span className="text-[8px] font-bold font-mono text-slate-500 uppercase block tracking-wider">Simulation Progress</span>
+                        <h4 className="text-xl font-extrabold text-white">{progressPct}% <span className="text-[10px] text-indigo-400 font-mono font-medium">In Progress</span></h4>
+                        <p className="text-[8.5px] text-slate-400 leading-normal">
+                          {hasTypedAnswer 
+                            ? `Active response: ~${currentWords} words recorded` 
+                            : "Awaiting your typed or recorded audio response"}
+                        </p>
                       </div>
                       
                       <div className="relative flex items-center justify-center w-16 h-16 shrink-0">
@@ -3162,22 +3169,22 @@ export default function ActiveInterview({
                             strokeWidth="3.5" 
                             fill="transparent" 
                             strokeDasharray={2 * Math.PI * 26}
-                            strokeDashoffset={2 * Math.PI * 26 - (87 / 100) * (2 * Math.PI * 26)}
+                            strokeDashoffset={2 * Math.PI * 26 - (progressPct / 100) * (2 * Math.PI * 26)}
                             strokeLinecap="round"
                           />
                         </svg>
-                        <span className="absolute text-xs font-bold font-mono text-white">87%</span>
+                        <span className="absolute text-xs font-bold font-mono text-white">{progressPct}%</span>
                       </div>
                     </div>
 
                     {/* EVALUATION GRID OF PROGRESS RINGS */}
                     <div className="grid grid-cols-3 gap-2">
-                      <ProgressRing percent={88} label="Delivery" color="stroke-indigo-500" />
-                      <ProgressRing percent={85} label="Precision" color="stroke-blue-500" />
-                      <ProgressRing percent={90} label="Topology" color="stroke-purple-500" />
-                      <ProgressRing percent={82} label="Coding" color="stroke-emerald-500" />
-                      <ProgressRing percent={94} label="Confidence" color="stroke-amber-500" />
-                      <ProgressRing percent={89} label="Culture" color="stroke-rose-500" />
+                      <ProgressRing percent={hasTypedAnswer ? Math.min(100, Math.round(currentWords * 1.5)) : 0} label="Response Depth" color="stroke-indigo-500" />
+                      <ProgressRing percent={hasTypedAnswer ? Math.min(100, Math.round(currentWords * 1.2)) : 0} label="Technical Depth" color="stroke-blue-500" />
+                      <ProgressRing percent={Math.round(((currentQuestionIndex + 1) / questions.length) * 100)} label="Pacing" color="stroke-purple-500" />
+                      <ProgressRing percent={hasTypedAnswer ? 85 : 0} label="STAR Method" color="stroke-emerald-500" />
+                      <ProgressRing percent={activeDeskTab === "mic" ? 90 : 75} label="Delivery Mode" color="stroke-amber-500" />
+                      <ProgressRing percent={100} label="Context Match" color="stroke-rose-500" />
                     </div>
 
                     {/* SESSION OVERVIEW METADATA TAB */}

@@ -1698,19 +1698,18 @@ ${qaPromptText}
       if (!textStr) return true;
       const trimmed = textStr.trim().toLowerCase();
       if (trimmed === "") return true;
-      const emptyKeywords = [
-        "skip",
-        "skipped",
-        "no answer",
-        "no answer provided",
-        "[no answer provided]",
-        "none",
-        "n/a",
-        "no written response",
-        "[no written response provided",
-        "no written response provided"
-      ];
-      if (emptyKeywords.some(keyword => trimmed.includes(keyword))) {
+      if (
+        trimmed === "skip" ||
+        trimmed === "skipped" ||
+        trimmed === "no answer" ||
+        trimmed === "no answer provided" ||
+        trimmed === "[no answer provided]" ||
+        trimmed === "none" ||
+        trimmed === "n/a" ||
+        trimmed.startsWith("[skipped") ||
+        trimmed.startsWith("[no answer") ||
+        trimmed.includes("[skipped/ended interview early]")
+      ) {
         return true;
       }
       if (trimmed.length < 5) {
@@ -1723,20 +1722,29 @@ ${qaPromptText}
     let computedScore = 0;
     if (evaluationResult.questionBreakdown && evaluationResult.questionBreakdown.length > 0) {
       let totalScore = 0;
-      evaluationResult.questionBreakdown.forEach((q: any) => {
-        // Enforce 0 score if the answer was empty or skipped
-        const matchingQA = qaList.find((qa: any) => qa.questionId === q.questionId || qa.questionId === parseInt(q.questionId, 10));
+      evaluationResult.questionBreakdown.forEach((q: any, idx: number) => {
+        // Match QA by questionId or index
+        const matchingQA = qaList.find((qa: any) => 
+          qa.questionId === q.questionId || 
+          qa.questionId === parseInt(q.questionId, 10) ||
+          qa.questionId === `q-${idx + 1}`
+        ) || qaList[idx];
+
         if (matchingQA && isAnswerEmpty(matchingQA.answerText)) {
           q.score = 0;
-          q.feedback = "No answer was provided. This question was skipped.";
+          q.feedback = "No answer was provided for this question (skipped or left blank).";
+        } else if (matchingQA && (matchingQA.answerText || "").trim().length < 15) {
+          q.score = Math.min(q.score !== undefined ? q.score : 25, 25);
+          q.feedback = "Response was extremely brief and lacked necessary technical or behavioral detail.";
         }
+
         totalScore += (q.score !== undefined ? q.score : 50);
       });
       computedScore = Math.round(totalScore / evaluationResult.questionBreakdown.length);
     } else {
       const isStrong = evaluationResult.overallRating.toLowerCase().includes("strong");
       const isLean = evaluationResult.overallRating.toLowerCase().includes("lean");
-      computedScore = isStrong ? 93 : isLean ? 76 : 52;
+      computedScore = isStrong ? 90 : isLean ? 72 : 45;
     }
 
     // Force 0% score if all answers are empty or skipped
@@ -1744,14 +1752,27 @@ ${qaPromptText}
     if (allEmpty) {
       computedScore = 0;
       evaluationResult.overallRating = "No Hire";
-      evaluationResult.overallFeedback = "No answers were provided during this interview simulation. All questions were skipped or left blank. Please try again and record or type your answers to receive a calibrated professional feedback assessment.";
+      evaluationResult.overallFeedback = "No answers were provided during this interview simulation. All questions were skipped or left blank. Please try again and record or type complete responses to receive a calibrated professional feedback assessment.";
       if (evaluationResult.questionBreakdown) {
         evaluationResult.questionBreakdown.forEach((q: any) => {
           q.score = 0;
           q.feedback = "This question was skipped.";
         });
       }
-      if (evaluationResult.panelFeedback) {
+    } else {
+      // Enforce overallRating consistency with computedScore
+      if (computedScore >= 78) {
+        evaluationResult.overallRating = "Strong Hire";
+      } else if (computedScore >= 55) {
+        evaluationResult.overallRating = "Lean Hire";
+      } else {
+        evaluationResult.overallRating = "No Hire";
+      }
+    }
+
+    // Synchronize panel feedback scores with computedScore
+    if (evaluationResult.panelFeedback) {
+      if (allEmpty) {
         if (evaluationResult.panelFeedback.hr) {
           evaluationResult.panelFeedback.hr.score = 0;
           evaluationResult.panelFeedback.hr.feedback = "Candidate did not provide behavioral responses.";
@@ -1763,6 +1784,16 @@ ${qaPromptText}
         if (evaluationResult.panelFeedback.hiringManager) {
           evaluationResult.panelFeedback.hiringManager.score = 0;
           evaluationResult.panelFeedback.hiringManager.feedback = "No responses analyzed.";
+        }
+      } else {
+        if (evaluationResult.panelFeedback.hr) {
+          evaluationResult.panelFeedback.hr.score = Math.min(100, Math.max(0, Math.round((evaluationResult.panelFeedback.hr.score + computedScore) / 2)));
+        }
+        if (evaluationResult.panelFeedback.technical) {
+          evaluationResult.panelFeedback.technical.score = Math.min(100, Math.max(0, Math.round((evaluationResult.panelFeedback.technical.score + computedScore) / 2)));
+        }
+        if (evaluationResult.panelFeedback.hiringManager) {
+          evaluationResult.panelFeedback.hiringManager.score = Math.min(100, Math.max(0, Math.round((evaluationResult.panelFeedback.hiringManager.score + computedScore) / 2)));
         }
       }
     }
