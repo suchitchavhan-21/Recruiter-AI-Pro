@@ -134,17 +134,23 @@ export default function App() {
       const res = await apiFetch("/api/profile");
       if (res.ok) {
         const data = await res.json();
-        setCurrentUser({
-          id: data.id,
-          name: data.fullName,
-          email: data.email,
-          roleTitle: data.role === "admin" ? "System Administrator" : "Candidate Engineer",
-          joinedAt: data.createdAt || new Date().toISOString(),
-          avatarEmoji: data.role === "admin" ? "🛡️" : "🦊",
-          role: data.role,
-          profilePhoto: data.profilePhoto,
-          phoneNumber: data.phoneNumber
-        });
+        const userObj = data.user || data;
+        if (userObj && (userObj.id || userObj.email || userObj.fullName || userObj.name)) {
+          setCurrentUser({
+            id: userObj.id,
+            name: userObj.fullName || userObj.name || "Candidate",
+            fullName: userObj.fullName || userObj.name || "Candidate",
+            email: userObj.email || "",
+            roleTitle: userObj.role === "admin" ? "System Administrator" : "Candidate Engineer",
+            joinedAt: userObj.createdAt || userObj.joinedAt || new Date().toISOString(),
+            avatarEmoji: userObj.role === "admin" ? "🛡️" : "🦊",
+            role: userObj.role || "candidate",
+            profilePhoto: userObj.profilePhoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+            phoneNumber: userObj.phoneNumber || ""
+          });
+        } else {
+          setCurrentUser(null);
+        }
       } else {
         setCurrentUser(null);
       }
@@ -153,6 +159,18 @@ export default function App() {
       setCurrentUser(null);
     }
     setApplications(seedApplicationsList());
+  };
+
+  const handleUpdateCurrentUser = (updated: any) => {
+    const userObj = updated.user || updated;
+    setCurrentUser((prev: any) => ({
+      ...prev,
+      ...userObj,
+      name: userObj.fullName || userObj.name || prev?.name || "Candidate",
+      fullName: userObj.fullName || userObj.name || prev?.fullName || "Candidate",
+      phoneNumber: typeof userObj.phoneNumber !== "undefined" ? userObj.phoneNumber : prev?.phoneNumber,
+      profilePhoto: userObj.profilePhoto || prev?.profilePhoto
+    }));
   };
 
   const handleLogout = async () => {
@@ -273,8 +291,9 @@ export default function App() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Analysis failed");
+        const errorData = await res.json().catch(() => ({}));
+        const errMsg = errorData?.error?.message || errorData?.error || errorData?.message || "Analysis failed";
+        throw new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
       }
 
       const data: JDAnalysis = await res.json();
@@ -343,22 +362,41 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          role: activeRole || "Software Engineer",
+          company: activeCompany || "Target Company",
           jd: activeAnalysis?.skills?.join(", ") || activeRole || "Software Engineer",
           companyName: activeCompany,
+          qaPairs: finalAnswers,
           qaList: finalAnswers,
           persona: activeInterviewerPersona,
           interviewerCount: activeInterviewerCount
         })
       });
 
-      if (!res.ok) throw new Error("Evaluation request failed.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errMsg = errorData?.error?.message || errorData?.error || errorData?.message || "Evaluation request failed.";
+        throw new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
+      }
 
       const report: FeedbackType = await res.json();
       setLatestFeedbackReport(report);
 
-      const isStrong = report.overallRating.toLowerCase().includes("strong");
-      const isLean = report.overallRating.toLowerCase().includes("lean");
-      const computedScore = report.score !== undefined ? report.score : (isStrong ? 93 : isLean ? 76 : 52);
+      let computedScore = Number(report.score);
+      if (isNaN(computedScore)) {
+        if (report.questionBreakdown && report.questionBreakdown.length > 0) {
+          const valid = report.questionBreakdown.map(q => Number(q.score)).filter(s => !isNaN(s));
+          if (valid.length > 0) {
+            computedScore = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
+          }
+        }
+      }
+      if (isNaN(computedScore)) {
+        const isStrong = report.overallRating?.toLowerCase().includes("strong");
+        const isLean = report.overallRating?.toLowerCase().includes("lean");
+        computedScore = isStrong ? 88 : isLean ? 74 : 45;
+      }
+      computedScore = Math.max(0, Math.min(100, Math.round(computedScore)));
 
       // Persist as a historical drill
       const newSession: InterviewSession = {
@@ -785,6 +823,7 @@ export default function App() {
               savedStarStories={savedStarStories}
               applications={applications}
               onLogout={handleLogout}
+              onUpdateUser={handleUpdateCurrentUser}
             />
           )}
 

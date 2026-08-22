@@ -1,0 +1,66 @@
+/* Recruiter AI Coach Enterprise Light Authentication Theme */
+
+.enterprise-auth-bg {
+  background-color: #F8F9FB;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(15, 23, 42, 0.02) 0%, transparent 50%);
+}
+
+.enterprise-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px -6px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.enterprise-left-panel {
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-right: 1px solid #E2E8F0;
+}
+
+.enterprise-input {
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  color: #111827;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.enterprise-input:focus {
+  border-color: #2563EB;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.enterprise-input::placeholder {
+  color: #94A3B8;
+}
+
+.enterprise-primary-btn {
+  background-color: #2563EB;
+  color: #FFFFFF;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.enterprise-primary-btn:hover:not(:disabled) {
+  background-color: #1D4ED8;
+}
+
+.enterprise-primary-btn:active:not(:disabled) {
+  background-color: #1E40AF;
+  transform: translateY(0.5px);
+}
+
+.enterprise-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.enterprise-subtle-box {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}

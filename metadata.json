@@ -1,6 +1,6 @@
 {
   "name": "Recruiter AI Pro",
-  "description": "Enterprise-grade AI Human Avatar Interview System featuring realistic digital human recruiters, live turn-taking simulation, multi-agent evaluation panel, STAR diagnostics, and deep analytics.",
+  "description": "Enterprise-grade AI platform for technical interviews, ATS resume review, and personalized coaching powered by real FAANG hiring standards.",
   "requestFramePermissions": ["camera", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

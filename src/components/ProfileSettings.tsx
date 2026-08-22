@@ -49,6 +49,7 @@ interface ProfileSettingsProps {
   savedStarStories?: any[];
   applications?: any[];
   onLogout?: () => void;
+  onUpdateUser?: (updated: any) => void;
 }
 
 export default function ProfileSettings({
@@ -56,13 +57,23 @@ export default function ProfileSettings({
   sessionsHistory = [],
   savedStarStories = [],
   applications = [],
-  onLogout
+  onLogout,
+  onUpdateUser
 }: ProfileSettingsProps) {
   // Input states for current user profile edits
   const [fullName, setFullName] = useState(currentUser?.name || currentUser?.fullName || "");
   const [countryCode, setCountryCode] = useState("+1");
   const [nationalNumber, setNationalNumber] = useState("");
   const [profilePhoto, setProfilePhoto] = useState(currentUser?.profilePhoto || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80");
+  
+  // Security & Password states
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+
   const [editStatus, setEditStatus] = useState<{ message: string; type: "success" | "error" | "" }>({ message: "", type: "" });
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -81,15 +92,15 @@ export default function ProfileSettings({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setEditStatus({ message: "Image size must be less than 2MB.", type: "error" });
+      if (file.size > 5 * 1024 * 1024) {
+        setEditStatus({ message: "Image size must be less than 5MB.", type: "error" });
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === "string") {
           setProfilePhoto(reader.result);
-          setEditStatus({ message: "Custom profile picture selected. Click 'Save Profile' to apply.", type: "success" });
+          setEditStatus({ message: "Custom profile picture selected. Click 'Save Profile Settings' to apply.", type: "success" });
         }
       };
       reader.readAsDataURL(file);
@@ -107,31 +118,70 @@ export default function ProfileSettings({
       return;
     }
 
+    if (newPassword.trim()) {
+      if (!currentPassword) {
+        setEditStatus({ message: "Please provide your current password to authorize password change.", type: "error" });
+        setIsUpdating(false);
+        return;
+      }
+      if (newPassword.length < 6) {
+        setEditStatus({ message: "New password must be at least 6 characters.", type: "error" });
+        setIsUpdating(false);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setEditStatus({ message: "New password and confirmation password do not match.", type: "error" });
+        setIsUpdating(false);
+        return;
+      }
+    }
+
     try {
-      const finalPhone = `${countryCode} ${nationalNumber}`.trim();
+      const finalPhone = nationalNumber.trim() ? `${countryCode} ${nationalNumber.trim()}` : "";
+      const payload: any = {
+        fullName: fullName.trim(),
+        phoneNumber: finalPhone,
+        profilePhoto
+      };
+
+      if (newPassword.trim()) {
+        payload.currentPassword = currentPassword;
+        payload.newPassword = newPassword.trim();
+      }
+
       const res = await apiFetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          phoneNumber: finalPhone,
-          profilePhoto
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to update profile details.");
+        let errorMsg = "Failed to update profile details.";
+        if (data?.error?.message) {
+          errorMsg = data.error.message;
+        } else if (typeof data?.error === "string") {
+          errorMsg = data.error;
+        } else if (data?.message) {
+          errorMsg = data.message;
+        }
+        throw new Error(errorMsg);
       }
 
       setEditStatus({ message: "Your profile has been updated successfully!", type: "success" });
       
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      const userObj = data.user || data;
+      if (onUpdateUser && userObj) {
+        onUpdateUser(userObj);
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordSection(false);
 
     } catch (err: any) {
-      setEditStatus({ message: err.message || "Failed to update.", type: "error" });
+      setEditStatus({ message: err.message || "Failed to update profile.", type: "error" });
     } finally {
       setIsUpdating(false);
     }
@@ -338,6 +388,80 @@ export default function ProfileSettings({
                     </label>
                   </div>
                 </div>
+              </div>
+
+              {/* Password & Security Section (Optional) */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordSection(!showPasswordSection)}
+                  className="text-xs font-semibold text-[#6D5EF8] hover:text-violet-400 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>{showPasswordSection ? "Hide Password Settings" : "Change Password"}</span>
+                </button>
+
+                {showPasswordSection && (
+                  <div className="mt-3 p-3.5 rounded-xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 space-y-3 animate-fade-in">
+                    <div className="space-y-1">
+                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">Current Password</label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
+                        <input
+                          type={showCurrentPass ? "text" : "password"}
+                          placeholder="Enter your current password"
+                          className="w-full glass-input rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPass(!showCurrentPass)}
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                        >
+                          {showCurrentPass ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">New Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
+                          <input
+                            type={showNewPass ? "text" : "password"}
+                            placeholder="At least 6 characters"
+                            className="w-full glass-input rounded-xl py-2 pl-9 pr-9 text-xs text-slate-900 dark:text-white placeholder-slate-400"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPass(!showNewPass)}
+                            className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                          >
+                            {showNewPass ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">Confirm New Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-400" />
+                          <input
+                            type={showNewPass ? "text" : "password"}
+                            placeholder="Re-enter new password"
+                            className="w-full glass-input rounded-xl py-2 pl-9 pr-4 text-xs text-slate-900 dark:text-white placeholder-slate-400"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {editStatus.message && (

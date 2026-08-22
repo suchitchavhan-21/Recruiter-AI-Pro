@@ -35,8 +35,10 @@ interviewRouter.post("/evaluate-interview", aiLimiter, validateBody(evaluateInte
 interviewRouter.post("/generate-draft-answer", aiLimiter, generateDraftAnswerHandler);
 interviewRouter.post("/evaluate-star", aiLimiter, validateBody(evaluateStarSchema), evaluateStarHandler);
 
+interviewRouter.get("/", listInterviewsHandler);
 interviewRouter.get("/history", listInterviewsHandler);
 interviewRouter.get("/history/:id", getInterviewByIdHandler);
+interviewRouter.get("/:id", getInterviewByIdHandler);
 
 interviewRouter.get("/star-stories", listStarStoriesHandler);
 interviewRouter.post("/star-stories", validateBody(saveStarSchema), saveStarStoryHandler);

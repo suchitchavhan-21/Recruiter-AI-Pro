@@ -30,15 +30,64 @@ export default function FeedbackReport({
   onNavigateToStudy,
   questions
 }: FeedbackReportProps) {
-  const isStrong = evaluation.overallRating.toLowerCase().includes("strong");
-  const isLean = evaluation.overallRating.toLowerCase().includes("lean");
-  
-  const score = evaluation.score !== undefined ? evaluation.score : (isStrong ? 93 : isLean ? 76 : 52);
-  const ratingColor = score >= 85 ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" : score >= 65 ? "text-amber-400 border-amber-500/20 bg-amber-500/5" : "text-rose-400 border-rose-500/20 bg-rose-500/5";
-  const scoreColorHex = score >= 85 ? "#10b981" : score >= 65 ? "#f59e0b" : "#ef4444";
+  // 1. Mathematically sound score derivation & calibration
+  let calculatedScore = Number(evaluation.score);
 
-  const technicalAccuracy = score === 0 ? 0 : Math.max(10, Math.min(100, Math.round(score * 1.02)));
-  const starConsistency = score === 0 ? 0 : Math.max(10, Math.min(100, Math.round(score * 0.95)));
+  if (isNaN(calculatedScore) || evaluation.score === undefined || evaluation.score === null) {
+    if (evaluation.questionBreakdown && evaluation.questionBreakdown.length > 0) {
+      const validScores = evaluation.questionBreakdown
+        .map(q => Number(q.score))
+        .filter(s => !isNaN(s));
+      if (validScores.length > 0) {
+        calculatedScore = Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length);
+      }
+    } else if (evaluation.panelFeedback) {
+      const panelVals: number[] = [];
+      if (evaluation.panelFeedback.hr?.score !== undefined) panelVals.push(Number(evaluation.panelFeedback.hr.score));
+      if (evaluation.panelFeedback.technical?.score !== undefined) panelVals.push(Number(evaluation.panelFeedback.technical.score));
+      if (evaluation.panelFeedback.hiringManager?.score !== undefined) panelVals.push(Number(evaluation.panelFeedback.hiringManager.score));
+      const validPanel = panelVals.filter(s => !isNaN(s));
+      if (validPanel.length > 0) {
+        calculatedScore = Math.round(validPanel.reduce((a, b) => a + b, 0) / validPanel.length);
+      }
+    }
+  }
+
+  if (isNaN(calculatedScore)) {
+    const isStrong = evaluation.overallRating?.toLowerCase().includes("strong");
+    const isLean = evaluation.overallRating?.toLowerCase().includes("lean");
+    calculatedScore = isStrong ? 88 : isLean ? 74 : 45;
+  }
+
+  const score = Math.max(0, Math.min(100, Math.round(calculatedScore)));
+
+  // 2. Synchronized rating badge
+  const ratingText = evaluation.overallRating || (score >= 85 ? "Strong Hire" : score >= 70 ? "Lean Hire" : "No Hire");
+  const ratingColor = score >= 85 
+    ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" 
+    : score >= 70 
+    ? "text-amber-400 border-amber-500/20 bg-amber-500/5" 
+    : "text-rose-400 border-rose-500/20 bg-rose-500/5";
+  const scoreColorHex = score >= 85 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
+
+  // 3. Technical & Behavioral Domain Breakdown
+  const techQuestions = evaluation.questionBreakdown?.filter((q, idx) => {
+    const type = questions[idx]?.type || (q as any)?.type;
+    return type === "technical" || type === "coding" || type === "system-design";
+  }) || [];
+
+  const behavQuestions = evaluation.questionBreakdown?.filter((q, idx) => {
+    const type = questions[idx]?.type || (q as any)?.type;
+    return type === "behavioral" || type === "situational" || type === "leadership";
+  }) || [];
+
+  const technicalAccuracy = techQuestions.length > 0
+    ? Math.round(techQuestions.reduce((acc, q) => acc + (Number(q.score) || score), 0) / techQuestions.length)
+    : (score === 0 ? 0 : Math.max(0, Math.min(100, Math.round(score * 1.02))));
+
+  const starConsistency = behavQuestions.length > 0
+    ? Math.round(behavQuestions.reduce((acc, q) => acc + (Number(q.score) || score), 0) / behavQuestions.length)
+    : (score === 0 ? 0 : Math.max(0, Math.min(100, Math.round(score * 0.96))));
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
@@ -77,7 +126,7 @@ export default function FeedbackReport({
           </div>
 
           <div className={`px-4 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wide ${ratingColor}`}>
-            {evaluation.overallRating}
+            {ratingText}
           </div>
         </div>
 
@@ -276,6 +325,68 @@ export default function FeedbackReport({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PER-QUESTION RECRUITER ASSESSMENT BREAKDOWN */}
+      {evaluation.questionBreakdown && evaluation.questionBreakdown.length > 0 && (
+        <div className="bg-[#111827] border border-[#27272A] p-6 rounded-[18px] space-y-5 animate-fade-in">
+          <div className="flex justify-between items-center border-b border-[#27272A]/60 pb-3">
+            <h4 className="text-xs font-bold text-white uppercase font-mono tracking-wider text-slate-300 flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <span>Per-Question Recruiter Assessment Scorecard</span>
+            </h4>
+            <span className="text-[10px] font-mono text-slate-400">
+              Avg Score: <strong className="text-white">{score}%</strong>
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {evaluation.questionBreakdown.map((q, idx) => {
+              const qScore = Math.max(0, Math.min(100, Math.round(Number(q.score) || 0)));
+              const qBadgeColor = qScore >= 85 
+                ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" 
+                : qScore >= 70 
+                ? "text-amber-400 bg-amber-500/10 border-amber-500/20" 
+                : "text-rose-400 bg-rose-500/10 border-rose-500/20";
+
+              return (
+                <div key={idx} className="p-4 bg-slate-950/60 border border-[#27272A] rounded-xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h5 className="text-xs font-bold text-white line-clamp-1">{q.questionText}</h5>
+                    </div>
+                    <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg border shrink-0 ${qBadgeColor}`}>
+                      {qScore}/100 Score
+                    </span>
+                  </div>
+
+                  {/* Question Score progress line */}
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${qScore >= 85 ? "bg-emerald-500" : qScore >= 70 ? "bg-amber-500" : "bg-rose-500"}`} 
+                      style={{ width: `${qScore}%` }} 
+                    />
+                  </div>
+
+                  <div className="text-xs text-slate-300 leading-relaxed font-sans">
+                    <span className="text-[10px] font-mono text-slate-400 block font-bold uppercase tracking-wider mb-1">Recruiter Evaluation</span>
+                    <p>{q.critique || q.feedback || "Answer met baseline expectations."}</p>
+                  </div>
+
+                  {q.modelAnswer && (
+                    <div className="p-3 bg-[#6D5EF8]/5 border border-[#6D5EF8]/10 rounded-lg text-xs text-indigo-200 leading-relaxed font-sans mt-2">
+                      <span className="text-[9px] font-mono font-bold text-indigo-400 block uppercase tracking-wider mb-1">Principal Benchmark Response</span>
+                      <p>{q.modelAnswer}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

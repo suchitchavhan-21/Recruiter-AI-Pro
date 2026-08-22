@@ -30,6 +30,7 @@ import {
   evaluateInterviewHandler, 
   generateDraftAnswerHandler, 
   evaluateStarHandler, 
+  listInterviewsHandler,
   listStarStoriesHandler, 
   saveStarStoryHandler, 
   deleteStarStoryHandler,
@@ -119,6 +120,8 @@ export function createExpressApp(): express.Application {
   app.delete("/api/sessions/:id", requireAuth, revokeSessionHandler);
 
   // Interview & AI Bridges
+  app.get("/api/interviews", requireAuth, listInterviewsHandler);
+  app.get("/api/interviews/history", requireAuth, listInterviewsHandler);
   app.post("/api/analyze-jd", requireAuth, validateBody(analyzeJdSchema), analyzeJdHandler);
   app.post("/api/evaluate-interview", requireAuth, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
   app.post("/api/generate-draft-answer", requireAuth, generateDraftAnswerHandler);

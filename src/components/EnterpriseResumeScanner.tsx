@@ -206,8 +206,9 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
         });
 
         if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "Failed to scan resume.");
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData?.error?.message || errData?.error || errData?.message || "Failed to scan resume.";
+          throw new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
         }
 
         const data = await res.json();

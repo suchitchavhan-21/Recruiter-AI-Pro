@@ -13,11 +13,11 @@ import {
 import { AuthenticatedRequest, clearAuthCookies } from "../middleware/auth";
 
 export const updateProfileSchema = z.object({
-  fullName: z.string().min(2).optional(),
-  phoneNumber: z.string().min(6).optional(),
-  profilePhoto: z.string().optional(),
-  currentPassword: z.string().optional(),
-  newPassword: z.string().min(8).optional()
+  fullName: z.string().min(1, "Full name must not be empty").optional().nullable(),
+  phoneNumber: z.string().optional().nullable(),
+  profilePhoto: z.string().optional().nullable(),
+  currentPassword: z.string().optional().nullable(),
+  newPassword: z.string().min(6, "New password must be at least 6 characters").optional().nullable()
 });
 
 export async function getProfileHandler(req: AuthenticatedRequest, res: Response) {
@@ -30,19 +30,24 @@ export async function getProfileHandler(req: AuthenticatedRequest, res: Response
     return res.status(404).json({ success: false, error: { code: "USER_NOT_FOUND", message: "User not found." } });
   }
 
+  const userObj = {
+    id: user.id,
+    fullName: user.fullName,
+    name: user.fullName,
+    email: user.email,
+    phoneNumber: user.phoneNumber || "",
+    profilePhoto: user.profilePhoto,
+    role: user.role,
+    roleTitle: user.role === "admin" ? "System Administrator" : "Candidate Engineer",
+    emailVerified: user.emailVerified,
+    createdAt: user.createdAt,
+    lastLogin: user.lastLogin
+  };
+
   return res.status(200).json({
     success: true,
-    user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      profilePhoto: user.profilePhoto,
-      role: user.role,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin
-    }
+    user: userObj,
+    ...userObj
   });
 }
 
@@ -59,17 +64,17 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
   const { fullName, phoneNumber, profilePhoto, currentPassword, newPassword } = req.body;
   const updates: Partial<typeof user> = {};
 
-  if (fullName && fullName.trim()) {
+  if (typeof fullName === "string" && fullName.trim().length > 0) {
     updates.fullName = fullName.trim();
   }
-  if (phoneNumber && phoneNumber.trim()) {
+  if (typeof phoneNumber === "string") {
     updates.phoneNumber = phoneNumber.trim();
   }
-  if (profilePhoto && profilePhoto.trim()) {
+  if (typeof profilePhoto === "string" && profilePhoto.trim().length > 0) {
     updates.profilePhoto = profilePhoto.trim();
   }
 
-  if (newPassword) {
+  if (newPassword && typeof newPassword === "string" && newPassword.trim().length > 0) {
     if (!currentPassword) {
       return res.status(400).json({
         success: false,
@@ -85,7 +90,7 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
       });
     }
 
-    updates.passwordHash = await bcrypt.hash(newPassword, 10);
+    updates.passwordHash = await bcrypt.hash(newPassword.trim(), 10);
   }
 
   const updatedUser = await updateUserById(user.id, updates);
@@ -97,19 +102,25 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
     description: "User profile settings updated."
   });
 
+  const finalUser = updatedUser || user;
+  const userObj = {
+    id: finalUser.id,
+    fullName: finalUser.fullName,
+    name: finalUser.fullName,
+    email: finalUser.email,
+    phoneNumber: finalUser.phoneNumber || "",
+    profilePhoto: finalUser.profilePhoto,
+    role: finalUser.role,
+    roleTitle: finalUser.role === "admin" ? "System Administrator" : "Candidate Engineer",
+    emailVerified: finalUser.emailVerified,
+    updatedAt: finalUser.updatedAt
+  };
+
   return res.status(200).json({
     success: true,
     message: "Profile updated successfully.",
-    user: {
-      id: updatedUser?.id,
-      fullName: updatedUser?.fullName,
-      email: updatedUser?.email,
-      phoneNumber: updatedUser?.phoneNumber,
-      profilePhoto: updatedUser?.profilePhoto,
-      role: updatedUser?.role,
-      emailVerified: updatedUser?.emailVerified,
-      updatedAt: updatedUser?.updatedAt
-    }
+    user: userObj,
+    ...userObj
   });
 }
 
