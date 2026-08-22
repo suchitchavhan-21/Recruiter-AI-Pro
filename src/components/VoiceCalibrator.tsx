@@ -58,6 +58,12 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
   const [activeStep, setActiveStep] = useState<"hardware" | "fidelity" | "synth">("hardware");
   const [isCalibratingNoise, setIsCalibratingNoise] = useState(false);
   const [noiseCountdown, setNoiseCountdown] = useState(3);
+  const [statusToast, setStatusToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setStatusToast({ message, type });
+    setTimeout(() => setStatusToast(null), 4500);
+  };
 
   // Calibration Target sentence
   const targetSentence = "I specialize in scaling high-throughput APIs and designing distributed systems.";
@@ -175,7 +181,7 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
   // 3. Ambient Noise Calibration
   const triggerNoiseCalibration = () => {
     if (!micStream) {
-      alert("Please initialize your microphone test stream first!");
+      showToast("Please initialize your microphone test stream first!", "error");
       return;
     }
     setIsCalibratingNoise(true);
@@ -377,11 +383,25 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
       onCalibrationComplete(settings);
     }
 
-    alert("Voice Profile fully calibrated and saved! Your microphone threshold, speaking tempo metrics, and preferred interviewer speech synthetics have been successfully locked in.");
+    showToast("Voice Profile fully calibrated and saved! Microphones and synthesis parameters locked in.", "success");
   };
 
   return (
     <div className="glass-panel rounded-3xl overflow-hidden shadow-2xl space-y-0 animate-fade-in max-w-3xl mx-auto">
+      {/* Toast Notification Banner */}
+      {statusToast && (
+        <div className={`p-3.5 border-b text-xs flex items-center justify-between gap-3 animate-fade-in ${
+          statusToast.type === "success"
+            ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+            : statusToast.type === "error"
+            ? "bg-rose-500/20 border-rose-500/30 text-rose-300"
+            : "bg-indigo-500/20 border-indigo-500/30 text-indigo-300"
+        }`}>
+          <span>{statusToast.message}</span>
+          <button onClick={() => setStatusToast(null)} className="opacity-70 hover:opacity-100 cursor-pointer">✕</button>
+        </div>
+      )}
+
       {/* Calibration Header */}
       <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">

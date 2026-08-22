@@ -230,10 +230,8 @@ export default function App() {
   };
 
   const handleClearAllSessions = () => {
-    if (window.confirm("Are you sure you want to clear your entire mock session history?")) {
-      saveSessionsHistory([]);
-      showNotification("All previous mock sessions cleared.", "success");
-    }
+    saveSessionsHistory([]);
+    showNotification("All previous mock sessions cleared.", "success");
   };
 
   const saveStarStories = (newStories: SavedSTARStory[]) => {
@@ -586,10 +584,9 @@ export default function App() {
         interviewerCount={activeInterviewerCount}
         currentUser={currentUser}
         onExitSession={() => {
-          if (confirm("Are you sure you want to exit this live simulation? Your active responses will be lost.")) {
-            setActiveSessionQuestions(null);
-            setActiveTab("home");
-          }
+          setActiveSessionQuestions(null);
+          setActiveTab("home");
+          showNotification("Exited live simulation session.", "info");
         }}
       />
     );

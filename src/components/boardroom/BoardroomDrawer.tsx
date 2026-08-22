@@ -528,11 +528,10 @@ export function BoardroomDrawer({
             <button
               type="button"
               onClick={() => {
-                if (window.confirm("Are you sure you want to clear your scratchpad notes?")) {
-                  onScratchNotesChange("");
-                }
+                onScratchNotesChange("");
               }}
               className="py-2 px-3 liquid-glass-subtle hover:bg-white/10 text-slate-400 hover:text-rose-400 border border-white/10 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              title="Clear scratchpad notes"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>Clear</span>

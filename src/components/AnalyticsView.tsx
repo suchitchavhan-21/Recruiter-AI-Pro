@@ -389,7 +389,7 @@ export default function AnalyticsView({
 
   const handleTriggerResumeScan = () => {
     if (!uploadedFile) {
-      alert("Please upload a resume file first by dragging or clicking on the upload area.");
+      triggerScanSimulation({ name: "Senior_Candidate_Resume_2026.pdf", size: 142850 });
       return;
     }
     triggerScanSimulation(uploadedFile);
@@ -402,7 +402,37 @@ export default function AnalyticsView({
   };
 
   const handleDownloadReport = () => {
-    alert("Downloading your comprehensive ATS compatibility report & skill gaps checklist PDF...");
+    const reportContent = `=====================================================
+RECRUITER AI PRO - EXECUTIVE ATS COMPATIBILITY REPORT
+=====================================================
+Candidate: ${currentUser?.name || "Candidate Engineer"}
+Email: ${currentUser?.email || "candidate@example.com"}
+Date: ${new Date().toLocaleDateString()}
+Target Role: ${targetRole}
+
+METRICS BREAKDOWN:
+- Overall ATS Score: ${resumeScore}%
+- Keyword Relevance Match: ${atsMatch}%
+- Completed Practice Sessions: ${totalInterviews}
+- Average Interview Score: ${averageScore}%
+- Active Practice Streak: ${currentStreak} Days
+
+APPLIED RESUME OPTIMIZATION CHECKPOINTS:
+${suggestionsData.map(s => `- [${appliedSuggestions.includes(s.id) ? "APPLIED" : "RECOMMENDED"}] ${s.title} (+${s.points} pts)\n  Rationale: ${s.short}\n  Before: ${s.before}\n  After: ${s.after}`).join("\n\n")}
+
+=====================================================
+Generated automatically by Recruiter AI Pro Suite.
+=====================================================`;
+
+    const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RecruiterAI_ATS_Report_${(currentUser?.name || "Candidate").replace(/\s+/g, "_")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (

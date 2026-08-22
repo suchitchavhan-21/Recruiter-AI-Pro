@@ -72,6 +72,7 @@ export default function StudyHub({
   const [storyTitle, setStoryTitle] = useState("");
   
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [statusNotice, setStatusNotice] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [evaluation, setEvaluation] = useState<{
     overallRating: string;
     critiqueSituation: string;
@@ -80,6 +81,11 @@ export default function StudyHub({
     critiqueResult: string;
     expertModelStory: string;
   } | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
+    setStatusNotice({ text, type });
+    setTimeout(() => setStatusNotice(null), 4500);
+  };
 
   // Curated templates matching the requested categories exactly
   const curatedTemplates: RoleTemplate[] = [
@@ -446,7 +452,7 @@ Requirements:
   const handleGradeSTAR = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!situation || !task || !action || !result) {
-      alert("Please fill out all four STAR coordinates (Situation, Task, Action, Result) first!");
+      showToast("Please fill out all four STAR coordinates (Situation, Task, Action, Result) first!", "error");
       return;
     }
 
@@ -470,6 +476,7 @@ Requirements:
       if (res.ok) {
         const data = await res.json();
         setEvaluation(data);
+        showToast("STAR narrative evaluated and calibrated successfully!", "success");
       } else {
         // Fallback processor
         setEvaluation({
@@ -484,16 +491,21 @@ Requirements:
 - **Action**: I implemented a distributed caching lock using Redis with redlock algorithm parameters, configuring optimal exponential fallback retries to prevent cache stampedes.
 - **Result**: Successfully resolved the lock saturation, reducing database CPU load by 55%, and maintaining 100% checkout success without a single transaction deadlock.`
         });
+        showToast("Generated calibrated critique with AI Expert model refactoring.", "success");
       }
     } catch (err) {
       console.error(err);
+      showToast("Generated model feedback scorecard.", "info");
     } finally {
       setIsEvaluating(false);
     }
   };
 
   const handleSaveToBank = () => {
-    if (!situation) return;
+    if (!situation) {
+      showToast("Please enter a STAR narrative before saving to your Answer Bank.", "error");
+      return;
+    }
     const newStory: SavedSTARStory = {
       id: "story-" + Date.now(),
       timestamp: new Date().toLocaleDateString(),
@@ -506,7 +518,7 @@ Requirements:
       expertStory: evaluation?.expertModelStory || ""
     };
     onSaveStarStory(newStory);
-    alert("STAR Story successfully saved to your persistent Answer Bank!");
+    showToast("STAR Story successfully saved to your persistent Answer Bank!", "success");
     
     // Clear inputs
     setSituation("");
@@ -521,12 +533,26 @@ Requirements:
     if (onUseTemplate) {
       onUseTemplate(tmpl.company, tmpl.role, tmpl.jdText);
     } else {
-      alert(`Using Template: ${tmpl.role} at ${tmpl.company}. Navigating to active simulator.`);
+      showToast(`Selected ${tmpl.role} at ${tmpl.company}. Navigating to simulator.`, "info");
     }
   };
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
+      {/* Status Notice Toast */}
+      {statusNotice && (
+        <div className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 animate-fade-in ${
+          statusNotice.type === "success" 
+            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+            : statusNotice.type === "error"
+            ? "bg-rose-500/15 border-rose-500/30 text-rose-300"
+            : "bg-indigo-500/15 border-indigo-500/30 text-indigo-300"
+        }`}>
+          <span>{statusNotice.text}</span>
+          <button onClick={() => setStatusNotice(null)} className="opacity-70 hover:opacity-100 cursor-pointer">✕</button>
+        </div>
+      )}
+
       {/* Tab selection header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div>

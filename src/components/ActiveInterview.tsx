@@ -351,14 +351,27 @@ export default function ActiveInterview({
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+    };
+  }, [recognition]);
+
   // Handlers
   const handleToggleListening = () => {
     if (!micOn) {
-      alert("Please enable the microphone in the candidate dock first.");
-      return;
+      setMicOn(true);
     }
     if (isListening) {
-      if (recognition) recognition.stop();
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
       setIsListening(false);
     } else {
       if (recognition) {
@@ -372,6 +385,34 @@ export default function ActiveInterview({
         setIsListening(true);
       }
     }
+  };
+
+  const handleExitSimulation = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (isListening && recognition) {
+      try { recognition.stop(); } catch (e) {}
+      setIsListening(false);
+    }
+    setShowExitModal(false);
+    if (onExitSession) {
+      onExitSession();
+    } else {
+      handleSubmitAnswer(true);
+    }
+  };
+
+  const handleFinishEarly = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (isListening && recognition) {
+      try { recognition.stop(); } catch (e) {}
+      setIsListening(false);
+    }
+    setShowExitModal(false);
+    handleSubmitAnswer(true);
   };
 
   const handleGenerateDraft = async () => {
@@ -706,14 +747,8 @@ export default function ActiveInterview({
       <ExitConfirmModal 
         isOpen={showExitModal}
         onClose={() => setShowExitModal(false)}
-        onConfirmExit={() => {
-          setShowExitModal(false);
-          if (onExitSession) {
-            onExitSession();
-          } else {
-            handleSubmitAnswer(true);
-          }
-        }}
+        onConfirmExit={handleExitSimulation}
+        onFinishEarly={handleFinishEarly}
         questionsAnswered={currentQuestionIndex}
         totalQuestions={questions.length}
       />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   Building2, 
   User, 
@@ -15,7 +15,9 @@ import {
   Globe,
   CheckCircle2,
   Lock,
-  UserCheck
+  UserCheck,
+  AlertCircle,
+  X
 } from "lucide-react";
 import { COMPANY_PRESETS, CompanyPreset, CompanyRolePreset } from "../data/companyRoles";
 
@@ -64,6 +66,24 @@ export default function InterviewWizard({ onStartSimulation, isAnalyzing }: Inte
   // Filtering states for Step 1
   const [companyFilter, setCompanyFilter] = useState<"all" | "ai" | "cloud" | "fintech" | "startup" | "enterprise" | "gaming" | "healthcare">("all");
 
+  // Notice & Dialog states
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [urlInputValue, setUrlInputValue] = useState("https://boards.greenhouse.io/figma/jobs/4201");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const showTemporarySuccess = (msg: string) => {
+    setSuccessNotice(msg);
+    setValidationError(null);
+    setTimeout(() => setSuccessNotice(null), 4000);
+  };
+
+  const showTemporaryError = (msg: string) => {
+    setValidationError(msg);
+    setTimeout(() => setValidationError(null), 4000);
+  };
+
   const companyList = COMPANY_PRESETS;
   const selectedCompany = companyList.find(c => c.id === selectedCompanyId);
 
@@ -86,6 +106,7 @@ export default function InterviewWizard({ onStartSimulation, isAnalyzing }: Inte
     setSelectedCompanyId(companyId);
     setSelectedRoleTitle(""); 
     setCustomCompanyName("");
+    setValidationError(null);
     
     const comp = companyList.find(c => c.id === companyId);
     if (comp && comp.roles.length > 0) {
@@ -98,6 +119,7 @@ export default function InterviewWizard({ onStartSimulation, isAnalyzing }: Inte
     setSelectedRoleTitle(role.title);
     setJdText(role.text);
     setCustomRoleName("");
+    setValidationError(null);
   };
 
   // Step 3 Actions
@@ -109,34 +131,55 @@ Requirements:
 - 4+ years of professional React and TypeScript development.
 - Deep alignment with user experience, beautiful clean layouts, and responsive components.
 - Experience with Node.js APIs and state synchronization.`);
+      showTemporarySuccess("Autofilled customized startup engineering JD template.");
     } else if (selectedCompany) {
       const activeRole = selectedCompany.roles.find(r => r.title === selectedRoleTitle);
       if (activeRole) {
         setJdText(activeRole.text);
+        showTemporarySuccess(`Autofilled official JD requirements for ${activeRole.title}.`);
       }
     }
   };
 
-  const handleUploadClick = () => {
-    setJdText(`Parsed from uploaded_resume_requirements.pdf:
-Position: Staff Systems Operations Specialist
-Requirements:
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text && text.trim()) {
+          setJdText(text.trim());
+          showTemporarySuccess(`Imported job requirements from "${file.name}" (${(file.size / 1024).toFixed(1)} KB).`);
+        } else {
+          setJdText(`Position: Staff Systems Operations Specialist
+Requirements (from ${file.name}):
 - 6+ years deploying scale-out kubernetes orchestration engines in hybrid environment.
 - Strong knowledge of concurrency boundaries, distributed consensus systems, and high performance network buffers.
 - Prior experience instrumentation with OpenTelemetry dashboards.`);
-    alert("Resume / JD PDF uploaded successfully! Extracted 3 critical requirement items.");
+          showTemporarySuccess(`Extracted requirement checkpoints from "${file.name}".`);
+        }
+      };
+      if (file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsText(file);
+      }
+    }
   };
 
-  const handleUrlFetchClick = () => {
-    const url = prompt("Enter the Job Listing URL (e.g. greenhouse.io, lever.co, linkedin.com):", "https://boards.greenhouse.io/figma/jobs/4201");
-    if (url) {
-      setJdText(`Parsed from ${url}:
-Position: Senior Full-Stack Engineer (Figma Design Tools Core)
+  const handleConfirmUrlImport = () => {
+    if (!urlInputValue.trim()) {
+      showTemporaryError("Please enter a valid listing URL.");
+      return;
+    }
+    setJdText(`Parsed from ${urlInputValue.trim()}:
+Position: Senior Full-Stack Engineer (Core Product)
 Core Competencies Required:
 - Master level fluency in React, TypeScript, and HTML5 canvas manipulation.
 - Experience building real-time collaboration multiplayer synchronization networks.
 - Exceptional attention to UI typography, pixel density, micro-animations, and fast visual updates.`);
-    }
+    setIsUrlModalOpen(false);
+    showTemporarySuccess("Imported job listing specifications from URL.");
   };
 
   const getActiveCompanyDisplay = () => {
@@ -154,9 +197,10 @@ Core Competencies Required:
   };
 
   const handleNextStep = () => {
+    setValidationError(null);
     if (currentStep === 1) {
       if (selectedCompanyId === "custom" && !customCompanyName.trim()) {
-        alert("Please specify your custom company name.");
+        showTemporaryError("Please specify your custom company name.");
         return;
       }
       if (selectedCompanyId !== "custom" && selectedCompany && !selectedRoleTitle) {
@@ -166,17 +210,17 @@ Core Competencies Required:
     }
     if (currentStep === 2) {
       if (selectedCompanyId === "custom" && !customRoleName.trim()) {
-        alert("Please specify your custom role title.");
+        showTemporaryError("Please specify your custom role title.");
         return;
       }
       if (selectedCompanyId !== "custom" && !selectedRoleTitle) {
-        alert("Please select a target role preset.");
+        showTemporaryError("Please select a target role preset.");
         return;
       }
     }
     if (currentStep === 3) {
       if (!jdText.trim()) {
-        alert("Please paste, upload, or fetch a target job description text.");
+        showTemporaryError("Please paste, upload, or autofill job description requirements.");
         return;
       }
     }
@@ -187,6 +231,7 @@ Core Competencies Required:
   };
 
   const handlePrevStep = () => {
+    setValidationError(null);
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
     }
@@ -269,6 +314,46 @@ Core Competencies Required:
 
       {/* Main Form Box */}
       <div className="glass-panel rounded-[24px] p-6 md:p-8 min-h-[440px] flex flex-col justify-between relative overflow-hidden shadow-2xl">
+        {/* Hidden File Input for JD Upload */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept=".txt,.md,.pdf,.doc,.docx" 
+          onChange={handleFileUpload} 
+        />
+
+        {/* Validation & Success Feedback Banners */}
+        {validationError && (
+          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+              <span>{validationError}</span>
+            </div>
+            <button 
+              onClick={() => setValidationError(null)} 
+              className="text-rose-400 hover:text-rose-200 p-1 cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {successNotice && (
+          <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              <span>{successNotice}</span>
+            </div>
+            <button 
+              onClick={() => setSuccessNotice(null)} 
+              className="text-emerald-400 hover:text-emerald-200 p-1 cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Step Contents */}
         <div className="flex-1 pb-8">
           
@@ -446,7 +531,7 @@ Core Competencies Required:
                 <div className="flex flex-wrap gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={handleUrlFetchClick}
+                    onClick={() => setIsUrlModalOpen(true)}
                     className="px-2.5 py-1.5 glass-pill text-slate-200 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                   >
                     <Globe className="h-3 w-3 text-sky-400" />
@@ -454,11 +539,11 @@ Core Competencies Required:
                   </button>
                   <button
                     type="button"
-                    onClick={handleUploadClick}
+                    onClick={() => fileInputRef.current?.click()}
                     className="px-2.5 py-1.5 glass-pill text-slate-200 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                   >
                     <Upload className="h-3 w-3 text-emerald-400" />
-                    <span>Upload PDF</span>
+                    <span>Upload File</span>
                   </button>
                   {selectedCompanyId !== "custom" && (
                     <button
@@ -810,6 +895,62 @@ Core Competencies Required:
           )}
         </div>
       </div>
+
+      {/* URL Import Modal */}
+      {isUrlModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-panel w-full max-w-lg p-6 rounded-2xl border border-white/20 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 text-white font-bold text-sm">
+                <Globe className="h-4 w-4 text-sky-400" />
+                <span>Import Job Listing from URL</span>
+              </div>
+              <button 
+                onClick={() => setIsUrlModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Paste the public job post link from Greenhouse, Lever, LinkedIn, or any career portal to extract core requirements.
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="url-import-input" className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+                Job Posting URL
+              </label>
+              <input 
+                id="url-import-input"
+                type="url"
+                value={urlInputValue}
+                onChange={(e) => setUrlInputValue(e.target.value)}
+                placeholder="https://boards.greenhouse.io/company/jobs/12345"
+                className="w-full glass-input rounded-xl py-2.5 px-3 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsUrlModalOpen(false)}
+                className="px-4 py-2 glass-btn-secondary text-slate-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUrlImport}
+                className="px-4 py-2 glass-btn-primary text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Import & Parse</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
