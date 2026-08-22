@@ -600,12 +600,10 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className={`flex min-h-screen text-[var(--text-main,#F4F4F5)] font-sans theme-${theme} bg-[var(--bg-app,#09090B)] items-center justify-center p-4`}>
-        <AuthPage 
-          onLoginSuccess={() => checkActiveAuthSession()} 
-          showNotification={showNotification} 
-        />
-      </div>
+      <AuthPage 
+        onLoginSuccess={() => checkActiveAuthSession()} 
+        showNotification={showNotification} 
+      />
     );
   }
 
