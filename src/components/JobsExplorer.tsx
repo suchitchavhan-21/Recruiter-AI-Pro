@@ -321,52 +321,52 @@ export default function JobsExplorer({
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
       {/* Intro section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#27272A]/40 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-[#6D5EF8]/10 text-[#6D5EF8] text-[9px] font-bold font-mono uppercase tracking-wider border border-[#6D5EF8]/20">
+            <span className="glass-pill px-2.5 py-0.5 text-[#6D5EF8] text-[9px] font-bold font-mono uppercase tracking-wider">
               Live Recruiting Integrations
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase">Online & Synced</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold uppercase">Online & Synced</span>
           </div>
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tight leading-tight font-sans">
+          <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight font-sans">
             Job Board & Application Center
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Browse real positions mapped to premium recruitment pools. Submit direct applications mimicking LinkedIn Easy Apply and Naukri.com, then track response pipelines live!
           </p>
         </div>
 
         {/* Dual Tab sub-navigation */}
-        <div className="bg-[#111827] border border-[#27272A] p-1.5 rounded-xl flex items-center gap-1 shrink-0 self-start md:self-center">
+        <div className="glass-dock p-1.5 rounded-2xl flex items-center gap-1 shrink-0 self-start md:self-center">
           <button
             onClick={() => setActiveSubTab("feed")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubTab === "feed" 
-                ? "bg-[#6D5EF8] text-white shadow" 
-                : "text-slate-400 hover:text-slate-200 hover:bg-[#1C1C1F]/40"
+                ? "bg-[#6D5EF8] text-white shadow-md" 
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <Briefcase className="h-3.5 w-3.5" />
             <span>Live Job Openings</span>
-            <span className="ml-1 text-[9px] font-mono font-extrabold bg-[#09090B]/40 px-1.5 py-0.5 rounded text-slate-300">
+            <span className="ml-1 text-[9px] font-mono font-extrabold bg-black/20 dark:bg-white/10 px-1.5 py-0.5 rounded-md text-inherit">
               {filteredLiveJobs.length}
             </span>
           </button>
           
           <button
             onClick={() => setActiveSubTab("tracker")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubTab === "tracker" 
-                ? "bg-[#6D5EF8] text-white shadow" 
-                : "text-slate-400 hover:text-slate-200 hover:bg-[#1C1C1F]/40"
+                ? "bg-[#6D5EF8] text-white shadow-md" 
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Applications Tracker</span>
             {submittedApplications.length > 0 && (
-              <span className={`ml-1 text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded ${
+              <span className={`ml-1 text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
                 activeSubTab === "tracker" ? "bg-white text-[#6D5EF8]" : "bg-[#6D5EF8]/20 text-[#6D5EF8]"
               }`}>
                 {submittedApplications.length}
@@ -379,13 +379,13 @@ export default function JobsExplorer({
       {activeSubTab === "feed" ? (
         <>
           {/* Filter and Search Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 bg-[#111827] border border-[#27272A] p-4 rounded-[18px] shadow-md">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 glass-panel p-4 rounded-2xl shadow-md">
             <div className="md:col-span-8 relative">
-              <Search className="absolute inset-y-0 left-3 h-4 w-4 text-slate-500 my-auto pointer-events-none" />
+              <Search className="absolute inset-y-0 left-3 h-4 w-4 text-slate-400 my-auto pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search live positions by company, role keyword, required stack, or location..."
-                className="w-full bg-[#09090B] border border-[#27272A] rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6D5EF8] transition-colors"
+                className="w-full glass-input rounded-xl py-2.5 pl-9 pr-4 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -395,10 +395,10 @@ export default function JobsExplorer({
               <select
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
-                className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-[#6D5EF8] cursor-pointer transition-colors"
+                className="w-full glass-input text-slate-800 dark:text-slate-200 rounded-xl py-2.5 px-3 text-xs cursor-pointer"
               >
                 {sectors.map(s => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
+                  <option key={s.id} value={s.id} className="bg-slate-900 text-white">{s.label}</option>
                 ))}
               </select>
             </div>
@@ -421,8 +421,8 @@ export default function JobsExplorer({
                   <div
                     key={job.id}
                     onClick={() => setExpandedId(isExpanded ? null : job.id)}
-                    className={`bg-[#111827] border rounded-[18px] transition-all overflow-hidden ${
-                      isExpanded ? "border-[#6D5EF8] shadow-lg ring-1 ring-[#6D5EF8]/10" : "border-[#27272A] hover:border-slate-700"
+                    className={`glass-card-hover rounded-2xl transition-all overflow-hidden cursor-pointer ${
+                      isExpanded ? "ring-2 ring-[#6D5EF8]/50 shadow-xl" : ""
                     }`}
                   >
                     {/* Compact Content Grid */}
@@ -431,20 +431,20 @@ export default function JobsExplorer({
                       {/* Left Column: Brand & Role Metadata */}
                       <div className="flex gap-4 items-center min-w-0 flex-1">
                         {/* Elegant Logo */}
-                        <span className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${logoInfo.bg} flex items-center justify-center text-sm font-black shrink-0 select-none shadow-md`}>
+                        <span className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${logoInfo.bg} flex items-center justify-center text-sm font-black text-white shrink-0 select-none shadow-md`}>
                           {logoInfo.char}
                         </span>
 
                         <div className="min-w-0 space-y-1.5">
                           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                            <h4 className="text-xs font-bold text-white tracking-tight leading-none truncate max-w-[280px]">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight leading-none truncate max-w-[280px]">
                               {job.roleTitle}
                             </h4>
-                            <span className="text-[10px] text-[#6D5EF8] font-mono font-bold bg-[#6D5EF8]/10 px-2 py-0.5 rounded border border-[#6D5EF8]/15">
+                            <span className="text-[10px] text-[#6D5EF8] font-mono font-bold glass-pill px-2 py-0.5">
                               {job.companyName}
                             </span>
                             {job.remoteBadge && (
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 text-[8px] font-mono font-bold uppercase tracking-wider">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-mono font-bold uppercase tracking-wider">
                                 Remote Eligible
                               </span>
                             )}

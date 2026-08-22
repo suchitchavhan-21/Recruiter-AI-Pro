@@ -644,33 +644,33 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
       </AnimatePresence>
 
       {/* Header Selector & Upload Meta Banner */}
-      <div className="bg-[#111827] border border-[#27272A] p-5 rounded-[18px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="glass-panel p-6 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping" />
-            <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">Enterprise Mode</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] animate-ping" />
+            <span className="text-[9px] font-mono text-[#818cf8] uppercase tracking-widest block font-bold">Enterprise Mode</span>
           </div>
           <h2 className="text-white text-lg font-bold tracking-tight font-sans">Recruiter AI Pro™ ATS Scanner Suite</h2>
-          <p className="text-[10.5px] text-slate-400 max-w-xl">
+          <p className="text-[10.5px] text-slate-300 max-w-xl">
             Simulate premium applicant shortlisting systems. Ensure your credentials withstand scanning parameters across tech giants including Google, Meta, and Stripe.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-slate-400">Target Role Domain:</span>
+            <span className="text-[10px] font-mono text-slate-300">Target Role Domain:</span>
             <select
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value)}
               disabled={isScanning}
-              className="bg-[#09090B] border border-[#27272A] rounded-lg px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+              className="glass-input rounded-xl px-3 py-1.5 text-xs font-mono text-slate-200 focus:outline-none cursor-pointer"
             >
-              <option value="Backend Engineer">Backend Engineer</option>
-              <option value="Frontend Engineer">Frontend Engineer</option>
-              <option value="Full Stack Engineer">Full Stack Engineer</option>
-              <option value="System Architect">System Architect</option>
-              <option value="DevOps Engineer">DevOps Engineer</option>
-              <option value="Data Engineer">Data Engineer</option>
+              <option value="Backend Engineer" className="bg-slate-900 text-white">Backend Engineer</option>
+              <option value="Frontend Engineer" className="bg-slate-900 text-white">Frontend Engineer</option>
+              <option value="Full Stack Engineer" className="bg-slate-900 text-white">Full Stack Engineer</option>
+              <option value="System Architect" className="bg-slate-900 text-white">System Architect</option>
+              <option value="DevOps Engineer" className="bg-slate-900 text-white">DevOps Engineer</option>
+              <option value="Data Engineer" className="bg-slate-900 text-white">Data Engineer</option>
             </select>
           </div>
 
@@ -683,7 +683,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                 setAppliedRoadmap([]);
                 setIsOptimized(false);
               }}
-              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-[10px] font-mono transition-all cursor-pointer"
+              className="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-xl text-[10px] font-mono transition-all cursor-pointer"
             >
               Reset Scan Panel
             </button>
@@ -698,10 +698,10 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
           onDragOver={handleDrag}
           onDragLeave={handleDrag}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-[22px] p-12 text-center transition-all duration-300 cursor-pointer ${
+          className={`glass-panel border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 cursor-pointer ${
             isDragging 
-              ? "border-indigo-500 bg-indigo-500/5 shadow-inner" 
-              : "border-[#27272A] hover:border-slate-600 bg-[#09090B]/30"
+              ? "border-[#818cf8] bg-indigo-500/10 shadow-inner" 
+              : "border-white/15 hover:border-white/30"
           }`}
         >
           <input
@@ -712,16 +712,16 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
             onChange={handleFileChange}
           />
           <label htmlFor="enterprise-resume-input" className="cursor-pointer block space-y-5">
-            <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto text-indigo-400 shadow-md">
+            <div className="w-16 h-16 glass-pill rounded-full flex items-center justify-center mx-auto text-[#818cf8] shadow-md">
               <UploadCloud className="h-8 w-8" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-200">
-                Drag & drop your resume file here, or <span className="text-indigo-400 underline hover:text-indigo-300">browse computer</span>
+              <h3 className="text-sm font-bold text-slate-100">
+                Drag & drop your resume file here, or <span className="text-[#818cf8] underline hover:text-indigo-300">browse computer</span>
               </h3>
-              <p className="text-[10.5px] text-slate-500 font-mono">Accepts standard PDF, DOCX, or text file formatting (Max 10MB)</p>
+              <p className="text-[10.5px] text-slate-400 font-mono">Accepts standard PDF, DOCX, or text file formatting (Max 10MB)</p>
             </div>
-            <div className="pt-4 border-t border-[#27272A]/40 max-w-md mx-auto text-[10px] text-slate-500 leading-normal">
+            <div className="pt-4 border-t border-white/10 max-w-md mx-auto text-[10px] text-slate-400 leading-normal">
               <strong>Enterprise Warning:</strong> Modern ATS parsers utilize linear string serialization. Avoid nesting layouts inside complex graphic tables, canvas objects, and side-by-side columns to prevent indexing corruption.
             </div>
           </label>
@@ -730,18 +730,18 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
       {/* PIPELINE PROGRESS ANIMATION GRID */}
       {isScanning && (
-        <div className="p-6 md:p-8 bg-[#111827] border border-[#27272A] rounded-[22px] space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#27272A] pb-4">
+        <div className="p-6 md:p-8 glass-panel rounded-3xl space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
             <div>
-              <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">Synchronous Thread Running</span>
+              <span className="text-[9px] font-mono text-[#818cf8] uppercase tracking-widest block font-bold">Synchronous Thread Running</span>
               <h3 className="text-white text-sm font-bold tracking-tight">Recruiter AI Pro Processing Pipeline</h3>
             </div>
-            <div className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20 animate-pulse">
+            <div className="text-[10px] font-mono text-indigo-300 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30 animate-pulse">
               Running Stage {currentStageIndex + 1} of 17: {PIPELINE_STAGES[currentStageIndex]?.key.toUpperCase()}
             </div>
           </div>
 
-          <p className="text-xs text-slate-400 font-sans">
+          <p className="text-xs text-slate-300 font-sans">
             Analyzing document parameters against top tech employer screening rules. Evaluating grammar weights, section headers, and keyword densities...
           </p>
 
@@ -757,19 +757,19 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   key={stage.key}
                   className={`p-3 rounded-xl border text-[11px] font-mono flex items-center justify-between transition-all duration-200 ${
                     isDone 
-                      ? "bg-emerald-950/15 border-emerald-500/20 text-emerald-400" 
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" 
                       : isActive 
-                      ? "bg-indigo-950/25 border-indigo-500/40 text-indigo-300 shadow-md shadow-indigo-500/5 animate-pulse"
-                      : "bg-[#09090B]/40 border-transparent text-slate-600"
+                      ? "bg-indigo-500/25 border-indigo-500/50 text-white shadow-md shadow-indigo-500/10 animate-pulse"
+                      : "glass-card text-slate-400 opacity-60"
                   }`}
                 >
                   <span className="truncate">{stage.label}</span>
                   {isDone ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
                   ) : isActive ? (
-                    <div className="w-3.5 h-3.5 border border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div className="w-3.5 h-3.5 border border-[#818cf8] border-t-transparent rounded-full animate-spin shrink-0" />
                   ) : (
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" />
                   )}
                 </div>
               );
@@ -786,32 +786,32 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
             {/* LEFT PANEL: Original Resume (4 Columns) */}
-            <div className="lg:col-span-4 bg-[#111827] border border-[#27272A] rounded-[22px] overflow-hidden flex flex-col h-[680px]">
+            <div className="lg:col-span-4 glass-panel rounded-3xl overflow-hidden flex flex-col h-[680px]">
               {/* Header bar */}
-              <div className="p-4 bg-[#09090B]/60 border-b border-[#27272A] flex items-center justify-between shrink-0">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-indigo-400" />
+                  <FileText className="h-4 w-4 text-[#818cf8]" />
                   <span className="text-xs font-bold text-white uppercase tracking-wider font-sans">Original Resume</span>
                 </div>
-                <span className="text-[9.5px] font-mono text-slate-500">FORMAT: PDF/DOCX</span>
+                <span className="text-[9.5px] font-mono text-slate-400">FORMAT: PDF/DOCX</span>
               </div>
 
               {/* Tools Tray */}
-              <div className="p-2 bg-[#09090B]/20 border-b border-[#27272A] flex flex-wrap gap-1.5 items-center justify-between shrink-0">
+              <div className="p-2.5 border-b border-white/10 flex flex-wrap gap-1.5 items-center justify-between shrink-0 bg-white/[0.02]">
                 <div className="flex gap-1">
                   <button 
                     onClick={() => setZoom(prev => Math.max(80, prev - 10))}
-                    className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                    className="p-1.5 glass-card-hover rounded-lg text-slate-300 hover:text-white cursor-pointer"
                     title="Zoom Out"
                   >
                     <ZoomOut className="h-3.5 w-3.5" />
                   </button>
-                  <span className="text-[10px] font-mono text-slate-400 px-1.5 py-1.5 bg-slate-900/50 rounded-lg border border-[#27272A]/40">
+                  <span className="text-[10px] font-mono text-slate-300 px-2 py-1.5 glass-pill">
                     {zoom}%
                   </span>
                   <button 
                     onClick={() => setZoom(prev => Math.min(150, prev + 10))}
-                    className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                    className="p-1.5 glass-card-hover rounded-lg text-slate-300 hover:text-white cursor-pointer"
                     title="Zoom In"
                   >
                     <ZoomIn className="h-3.5 w-3.5" />
@@ -825,9 +825,9 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     placeholder="Search terms..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-[#09090B] border border-[#27272A] rounded-lg pl-7 pr-2.5 py-1 text-[10px] font-mono text-white focus:outline-none focus:border-indigo-500 w-28"
+                    className="glass-input rounded-lg pl-7 pr-2.5 py-1 text-[10px] font-mono text-slate-200 focus:outline-none w-28"
                   />
-                  <Search className="h-3 w-3 text-slate-500 absolute left-2.5 top-2" />
+                  <Search className="h-3 w-3 text-slate-400 absolute left-2.5 top-2" />
                 </div>
 
                 <div className="flex gap-1">
@@ -836,14 +836,14 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       triggerToast("Simulating Resume Print Layout...", "info");
                       window.print();
                     }}
-                    className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                    className="p-1.5 glass-card-hover rounded-lg text-slate-300 hover:text-white cursor-pointer"
                     title="Print"
                   >
                     <Printer className="h-3.5 w-3.5" />
                   </button>
                   <button 
                     onClick={() => setIsFullscreen(!isFullscreen)}
-                    className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                    className="p-1.5 glass-card-hover rounded-lg text-slate-300 hover:text-white cursor-pointer"
                     title="Toggle Fullscreen"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
@@ -932,20 +932,20 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
             </div>
 
             {/* CENTER PANEL: Score Circular & Metrics Dashboard (4 Columns) */}
-            <div className="lg:col-span-4 bg-[#111827] border border-[#27272A] rounded-[22px] p-5 space-y-6 h-[680px] overflow-y-auto">
+            <div className="lg:col-span-4 glass-panel rounded-3xl p-5 space-y-6 h-[680px] overflow-y-auto">
               
               {/* Animated Circle ATS Score */}
-              <div className="flex flex-col items-center justify-center p-4 bg-[#09090B]/60 border border-[#27272A] rounded-xl text-center space-y-4">
-                <span className="text-[9px] font-bold text-slate-500 uppercase font-mono tracking-widest">Aggregate ATS Match Quotient</span>
+              <div className="flex flex-col items-center justify-center p-5 glass-card rounded-2xl text-center space-y-4">
+                <span className="text-[9px] font-bold text-slate-400 uppercase font-mono tracking-widest">Aggregate ATS Match Quotient</span>
                 
                 <div className="relative w-36 h-36 flex items-center justify-center select-none">
                   <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="72" cy="72" r="64" stroke="#1F2937" strokeWidth="9" fill="transparent" />
+                    <circle cx="72" cy="72" r="64" stroke="rgba(255,255,255,0.08)" strokeWidth="9" fill="transparent" />
                     <circle 
                       cx="72" 
                       cy="72" 
                       r="64" 
-                      stroke={calculatedScore >= 88 ? "#10B981" : calculatedScore >= 78 ? "#6D5EF8" : "#F59E0B"} 
+                      stroke={calculatedScore >= 88 ? "#10B981" : calculatedScore >= 78 ? "#6366f1" : "#F59E0B"} 
                       strokeWidth="9" 
                       fill="transparent" 
                       strokeDasharray="402.1" 
@@ -956,17 +956,17 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   </svg>
                   <div className="absolute text-center">
                     <span className="text-4xl font-extrabold text-white tracking-tight">{calculatedScore}</span>
-                    <span className="text-slate-500 font-bold block text-[10px] tracking-wider mt-0.5">/ 100</span>
+                    <span className="text-slate-400 font-bold block text-[10px] tracking-wider mt-0.5">/ 100</span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex flex-wrap justify-center gap-1.5 items-center text-[9.5px] font-mono text-slate-300">
-                    <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">ATS Compatible</span>
-                    <span className="bg-indigo-500/15 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded">Excellent</span>
-                    <span className="bg-amber-500/15 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">Top 5%</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg">ATS Compatible</span>
+                    <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-lg">Excellent</span>
+                    <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-lg">Top 5%</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 leading-normal pt-1.5">
+                  <p className="text-[10px] text-slate-300 leading-normal pt-1.5">
                     {calculatedScore >= 88 
                       ? "Flawless score index! Highly compliant resume ready to dominate modern tracking spiders." 
                       : "Improve weak action bullets and contact identifiers to reach 90%+ qualification rates."
@@ -977,77 +977,77 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
               {/* Dynamic Score Metrics Cards */}
               <div className="space-y-3">
-                <h4 className="text-[9.5px] font-bold text-slate-500 uppercase font-mono tracking-widest block">Parameter Evaluation Breakdown</h4>
+                <h4 className="text-[9.5px] font-bold text-slate-400 uppercase font-mono tracking-widest block">Parameter Evaluation Breakdown</h4>
                 
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                   
                   {/* Card 1: Formatting */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Formatting</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Formatting</span>
                       <span className="text-slate-200 font-bold">96%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   </div>
 
                   {/* Card 2: Grammar */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Grammar</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Grammar</span>
                       <span className="text-slate-200 font-bold">{Math.min(100, 80 + appliedGrammar.length * 4)}%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   </div>
 
                   {/* Card 3: Keywords */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Keywords</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Keywords</span>
                       <span className="text-slate-200 font-bold">{calculatedAtsMatch}%</span>
                     </div>
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400" />
+                    <CheckCircle2 className="h-4 w-4 text-[#818cf8]" />
                   </div>
 
                   {/* Card 4: Projects */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Projects</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Projects</span>
                       <span className="text-slate-200 font-bold">91%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   </div>
 
                   {/* Card 5: Skills */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Skills</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Skills</span>
                       <span className="text-slate-200 font-bold">87%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-amber-400 animate-pulse" />
                   </div>
 
                   {/* Card 6: Experience */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Experience</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Experience</span>
                       <span className="text-slate-200 font-bold">{Math.min(100, 72 + appliedRoadmap.length * 6)}%</span>
                     </div>
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400" />
+                    <CheckCircle2 className="h-4 w-4 text-[#818cf8]" />
                   </div>
 
                   {/* Card 7: Education */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Education</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Education</span>
                       <span className="text-slate-200 font-bold">100%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   </div>
 
                   {/* Card 8: Recruiter Score */}
-                  <div className="p-3 bg-[#09090B]/40 border border-[#27272A] rounded-xl flex items-center justify-between">
+                  <div className="p-3 glass-card rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase">Recruiter</span>
+                      <span className="text-slate-400 block text-[9px] uppercase">Recruiter</span>
                       <span className="text-slate-200 font-bold">93%</span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -1055,9 +1055,9 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                 </div>
 
                 {/* ATS parsing engine code index */}
-                <div className="p-3.5 bg-indigo-950/10 border border-indigo-500/10 rounded-xl flex items-center justify-between text-[11px] font-mono">
+                <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between text-[11px] font-mono">
                   <div>
-                    <span className="text-indigo-400 font-bold block text-[9px] uppercase tracking-wider">ATS Parsing Compliance</span>
+                    <span className="text-[#818cf8] font-bold block text-[9px] uppercase tracking-wider">ATS Parsing Compliance</span>
                     <span className="text-slate-300">Linear DOM Compliance Index</span>
                   </div>
                   <span className="text-indigo-300 font-bold">98%</span>
@@ -1066,29 +1066,29 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
             </div>
 
             {/* RIGHT PANEL: AI Recruiter Review (4 Columns) */}
-            <div className="lg:col-span-4 bg-[#111827] border border-[#27272A] rounded-[22px] p-5 space-y-6 h-[680px] overflow-y-auto">
+            <div className="lg:col-span-4 glass-panel rounded-3xl p-5 space-y-6 h-[680px] overflow-y-auto">
               
-              <div className="border-b border-[#27272A] pb-3.5">
-                <span className="text-[9px] font-mono text-indigo-400 uppercase tracking-widest block font-bold">Recruiter Intelligence Report</span>
+              <div className="border-b border-white/10 pb-3.5">
+                <span className="text-[9px] font-mono text-[#818cf8] uppercase tracking-widest block font-bold">Recruiter Intelligence Report</span>
                 <h3 className="text-white text-sm font-bold tracking-tight">AI Recruiter Screen Review</h3>
               </div>
 
               {/* Recruitment metrics block */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-900 border border-[#27272A] rounded-xl">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase block">Interview Probability</span>
+                <div className="p-3.5 glass-card rounded-xl">
+                  <span className="text-[9px] font-mono text-slate-400 uppercase block">Interview Probability</span>
                   <span className="text-white font-extrabold text-base tracking-tight">91%</span>
                 </div>
-                <div className="p-3 bg-slate-900 border border-[#27272A] rounded-xl">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase block">Recruiter Confidence</span>
+                <div className="p-3.5 glass-card rounded-xl">
+                  <span className="text-[9px] font-mono text-slate-400 uppercase block">Recruiter Confidence</span>
                   <span className="text-white font-extrabold text-base tracking-tight">95%</span>
                 </div>
               </div>
 
               {/* Recruiter First Impression Banner */}
-              <div className="p-3.5 bg-emerald-950/10 border border-emerald-500/10 rounded-xl space-y-1">
-                <span className="text-[9.5px] font-bold text-emerald-400 uppercase font-mono tracking-wide block">First Impression: EXCELLENT RESUME</span>
-                <p className="text-[10px] text-slate-400 leading-normal font-sans">
+              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-1">
+                <span className="text-[9.5px] font-bold text-emerald-300 uppercase font-mono tracking-wide block">First Impression: EXCELLENT RESUME</span>
+                <p className="text-[10px] text-slate-300 leading-normal font-sans">
                   Highly aligned technology summary matching backend pipeline requirements. Stanford CS education pedigree guarantees instant recruiter interest.
                 </p>
               </div>
@@ -1098,7 +1098,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                 
                 {/* Strengths */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Primary Strengths</span>
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block">Primary Strengths</span>
                   <div className="space-y-2 font-mono text-[10px] text-slate-300">
                     <div className="flex items-start gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
@@ -1113,7 +1113,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
                 {/* Weaknesses */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Identified Gaps</span>
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block">Identified Gaps</span>
                   <div className="space-y-2 font-mono text-[10px] text-slate-300">
                     <div className="flex items-start gap-2">
                       <X className="h-3.5 w-3.5 text-rose-400 shrink-0 mt-0.5" />
@@ -1128,19 +1128,19 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
                 {/* Missing Skills */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Missing Tech Keywords</span>
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block">Missing Tech Keywords</span>
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/10 text-rose-400 rounded text-[9px] font-mono">OpenTelemetry</span>
-                    <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/10 text-rose-400 rounded text-[9px] font-mono">Raft Consensus</span>
-                    <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/10 text-rose-400 rounded text-[9px] font-mono">Kubernetes</span>
-                    <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/10 text-rose-400 rounded text-[9px] font-mono">AWS Cloud</span>
+                    <span className="px-2 py-0.5 bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded text-[9px] font-mono">OpenTelemetry</span>
+                    <span className="px-2 py-0.5 bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded text-[9px] font-mono">Raft Consensus</span>
+                    <span className="px-2 py-0.5 bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded text-[9px] font-mono">Kubernetes</span>
+                    <span className="px-2 py-0.5 bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded text-[9px] font-mono">AWS Cloud</span>
                   </div>
                 </div>
 
                 {/* Areas to Improve */}
                 <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Areas to Improve</span>
-                  <p className="text-[10px] text-slate-400 leading-normal">
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest block">Areas to Improve</span>
+                  <p className="text-[10px] text-slate-300 leading-normal">
                     Format sections to linear single-column. Replace flat task descriptors with high-impact STAR structure and latency percentages.
                   </p>
                 </div>
@@ -1149,10 +1149,10 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
           </div>
 
           {/* TABBED ANALYSIS SECTION UNDERNEATH PANELS */}
-          <div className="bg-[#111827] border border-[#27272A] rounded-[22px] overflow-hidden">
+          <div className="glass-panel rounded-3xl overflow-hidden">
             
             {/* Advanced Analysis Tabs Navigation Bar */}
-            <div className="flex flex-wrap border-b border-[#27272A] bg-[#09090B]/40 p-2 gap-1 shrink-0">
+            <div className="flex flex-wrap border-b border-white/10 bg-white/[0.02] p-2.5 gap-1 shrink-0">
               {[
                 { id: "roadmap", label: "AI Optimization Roadmap", icon: Sparkles },
                 { id: "parameters", label: "ATS Parameter Analysis", icon: Sliders },
@@ -1169,10 +1169,10 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                       isActive 
-                        ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/15" 
-                        : "text-slate-400 hover:text-white hover:bg-slate-900"
+                        ? "glass-btn-primary text-white" 
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
                     <IconComp className="h-3.5 w-3.5" />
@@ -1188,14 +1188,14 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 1. AI OPTIMIZATION ROADMAP */}
               {activeTab === "roadmap" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#27272A] pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
                     <div>
                       <h3 className="text-white text-base font-bold tracking-tight">AI Optimization Roadmap</h3>
-                      <p className="text-[11px] text-slate-400">Step-by-step changes recommended by Gemini to bypass rigid Applicant Tracking filters.</p>
+                      <p className="text-[11px] text-slate-300">Step-by-step changes recommended by Gemini to bypass rigid Applicant Tracking filters.</p>
                     </div>
                     <button
                       onClick={handleOptimizeAll}
-                      className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 glass-btn-primary text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Sparkles className="h-4 w-4 animate-spin-slow" />
                       <span>Optimize Entire Resume</span>
@@ -1208,38 +1208,38 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       return (
                         <div 
                           key={r.id} 
-                          className={`p-5 rounded-2xl border transition-all duration-300 space-y-4 ${
+                          className={`p-5 rounded-2xl transition-all duration-300 space-y-4 ${
                             isApplied 
-                              ? "bg-emerald-950/10 border-emerald-500/35 shadow-lg" 
-                              : "bg-[#09090B]/50 border-[#27272A] hover:bg-[#09090B]/80"
+                              ? "bg-emerald-500/10 border border-emerald-500/30 shadow-lg" 
+                              : "glass-card hover:bg-white/[0.08]"
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className={`text-[8.5px] font-bold uppercase font-mono px-2 py-0.5 rounded border ${
+                                <span className={`text-[8.5px] font-bold uppercase font-mono px-2 py-0.5 rounded-lg border ${
                                   r.priority === "High Priority" 
-                                    ? "bg-rose-500/10 border-rose-500/20 text-rose-400" 
+                                    ? "bg-rose-500/20 border-rose-500/30 text-rose-300" 
                                     : r.priority === "Medium Priority"
-                                    ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                                    : "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
+                                    ? "bg-amber-500/20 border-amber-500/30 text-amber-300"
+                                    : "bg-indigo-500/20 border-indigo-500/30 text-indigo-300"
                                 }`}>
                                   {r.priority}
                                 </span>
-                                <span className="text-[9.5px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-bold">
+                                <span className="text-[9.5px] font-mono text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-lg font-bold">
                                   ATS GAIN: {r.atsGain}
                                 </span>
                               </div>
                               <h4 className="text-sm font-bold text-white mt-1">{r.issue}</h4>
-                              <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{r.explanation}</p>
+                              <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{r.explanation}</p>
                             </div>
 
                             <button
                               onClick={() => toggleRoadmapFix(r.id)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer ${
+                              className={`px-3.5 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer ${
                                 isApplied 
-                                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10" 
-                                  : "bg-slate-900 text-slate-300 hover:text-white border border-[#27272A] hover:bg-slate-800"
+                                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" 
+                                  : "glass-card-hover text-slate-200"
                               }`}
                             >
                               {isApplied ? "✓ Change Applied" : "Apply Improvement"}
@@ -1247,19 +1247,19 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10.5px] font-mono leading-relaxed">
-                            <div className="bg-rose-950/10 border border-rose-500/15 rounded-xl p-3.5 space-y-1.5">
+                            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3.5 space-y-1.5">
                               <span className="text-[8.5px] text-rose-400 font-bold uppercase tracking-wider block">❌ ORIGINAL TEXT</span>
-                              <p className="text-slate-400 italic">"{r.current}"</p>
+                              <p className="text-slate-300 italic">"{r.current}"</p>
                             </div>
-                            <div className="bg-emerald-950/15 border border-emerald-500/15 rounded-xl p-3.5 space-y-1.5">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 space-y-1.5">
                               <span className="text-[8.5px] text-emerald-400 font-bold uppercase tracking-wider block">✅ AI RECOMMENDED WRITING</span>
-                              <p className="text-slate-200">"{r.suggested}"</p>
+                              <p className="text-slate-100">"{r.suggested}"</p>
                             </div>
                           </div>
 
-                          <div className="pt-2 border-t border-[#27272A]/40 flex flex-col sm:flex-row justify-between text-[10px] font-mono text-slate-400 gap-2">
+                          <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row justify-between text-[10px] font-mono text-slate-400 gap-2">
                             <span><strong>Recruiter Impact:</strong> {r.recruiterBenefit}</span>
-                            <span className="text-indigo-400 font-bold">Standard Met: Senior Staff Engineering</span>
+                            <span className="text-[#818cf8] font-bold">Standard Met: Senior Staff Engineering</span>
                           </div>
                         </div>
                       );
@@ -1271,15 +1271,15 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 2. ATS PARAMETER ANALYSIS */}
               {activeTab === "parameters" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">ATS Parameter Matrix Scan</h3>
-                    <p className="text-[11px] text-slate-400">Evaluating more than 100 formatting, contact, and structural criteria required by premium software filters.</p>
+                    <p className="text-[11px] text-slate-300">Evaluating more than 100 formatting, contact, and structural criteria required by premium software filters.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Contact Information */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 text-indigo-400 border-b border-[#27272A]/40 pb-2">
+                    <div className="p-5 glass-card rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 text-[#818cf8] border-b border-white/10 pb-2">
                         <User className="h-4 w-4" />
                         <h4 className="text-xs font-bold uppercase font-mono tracking-wider">Contact Details</h4>
                       </div>
@@ -1294,11 +1294,11 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           { label: "Physical Address/Location", status: (realScanData?.parsedText?.toLowerCase()?.match(/california|stanford|san francisco|ny|new york|city|address|location/) || realScanData?.optimizedTextData?.header?.toLowerCase()?.match(/california|stanford|san francisco|ny|new york|city/)) ? "found" : "missing" }
                         ].map((item) => (
                           <div key={item.label} className="flex justify-between items-center">
-                            <span className="text-slate-400">{item.label}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8.5px] font-bold uppercase font-mono border ${
+                            <span className="text-slate-300">{item.label}</span>
+                            <span className={`px-2 py-0.5 rounded-lg text-[8.5px] font-bold uppercase font-mono border ${
                               item.status === "found" 
-                                ? "bg-emerald-500/10 border-emerald-500/10 text-emerald-400" 
-                                : "bg-amber-500/10 border-amber-500/10 text-amber-400 animate-pulse"
+                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" 
+                                : "bg-amber-500/20 border-amber-500/30 text-amber-300 animate-pulse"
                             }`}>
                               {item.status.toUpperCase()}
                             </span>
@@ -1308,8 +1308,8 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     </div>
 
                     {/* Resume Section Checker */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 text-indigo-400 border-b border-[#27272A]/40 pb-2">
+                    <div className="p-5 glass-card rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 text-[#818cf8] border-b border-white/10 pb-2">
                         <Layers className="h-4 w-4" />
                         <h4 className="text-xs font-bold uppercase font-mono tracking-wider">Core Section Parsing</h4>
                       </div>
@@ -1326,11 +1326,11 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           { label: "Spoken Languages Grid", status: realScanData?.parsedText?.toLowerCase()?.includes("languages") ? "verified" : "missing" }
                         ].map((item) => (
                           <div key={item.label} className="flex justify-between items-center">
-                            <span className="text-slate-400">{item.label}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8.5px] font-bold uppercase font-mono border ${
+                            <span className="text-slate-300">{item.label}</span>
+                            <span className={`px-2 py-0.5 rounded-lg text-[8.5px] font-bold uppercase font-mono border ${
                               item.status === "verified" 
-                                ? "bg-emerald-500/10 border-emerald-500/10 text-emerald-400" 
-                                : "bg-slate-900 border-[#27272A] text-slate-500"
+                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" 
+                                : "glass-pill text-slate-400"
                             }`}>
                               {item.status.toUpperCase()}
                             </span>
@@ -1340,8 +1340,8 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     </div>
 
                     {/* Formatting & Parser parameters */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 text-indigo-400 border-b border-[#27272A]/40 pb-2">
+                    <div className="p-5 glass-card rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 text-[#818cf8] border-b border-white/10 pb-2">
                         <Settings className="h-4 w-4" />
                         <h4 className="text-xs font-bold uppercase font-mono tracking-wider">Format Metrics</h4>
                       </div>
@@ -1356,11 +1356,11 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           { label: "Complex Multi-Columns", status: realScanData?.formattingCritique?.layoutStyle?.toLowerCase()?.includes("column") ? "alert" : "none_detected" }
                         ].map((item) => (
                           <div key={item.label} className="flex justify-between items-center">
-                            <span className="text-slate-400">{item.label}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8.5px] font-bold uppercase font-mono border ${
+                            <span className="text-slate-300">{item.label}</span>
+                            <span className={`px-2 py-0.5 rounded-lg text-[8.5px] font-bold uppercase font-mono border ${
                               item.status === "verified" || item.status === "none_detected"
-                                ? "bg-emerald-500/10 border-emerald-500/10 text-emerald-400" 
-                                : "bg-amber-500/10 border-amber-500/10 text-amber-400"
+                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" 
+                                : "bg-amber-500/20 border-amber-500/30 text-amber-300"
                             }`}>
                               {item.status === "none_detected" ? "NONE" : item.status.toUpperCase()}
                             </span>
@@ -1371,44 +1371,44 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   </div>
 
                   {/* Dynamic Formatting, Template & Layout Critique Panel */}
-                  <div className="p-6 bg-slate-900/40 border border-[#27272A] rounded-2xl space-y-6">
-                    <div className="flex items-center justify-between border-b border-[#27272A]/80 pb-3">
-                      <div className="flex items-center gap-2 text-indigo-400">
+                  <div className="p-6 glass-card rounded-2xl space-y-6">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2 text-[#818cf8]">
                         <Sliders className="h-4 w-4" />
                         <h4 className="text-sm font-bold uppercase font-mono tracking-wider">Visual Template & Formatting Audit</h4>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold border ${
+                      <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
                         (realScanData?.formattingCritique?.overallRating === "Excellent" || realScanData?.formattingCritique?.overallRating === "Good")
-                          ? "bg-emerald-500/10 border-emerald-500/10 text-emerald-400"
-                          : "bg-amber-500/10 border-amber-500/10 text-amber-400 animate-pulse"
+                          ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                          : "bg-amber-500/20 border-amber-500/30 text-amber-300 animate-pulse"
                       }`}>
                         Rating: {realScanData?.formattingCritique?.overallRating || "Needs Audit"}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300 font-sans">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-200 font-sans">
                       <div className="space-y-4">
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-1">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Document Layout Style & Template</span>
+                        <div className="p-4 glass-card rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Document Layout Style & Template</span>
                           <p className="font-bold text-white text-[13px]">{realScanData?.formattingCritique?.layoutStyle || "Double-Column Table Grid Layout"}</p>
                         </div>
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-1">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Typography & Font Choices</span>
+                        <div className="p-4 glass-card rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Typography & Font Choices</span>
                           <p className="leading-relaxed text-slate-300 text-[11px]">{realScanData?.formattingCritique?.fontEvaluation || "Arial font families with inconsistent size hierarchy across summary, work history, and projects."}</p>
                         </div>
                       </div>
 
                       <div className="space-y-4">
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-1">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">ATS Parse Compatibility</span>
+                        <div className="p-4 glass-card rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">ATS Parse Compatibility</span>
                           <p className={`font-bold text-[13px] ${
                             (realScanData?.formattingCritique?.parserFriendlyRating?.toLowerCase()?.includes("highly") || realScanData?.formattingCritique?.parserFriendlyRating?.toLowerCase()?.includes("excellent"))
                               ? "text-emerald-400"
                               : "text-amber-400"
                           }`}>{realScanData?.formattingCritique?.parserFriendlyRating || "Severely Impeded (Nested tables break text parsing order)"}</p>
                         </div>
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-1">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Margin & Spacing Symmetry</span>
+                        <div className="p-4 glass-card rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Margin & Spacing Symmetry</span>
                           <p className="leading-relaxed text-slate-300 text-[11px]">{realScanData?.formattingCritique?.marginEvaluation || "Cramped 0.5-inch margins leave insufficient white space, resulting in reader fatigue."}</p>
                         </div>
                       </div>
@@ -1416,7 +1416,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
                     {/* Formatting Issues List */}
                     <div className="space-y-3">
-                      <h5 className="text-xs font-mono text-slate-400 uppercase tracking-wider">Identified Visual / Layout Vulnerabilities</h5>
+                      <h5 className="text-xs font-mono text-slate-300 uppercase tracking-wider">Identified Visual / Layout Vulnerabilities</h5>
                       <div className="space-y-2">
                         {(realScanData?.formattingCritique?.formattingIssues || [
                           {
@@ -1455,9 +1455,9 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 3. GRAMMAR ANALYSIS */}
               {activeTab === "grammar" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">Interactive Grammar Analysis</h3>
-                    <p className="text-[11px] text-slate-400">Simultaneous proofreading and technical parallel verb alignment checklist. Toggle changes to verify improvement scores.</p>
+                    <p className="text-[11px] text-slate-300">Simultaneous proofreading and technical parallel verb alignment checklist. Toggle changes to verify improvement scores.</p>
                   </div>
 
                   <div className="space-y-4">
@@ -1466,28 +1466,28 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       return (
                         <div 
                           key={issue.id} 
-                          className={`p-5 rounded-xl border transition-all duration-300 space-y-3.5 ${
+                          className={`p-5 rounded-2xl transition-all duration-300 space-y-3.5 ${
                             isApplied 
-                              ? "bg-emerald-950/10 border-emerald-500/25" 
-                              : "bg-[#09090B]/40 border-[#27272A] hover:bg-[#09090B]/60"
+                              ? "bg-emerald-500/10 border border-emerald-500/30" 
+                              : "glass-card hover:bg-white/[0.08]"
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                             <div className="space-y-1">
-                              <span className="text-[8.5px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded uppercase block w-max">
+                              <span className="text-[8.5px] font-mono text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-lg uppercase block w-max">
                                 Grammar & Parallel Syntax
                               </span>
-                              <p className="text-[11.5px] text-slate-300 mt-1.5 leading-relaxed font-sans font-medium">
+                              <p className="text-[11.5px] text-slate-200 mt-1.5 leading-relaxed font-sans font-medium">
                                 <strong>Issue Critique:</strong> {issue.reason}
                               </p>
                             </div>
 
                             <button
                               onClick={() => toggleGrammarFix(issue.id)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer ${
+                              className={`px-3.5 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer ${
                                 isApplied 
-                                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10" 
-                                  : "bg-slate-900 text-slate-300 hover:text-white border border-[#27272A] hover:bg-slate-800"
+                                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" 
+                                  : "glass-card-hover text-slate-200"
                               }`}
                             >
                               {isApplied ? "✓ Applied" : "Accept Grammar Fix"}
@@ -1495,17 +1495,17 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[10.5px] font-mono">
-                            <div className="bg-rose-950/10 border border-rose-500/15 rounded-lg p-3 space-y-1">
+                            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 space-y-1">
                               <span className="text-[8.5px] text-rose-400 font-bold block">❌ CURRENT SENTENCE</span>
-                              <p className="text-slate-400 italic">"{issue.current}"</p>
+                              <p className="text-slate-300 italic">"{issue.current}"</p>
                             </div>
-                            <div className="bg-emerald-950/15 border border-emerald-500/15 rounded-lg p-3 space-y-1">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 space-y-1">
                               <span className="text-[8.5px] text-emerald-400 font-bold block">✅ CORRECTED SENTENCE</span>
-                              <p className="text-slate-200">"{issue.suggested}"</p>
+                              <p className="text-slate-100">"{issue.suggested}"</p>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[9.5px] font-mono text-slate-400 pt-1 border-t border-[#27272A]/40">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[9.5px] font-mono text-slate-400 pt-2 border-t border-white/10">
                             <span><strong>Recruiter Value:</strong> {issue.recruiter}</span>
                             <span><strong>ATS Weight:</strong> {issue.ats}</span>
                           </div>
@@ -1519,46 +1519,46 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 4. SKILLS & KEYWORD MATCHING */}
               {activeTab === "keywords" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">Skills Grouping & Keyword Matching</h3>
-                    <p className="text-[11px] text-slate-400">Comparing your parsed skills against selected role requirements.</p>
+                    <p className="text-[11px] text-slate-300">Comparing your parsed skills against selected role requirements.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* SVG Pie & Bar Chart representation */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                      <h4 className="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">Keyword Matching Density</h4>
+                    <div className="p-5 glass-card rounded-2xl space-y-4">
+                      <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider">Keyword Matching Density</h4>
                       
                       <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-4">
                         {/* Circular match chart */}
                         <div className="relative w-28 h-28 flex items-center justify-center">
                           <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="56" cy="56" r="48" stroke="#1F2937" strokeWidth="8" fill="transparent" />
-                            <circle cx="56" cy="56" r="48" stroke="#6D5EF8" strokeWidth="8" fill="transparent" strokeDasharray="301.6" strokeDashoffset={301.6 - (301.6 * calculatedAtsMatch) / 100} />
+                            <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.08)" strokeWidth="8" fill="transparent" />
+                            <circle cx="56" cy="56" r="48" stroke="#6366f1" strokeWidth="8" fill="transparent" strokeDasharray="301.6" strokeDashoffset={301.6 - (301.6 * calculatedAtsMatch) / 100} />
                           </svg>
                           <div className="absolute text-center">
                             <span className="text-xl font-bold text-white">{calculatedAtsMatch}%</span>
-                            <span className="text-[8px] text-slate-500 font-mono block">MATCH %</span>
+                            <span className="text-[8px] text-slate-400 font-mono block">MATCH %</span>
                           </div>
                         </div>
 
                         {/* Bar chart representation */}
                         <div className="flex-1 w-full space-y-2 text-[10.5px] font-mono">
                           <div className="space-y-1">
-                            <div className="flex justify-between text-slate-400">
+                            <div className="flex justify-between text-slate-300">
                               <span>Required Keywords</span>
                               <span>{realScanData?.roleAlignment?.presentTechSkills?.length || 12} Found / {(realScanData?.roleAlignment?.requiredTechSkillsForTarget?.length || 15)} Required</span>
                             </div>
-                            <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-[#27272A]">
+                            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden border border-white/10">
                               <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${realScanData ? Math.min(100, Math.round(((realScanData?.roleAlignment?.presentTechSkills?.length || 1) / (realScanData?.roleAlignment?.requiredTechSkillsForTarget?.length || 1)) * 100)) : 80}%` }}></div>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <div className="flex justify-between text-slate-400">
+                            <div className="flex justify-between text-slate-300">
                               <span>Keyword Density Ratio</span>
                               <span>{realScanData ? "Optimized (2.9%)" : "Optimized (2.8%)"}</span>
                             </div>
-                            <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-[#27272A]">
+                            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden border border-white/10">
                               <div className="bg-emerald-400 h-full rounded-full" style={{ width: "95%" }}></div>
                             </div>
                           </div>
@@ -1566,34 +1566,34 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       </div>
 
                       {/* Word Cloud Visual Block */}
-                      <div className="pt-4 border-t border-[#27272A]/40 space-y-2">
-                        <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block">Interactive Word Cloud Density</h4>
-                        <div className="p-3 bg-slate-900/50 rounded-xl flex flex-wrap gap-2 justify-center leading-relaxed">
+                      <div className="pt-4 border-t border-white/10 space-y-2">
+                        <h4 className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Interactive Word Cloud Density</h4>
+                        <div className="p-3.5 glass-card rounded-xl flex flex-wrap gap-2 justify-center leading-relaxed">
                           {(realScanData?.roleAlignment?.presentTechSkills && realScanData.roleAlignment.presentTechSkills.length > 0) ? (
                             [
-                              ...realScanData.roleAlignment.presentTechSkills.map((s: string) => ({ text: s, weight: "text-sm text-indigo-400 font-bold" })),
-                              ...(realScanData.roleAlignment.missingTechSkills || []).map((s: string) => ({ text: s, weight: "text-xs text-slate-500 italic" }))
+                              ...realScanData.roleAlignment.presentTechSkills.map((s: string) => ({ text: s, weight: "text-sm text-indigo-300 font-bold" })),
+                              ...(realScanData.roleAlignment.missingTechSkills || []).map((s: string) => ({ text: s, weight: "text-xs text-slate-400 italic" }))
                             ].map((word) => (
-                              <span key={word.text} className={`px-2 py-0.5 rounded bg-slate-900/80 border border-[#27272A] ${word.weight}`}>
+                              <span key={word.text} className={`px-2 py-0.5 rounded-lg glass-pill ${word.weight}`}>
                                 {word.text}
                               </span>
                             ))
                           ) : (
                             [
-                              { text: "Node.js", weight: "text-base text-indigo-400 font-bold" },
-                              { text: "PostgreSQL", weight: "text-sm text-indigo-400 font-bold" },
-                              { text: "Express", weight: "text-xs text-slate-300 font-bold" },
+                              { text: "Node.js", weight: "text-base text-indigo-300 font-bold" },
+                              { text: "PostgreSQL", weight: "text-sm text-indigo-300 font-bold" },
+                              { text: "Express", weight: "text-xs text-slate-200 font-bold" },
                               { text: "Docker", weight: "text-xs text-slate-300" },
                               { text: "APIs", weight: "text-xs text-slate-400" },
                               { text: "Relational DB", weight: "text-xs text-slate-400" },
-                              { text: "AWS infrastructure", weight: "text-xs text-indigo-300 font-medium" },
-                              { text: "OpenTelemetry", weight: "text-sm text-indigo-400 font-bold animate-pulse" },
-                              { text: "Prometheus", weight: "text-xs text-indigo-300 font-medium" },
+                              { text: "AWS infrastructure", weight: "text-xs text-indigo-200 font-medium" },
+                              { text: "OpenTelemetry", weight: "text-sm text-indigo-300 font-bold animate-pulse" },
+                              { text: "Prometheus", weight: "text-xs text-indigo-200 font-medium" },
                               { text: "Grafana", weight: "text-xs text-slate-400" },
-                              { text: "Raft Consensus", weight: "text-xs text-slate-500 italic" },
-                              { text: "Performance", weight: "text-xs text-slate-300 font-bold" }
+                              { text: "Raft Consensus", weight: "text-xs text-slate-400 italic" },
+                              { text: "Performance", weight: "text-xs text-slate-200 font-bold" }
                             ].map((word) => (
-                              <span key={word.text} className={`px-2 py-0.5 rounded bg-slate-900/80 border border-[#27272A] ${word.weight}`}>
+                              <span key={word.text} className={`px-2 py-0.5 rounded-lg glass-pill ${word.weight}`}>
                                 {word.text}
                               </span>
                             ))
@@ -1603,12 +1603,12 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     </div>
 
                     {/* Categorized Skills Lists */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-5">
-                      <h4 className="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">Categorized Skills Matrix</h4>
+                    <div className="p-5 glass-card rounded-2xl space-y-5">
+                      <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider">Categorized Skills Matrix</h4>
                       
                       <div className="grid grid-cols-2 gap-4 text-[10.5px] font-mono">
                         <div className="space-y-2">
-                          <span className="text-[9px] text-slate-500 uppercase block">Languages & Frameworks</span>
+                          <span className="text-[9px] text-slate-400 uppercase block">Languages & Frameworks</span>
                           <div className="space-y-1 text-slate-300">
                             {(realScanData?.skillsMatrixDetailed?.languagesAndFrameworks || realScanData?.skillsMatrix?.languagesAndFrameworks || [
                               "Node.js (Expert)",
@@ -1622,7 +1622,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                         </div>
 
                         <div className="space-y-2">
-                          <span className="text-[9px] text-slate-500 uppercase block">Databases & Cloud</span>
+                          <span className="text-[9px] text-slate-400 uppercase block">Databases & Cloud</span>
                           <div className="space-y-1 text-slate-300">
                             {(realScanData?.skillsMatrixDetailed?.databasesAndCloud || realScanData?.skillsMatrix?.databasesAndCloud || [
                               "PostgreSQL (Expert)",
@@ -1635,8 +1635,8 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
                         </div>
 
-                        <div className="space-y-2 border-t border-[#27272A]/20 pt-2">
-                          <span className="text-[9px] text-slate-500 uppercase block">Soft Skills & Leadership</span>
+                        <div className="space-y-2 border-t border-white/10 pt-2">
+                          <span className="text-[9px] text-slate-400 uppercase block">Soft Skills & Leadership</span>
                           <div className="space-y-1 text-slate-300">
                             {(realScanData?.skillsMatrixDetailed?.softSkillsAndLeadership || realScanData?.skillsMatrix?.softSkillsAndLeadership || [
                               "Team Mentoring",
@@ -1648,8 +1648,8 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
                         </div>
 
-                        <div className="space-y-2 border-t border-[#27272A]/20 pt-2">
-                          <span className="text-[9px] text-slate-500 uppercase block">Observability & DevOps</span>
+                        <div className="space-y-2 border-t border-white/10 pt-2">
+                          <span className="text-[9px] text-slate-400 uppercase block">Observability & DevOps</span>
                           <div className="space-y-1 text-slate-300">
                             {(realScanData?.skillsMatrixDetailed?.observabilityAndDevOps || realScanData?.skillsMatrix?.observabilityAndDevOps || [
                               "OpenTelemetry (Applied)",
@@ -1665,19 +1665,19 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   </div>
 
                   {/* Dynamic Job Skill Analysis (Required vs Present vs Missing) */}
-                  <div className="p-6 bg-slate-900/40 border border-[#27272A] rounded-2xl space-y-6">
-                    <div className="border-b border-[#27272A]/80 pb-3">
-                      <div className="flex items-center gap-2 text-indigo-400">
+                  <div className="p-6 glass-card rounded-2xl space-y-6">
+                    <div className="border-b border-white/10 pb-3">
+                      <div className="flex items-center gap-2 text-[#818cf8]">
                         <Layers className="h-4 w-4" />
                         <h4 className="text-sm font-bold uppercase font-mono tracking-wider">Required Job Skills vs Resume Gaps</h4>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Comparing technical and behavioral skill requirements for standard "{targetRole || "Software Engineer"}" job openings.</p>
+                      <p className="text-[11px] text-slate-300 mt-1">Comparing technical and behavioral skill requirements for standard "{targetRole || "Software Engineer"}" job openings.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-mono">
                       {/* Technical Skills Side-by-Side */}
                       <div className="space-y-3 font-sans">
-                        <h5 className="text-[11px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        <h5 className="text-[11px] text-slate-200 font-bold uppercase tracking-wider flex items-center gap-1.5 font-mono">
                           <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                           Technical Skills Analysis
                         </h5>
@@ -1687,7 +1687,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                             <span className="text-[9px] text-emerald-400 uppercase tracking-widest block font-bold font-mono">Present in Resume</span>
                             <div className="flex flex-wrap gap-1.5">
                               {(realScanData?.roleAlignment?.presentTechSkills || ["Node.js", "SQL", "Databases"]).map((skill: string, idx: number) => (
-                                <span key={idx} className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/10 text-emerald-400 text-[10.5px]">
+                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10.5px]">
                                   ✓ {skill}
                                 </span>
                               ))}
@@ -1698,7 +1698,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                             <span className="text-[9px] text-rose-400 uppercase tracking-widest block font-bold font-mono">Missing / Weak Gaps</span>
                             <div className="flex flex-wrap gap-1.5">
                               {(realScanData?.roleAlignment?.missingTechSkills || ["TypeScript", "Docker", "REST APIs", "AWS infrastructure", "OpenTelemetry"]).map((skill: string, idx: number) => (
-                                <span key={idx} className="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/10 text-rose-400 text-[10.5px]">
+                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10.5px]">
                                   ⚠ {skill}
                                 </span>
                               ))}
@@ -1709,7 +1709,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
                       {/* Soft / Behavioral Skills Side-by-Side */}
                       <div className="space-y-3 font-sans">
-                        <h5 className="text-[11px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        <h5 className="text-[11px] text-slate-200 font-bold uppercase tracking-wider flex items-center gap-1.5 font-mono">
                           <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                           Behavioral & Soft Skills Signal
                         </h5>
@@ -1719,7 +1719,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                             <span className="text-[9px] text-emerald-400 uppercase tracking-widest block font-bold font-mono">Present in Resume</span>
                             <div className="flex flex-wrap gap-1.5">
                               {(realScanData?.roleAlignment?.presentSoftSkills || ["Team Collaboration", "Problem Solving"]).map((skill: string, idx: number) => (
-                                <span key={idx} className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/10 text-emerald-400 text-[10.5px]">
+                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10.5px]">
                                   ✓ {skill}
                                 </span>
                               ))}
@@ -1727,10 +1727,10 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
                           {/* Missing Soft Skills */}
                           <div className="space-y-2">
-                            <span className="text-[9px] text-rose-400 uppercase tracking-widest block font-bold font-mono font-mono">Missing / Weak Gaps</span>
+                            <span className="text-[9px] text-rose-400 uppercase tracking-widest block font-bold font-mono">Missing / Weak Gaps</span>
                             <div className="flex flex-wrap gap-1.5">
                               {(realScanData?.roleAlignment?.missingSoftSkills || ["Technical Mentoring", "System Documentation", "Squad Facilitation"]).map((skill: string, idx: number) => (
-                                <span key={idx} className="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/10 text-rose-400 text-[10.5px]">
+                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10.5px]">
                                   ⚠ {skill}
                                 </span>
                               ))}
@@ -1746,9 +1746,9 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 5. EXPERIENCE & PROJECTS REWRITE */}
               {activeTab === "experience" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">Experience & Project Bullet Point Rewriter</h3>
-                    <p className="text-[11px] text-slate-400">Review, modify, or rewrite weaker resume action bullets using the STAR (Situation, Task, Action, Result) method.</p>
+                    <p className="text-[11px] text-slate-300">Review, modify, or rewrite weaker resume action bullets using the STAR (Situation, Task, Action, Result) method.</p>
                   </div>
 
                   <div className="space-y-4">
@@ -1768,47 +1768,47 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                         star: { S: "E-commerce platform needed external payment processor support.", T: "Integrate third-party endpoints securely with comprehensive unit test suites.", A: "Authored robust mock payloads and integration test matrices in Jest.", R: "Maintained 100% endpoint security with zero checkout transaction crashes." }
                       }
                     ].map((item, index) => (
-                      <div key={index} className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                        <div className="flex justify-between items-center border-b border-[#27272A]/40 pb-2">
-                          <h4 className="text-xs font-bold text-indigo-400 font-mono uppercase">{item.title}</h4>
-                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/10 rounded">STAR Qualified</span>
+                      <div key={index} className="p-5 glass-card rounded-2xl space-y-4">
+                        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                          <h4 className="text-xs font-bold text-[#818cf8] font-mono uppercase">{item.title}</h4>
+                          <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/20 px-2 py-0.5 border border-emerald-500/30 rounded-lg">STAR Qualified</span>
                         </div>
 
                         <div className="space-y-1.5 font-sans">
                           <p className="text-xs text-white font-medium">Critique Analysis:</p>
-                          <p className="text-xs text-slate-400">{item.critique}</p>
+                          <p className="text-xs text-slate-300">{item.critique}</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10.5px] font-mono">
-                          <div className="bg-rose-950/10 border border-rose-500/15 rounded-xl p-3.5 space-y-1">
+                          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3.5 space-y-1">
                             <span className="text-[8.5px] text-rose-400 font-bold block">❌ ORIGINAL TEXT</span>
-                            <p className="text-slate-400">"{item.current}"</p>
+                            <p className="text-slate-300">"{item.current}"</p>
                           </div>
-                          <div className="bg-emerald-950/15 border border-emerald-500/15 rounded-xl p-3.5 space-y-1">
+                          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 space-y-1">
                             <span className="text-[8.5px] text-emerald-400 font-bold block">✅ AI STAR REWRITE</span>
-                            <p className="text-slate-200">"{item.suggested}"</p>
+                            <p className="text-slate-100">"{item.suggested}"</p>
                           </div>
                         </div>
 
                         {/* STAR breakdown details */}
-                        <div className="bg-slate-900/40 p-4 rounded-xl space-y-2 border border-[#27272A]/60 text-[10.5px] font-mono text-slate-300">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">STAR Structural Breakdown</span>
+                        <div className="glass-card p-4 rounded-xl space-y-2 text-[10.5px] font-mono text-slate-300">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">STAR Structural Breakdown</span>
                           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             <div>
-                              <strong className="text-indigo-400 block mb-0.5">S (Situation)</strong>
-                              <span className="text-slate-400">{item.star.S}</span>
+                              <strong className="text-indigo-300 block mb-0.5">S (Situation)</strong>
+                              <span className="text-slate-300">{item.star.S}</span>
                             </div>
                             <div>
-                              <strong className="text-indigo-400 block mb-0.5">T (Task)</strong>
-                              <span className="text-slate-400">{item.star.T}</span>
+                              <strong className="text-indigo-300 block mb-0.5">T (Task)</strong>
+                              <span className="text-slate-300">{item.star.T}</span>
                             </div>
                             <div>
-                              <strong className="text-indigo-400 block mb-0.5">A (Action)</strong>
-                              <span className="text-slate-400">{item.star.A}</span>
+                              <strong className="text-indigo-300 block mb-0.5">A (Action)</strong>
+                              <span className="text-slate-300">{item.star.A}</span>
                             </div>
                             <div>
-                              <strong className="text-indigo-400 block mb-0.5">R (Result)</strong>
-                              <span className="text-slate-400">{item.star.R}</span>
+                              <strong className="text-indigo-300 block mb-0.5">R (Result)</strong>
+                              <span className="text-slate-300">{item.star.R}</span>
                             </div>
                           </div>
                         </div>
@@ -1821,26 +1821,26 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 6. BEFORE VS AFTER RESUME (Synchronized Viewers) */}
               {activeTab === "after" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#27272A] pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
                     <div>
                       <h3 className="text-white text-base font-bold tracking-tight">Synchronized Before vs After Viewer</h3>
-                      <p className="text-[11px] text-slate-400">Compare original text with Gemini-optimized text side-by-side. Highlights: Red (Removed), Green (Added/Optimized).</p>
+                      <p className="text-[11px] text-slate-300">Compare original text with Gemini-optimized text side-by-side. Highlights: Red (Removed), Green (Added/Optimized).</p>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 text-[10.5px] font-mono text-slate-400 cursor-pointer">
+                      <label className="flex items-center gap-2 text-[10.5px] font-mono text-slate-300 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={syncScroll}
                           onChange={(e) => setSyncScroll(e.target.checked)}
-                          className="rounded bg-[#09090B] border-[#27272A] text-indigo-500 focus:ring-0 cursor-pointer"
+                          className="rounded bg-black/40 border-white/20 text-indigo-500 focus:ring-0 cursor-pointer"
                         />
                         <span>Synchronize Scrollbars</span>
                       </label>
                       <button
                         onClick={handleOptimizeAll}
                         disabled={isOptimized}
-                        className="px-3.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-xl text-[10px] font-mono font-bold transition-all disabled:opacity-50 cursor-pointer"
+                        className="px-3.5 py-1.5 glass-pill text-indigo-300 hover:text-white rounded-xl text-[10px] font-mono font-bold transition-all disabled:opacity-50 cursor-pointer"
                       >
                         {isOptimized ? "All Changes Applied" : "Apply All Rewrite Nodes"}
                       </button>
@@ -1850,67 +1850,67 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[500px]">
                     
                     {/* ORIGINAL VIEWPORT */}
-                    <div className="bg-[#09090B]/30 border border-[#27272A] rounded-2xl flex flex-col h-full overflow-hidden">
-                      <div className="p-3 bg-[#09090B]/80 border-b border-[#27272A] flex justify-between items-center shrink-0">
+                    <div className="glass-panel rounded-2xl flex flex-col h-full overflow-hidden">
+                      <div className="p-3.5 border-b border-white/10 bg-white/5 flex justify-between items-center shrink-0">
                         <span className="text-[10px] font-bold text-rose-400 uppercase font-mono">❌ Original Resume Output</span>
-                        <span className="text-[9px] font-mono text-slate-500">Unoptimized Baseline</span>
+                        <span className="text-[9px] font-mono text-slate-400">Unoptimized Baseline</span>
                       </div>
                       
                       <div 
                         ref={originalScrollRef}
                         onScroll={() => handleScrollSync("original")}
-                        className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-400 leading-relaxed space-y-4"
+                        className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-300 leading-relaxed space-y-4"
                       >
                         {realScanData ? (
                           <div className="space-y-4">
-                            <div className="text-center space-y-1 border-b border-[#27272A]/20 pb-3">
-                              <h4 className="font-bold text-slate-300 uppercase">{realScanData.optimizedTextData?.header?.split('\n')[0] || "ORIGINAL RESUME"}</h4>
-                              <p className="text-[9px] text-slate-500">{realScanData.optimizedTextData?.header?.split('\n')[1] || ""}</p>
+                            <div className="text-center space-y-1 border-b border-white/10 pb-3">
+                              <h4 className="font-bold text-slate-200 uppercase">{realScanData.optimizedTextData?.header?.split('\n')[0] || "ORIGINAL RESUME"}</h4>
+                              <p className="text-[9px] text-slate-400">{realScanData.optimizedTextData?.header?.split('\n')[1] || ""}</p>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="font-bold text-slate-300 block text-[9.5px]">PROFESSIONAL SUMMARY</span>
-                              <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-2 rounded italic">
+                              <span className="font-bold text-slate-200 block text-[9.5px]">PROFESSIONAL SUMMARY</span>
+                              <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2.5 rounded-xl italic">
                                 {realScanData.roadmapRecommendations?.find((r: any) => r.issue?.toLowerCase().includes("summary"))?.current || realScanData.grammarIssues?.[0]?.current || "Unoptimized summary lacks metrics and key technical keywords."}
                               </p>
                             </div>
 
                             <div className="space-y-2">
-                              <span className="font-bold text-slate-300 block text-[9.5px]">EXPERIENCE / HIGHLIGHTS</span>
+                              <span className="font-bold text-slate-200 block text-[9.5px]">EXPERIENCE / HIGHLIGHTS</span>
                               <div className="space-y-1.5">
                                 {realScanData.roadmapRecommendations?.slice(0, 3).map((rec: any, idx: number) => (
                                   <div key={idx} className="space-y-0.5">
-                                    <p className="text-[9px] text-slate-500 font-bold">{rec.issue}</p>
-                                    <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-1.5 rounded">• {rec.current}</p>
+                                    <p className="text-[9px] text-slate-400 font-bold">{rec.issue}</p>
+                                    <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2 rounded-lg">• {rec.current}</p>
                                   </div>
                                 ))}
                                 {realScanData.roadmapRecommendations?.length === 0 && (
-                                  <p className="text-slate-500 italic text-[9px]">No significant experience gaps detected.</p>
+                                  <p className="text-slate-400 italic text-[9px]">No significant experience gaps detected.</p>
                                 )}
                               </div>
                             </div>
                           </div>
                         ) : (
                           <>
-                            <div className="text-center space-y-1 border-b border-[#27272A]/20 pb-3">
-                              <h4 className="font-bold text-slate-300">JOHN DOE</h4>
-                              <p className="text-[9px]">john.doe@email.com | +1 555-019-2834</p>
+                            <div className="text-center space-y-1 border-b border-white/10 pb-3">
+                              <h4 className="font-bold text-slate-200">JOHN DOE</h4>
+                              <p className="text-[9px] text-slate-400">john.doe@email.com | +1 555-019-2834</p>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="font-bold text-slate-300 block">PROFESSIONAL SUMMARY</span>
-                              <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-2 rounded italic">
+                              <span className="font-bold text-slate-200 block">PROFESSIONAL SUMMARY</span>
+                              <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2.5 rounded-xl italic">
                                 "Hardworking engineering student with experience in node, databases, and looking for a backend role to grow."
                               </p>
                             </div>
 
                             <div className="space-y-2">
-                              <span className="font-bold text-slate-300 block">EXPERIENCE</span>
+                              <span className="font-bold text-slate-200 block">EXPERIENCE</span>
                               <div className="space-y-1.5">
-                                <p className="text-[9px] text-slate-500 font-bold">Backend Intern | CloudTech Corp</p>
-                                <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-1.5 rounded">• Responsable for deploying APIs and sped up queries.</p>
-                                <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-1.5 rounded">• Implemented dynamic components that works on all browsers.</p>
-                                <p className="bg-rose-500/5 text-rose-400 border border-rose-500/10 p-1.5 rounded">• Created backend API endpoints and made SQL database queries run faster.</p>
+                                <p className="text-[9px] text-slate-400 font-bold">Backend Intern | CloudTech Corp</p>
+                                <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2 rounded-lg">• Responsable for deploying APIs and sped up queries.</p>
+                                <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2 rounded-lg">• Implemented dynamic components that works on all browsers.</p>
+                                <p className="bg-rose-500/10 text-rose-300 border border-rose-500/20 p-2 rounded-lg">• Created backend API endpoints and made SQL database queries run faster.</p>
                               </div>
                             </div>
                           </>
@@ -1919,27 +1919,27 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     </div>
 
                     {/* OPTIMIZED VIEWPORT */}
-                    <div className="bg-[#09090B]/30 border border-[#27272A] rounded-2xl flex flex-col h-full overflow-hidden">
-                      <div className="p-3 bg-[#09090B]/80 border-b border-[#27272A] flex justify-between items-center shrink-0">
+                    <div className="glass-panel rounded-2xl flex flex-col h-full overflow-hidden">
+                      <div className="p-3.5 border-b border-white/10 bg-white/5 flex justify-between items-center shrink-0">
                         <span className="text-[10px] font-bold text-emerald-400 uppercase font-mono">✅ Optimized Resume Output</span>
-                        <span className="text-[9px] font-mono text-slate-500">Optimized by Gemini recruiter</span>
+                        <span className="text-[9px] font-mono text-slate-400">Optimized by Gemini recruiter</span>
                       </div>
 
                       <div 
                         ref={optimizedScrollRef}
                         onScroll={() => handleScrollSync("optimized")}
-                        className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-300 leading-relaxed space-y-4"
+                        className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-200 leading-relaxed space-y-4"
                       >
                         {realScanData ? (
                           <div className="space-y-4">
-                            <div className="text-center space-y-1 border-b border-[#27272A]/20 pb-3">
+                            <div className="text-center space-y-1 border-b border-white/10 pb-3">
                               <h4 className="font-bold text-white uppercase">{realScanData.optimizedTextData?.header?.split('\n')[0] || "OPTIMIZED RESUME"}</h4>
-                              <p className="text-[9px] text-slate-400">{realScanData.optimizedTextData?.header?.split('\n')[1] || ""}</p>
+                              <p className="text-[9px] text-slate-300">{realScanData.optimizedTextData?.header?.split('\n')[1] || ""}</p>
                             </div>
 
                             <div className="space-y-1">
                               <span className="font-bold text-white block text-[9.5px]">PROFESSIONAL SUMMARY</span>
-                              <p className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-2 rounded cursor-help transition-colors hover:bg-emerald-500/15" onClick={() => {
+                              <p className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2.5 rounded-xl cursor-help transition-colors hover:bg-emerald-500/20" onClick={() => {
                                 triggerToast("Gemini optimized this statement to establish explicit tech-stack parameters.", "info");
                               }}>
                                 {realScanData.optimizedTextData?.summary}
@@ -1950,12 +1950,12 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                               <span className="font-bold text-white block text-[9.5px]">EXPERIENCE / HIGHLIGHTS</span>
                               <div className="space-y-1.5">
                                 {realScanData.optimizedTextData?.experience?.map((exp: string, idx: number) => (
-                                  <p key={idx} className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-1.5 rounded cursor-help hover:bg-emerald-500/15" onClick={() => {
+                                  <p key={idx} className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2 rounded-lg cursor-help hover:bg-emerald-500/20" onClick={() => {
                                     triggerToast(`Quantified metric bullet #${idx + 1} synchronized.`, "info");
                                   }}>• {exp}</p>
                                 ))}
                                 {realScanData.optimizedTextData?.projects?.map((proj: string, idx: number) => (
-                                  <p key={idx} className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-1.5 rounded cursor-help hover:bg-emerald-500/15" onClick={() => {
+                                  <p key={idx} className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2 rounded-lg cursor-help hover:bg-emerald-500/20" onClick={() => {
                                     triggerToast(`Optimized projects bullet #${idx + 1} synchronized.`, "info");
                                   }}>• {proj}</p>
                                 ))}
@@ -1964,14 +1964,14 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           </div>
                         ) : (
                           <>
-                            <div className="text-center space-y-1 border-b border-[#27272A]/20 pb-3">
+                            <div className="text-center space-y-1 border-b border-white/10 pb-3">
                               <h4 className="font-bold text-white">JOHN DOE</h4>
-                              <p className="text-[9px] text-slate-400">john.doe@email.com | +1 555-019-2834</p>
+                              <p className="text-[9px] text-slate-300">john.doe@email.com | +1 555-019-2834</p>
                             </div>
 
                             <div className="space-y-1">
                               <span className="font-bold text-white block">PROFESSIONAL SUMMARY</span>
-                              <p className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-2 rounded cursor-help transition-colors hover:bg-emerald-500/15" onClick={() => {
+                              <p className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2.5 rounded-xl cursor-help transition-colors hover:bg-emerald-500/20" onClick={() => {
                                 triggerToast("Gemini optimized this statement to establish explicit tech-stack parameters. ATS gain: +8%.", "info");
                               }}>
                                 "Results-driven Backend Engineer with specialized expertise in Node.js, Express, SQL, and Docker containerization. Proven track record architecting secure microservices and optimizing relational query schemas for peak user concurrency."
@@ -1981,14 +1981,14 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                             <div className="space-y-2">
                               <span className="font-bold text-white block">EXPERIENCE</span>
                               <div className="space-y-1.5">
-                                <p className="text-[9px] text-slate-400 font-bold">Backend Intern | CloudTech Corp</p>
-                                <p className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-1.5 rounded cursor-help hover:bg-emerald-500/15" onClick={() => {
+                                <p className="text-[9px] text-slate-300 font-bold">Backend Intern | CloudTech Corp</p>
+                                <p className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2 rounded-lg cursor-help hover:bg-emerald-500/20" onClick={() => {
                                   triggerToast("Parallel spelling aligned. ATS gain: +3%.", "info");
                                 }}>• Responsible for deploying APIs and speeding up query execution.</p>
-                                <p className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-1.5 rounded cursor-help hover:bg-emerald-500/15" onClick={() => {
+                                <p className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2 rounded-lg cursor-help hover:bg-emerald-500/20" onClick={() => {
                                   triggerToast("Plural subject-verb agreement fixed. ATS gain: +3%.", "info");
                                 }}>• Implemented responsive web components that operate seamlessly across all web browsers.</p>
-                                <p className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 p-1.5 rounded cursor-help hover:bg-emerald-500/15" onClick={() => {
+                                <p className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 p-2 rounded-lg cursor-help hover:bg-emerald-500/20" onClick={() => {
                                   triggerToast("Quantified accomplishment impact added. ATS gain: +12%.", "info");
                                 }}>• Refactored Node.js REST endpoints and structured Postgres index keys, reducing API request latency by 42% (from 180ms to 104ms) and supporting up to 15,000 concurrent peak socket connections.</p>
                               </div>
@@ -2005,15 +2005,15 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 7. RECRUITER REPORT SIMULATION */}
               {activeTab === "recruiter" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">AI Recruiter Assessment Matrix</h3>
-                    <p className="text-[11px] text-slate-400">Deep recruiter scorecard mapping candidate qualities against core engineering team expectations.</p>
+                    <p className="text-[11px] text-slate-300">Deep recruiter scorecard mapping candidate qualities against core engineering team expectations.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Performance metrics dashboard */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4">
-                      <h4 className="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">Candidate Skills Scoring Matrix</h4>
+                    <div className="p-5 glass-card rounded-2xl space-y-4">
+                      <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider">Candidate Skills Scoring Matrix</h4>
                       
                       <div className="space-y-3 font-mono text-[11px]">
                         {[
@@ -2025,11 +2025,11 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           { label: "Hiring Probability Index", score: realScanData?.skillsMatrix?.find((m: any) => m.label?.toLowerCase()?.includes("hiring") || m.label?.toLowerCase()?.includes("probability"))?.score || 91, bar: "bg-emerald-400" }
                         ].map((metric) => (
                           <div key={metric.label} className="space-y-1.5">
-                            <div className="flex justify-between text-slate-400 text-[10px]">
+                            <div className="flex justify-between text-slate-300 text-[10px]">
                               <span>{metric.label}</span>
-                              <span className="text-slate-200 font-bold">{metric.score}%</span>
+                              <span className="text-white font-bold">{metric.score}%</span>
                             </div>
-                            <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-[#27272A]">
+                            <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden border border-white/10">
                               <div className={`${metric.bar} h-full rounded-full`} style={{ width: `${metric.score}%` }}></div>
                             </div>
                           </div>
@@ -2038,57 +2038,57 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                     </div>
 
                     {/* Overall Recruiter Recommendation */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4 font-sans text-xs">
-                      <h4 className="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">Strategic Recruiting Recommendation</h4>
+                    <div className="p-5 glass-card rounded-2xl space-y-4 font-sans text-xs">
+                      <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-wider">Strategic Recruiting Recommendation</h4>
                       
-                      <div className="space-y-3 text-slate-400 leading-relaxed">
+                      <div className="space-y-3 text-slate-300 leading-relaxed">
                         <p>
                           <strong>First Impression Critique:</strong> {realScanData?.recruiterFirstImpression || "John possesses strong academic fundamentals from Stanford paired with solid baseline relational query practice. The initial resume draft hides this strength behind basic, unquantified text bullets."}
                         </p>
                         <p>
                           <strong>Interview Strategy Advice:</strong> {realScanData?.recruiterInterviewStrategy || "Fast-track to active technical screen. Direct him to explain specific Postgres scaling roadblocks during system design interviews, and probe his familiarity with cloud tracing containers."}
                         </p>
-                        <p className="bg-indigo-500/10 border border-indigo-500/10 p-3 rounded-xl text-indigo-300 text-[11px] font-mono leading-normal">
+                        <p className="bg-indigo-500/15 border border-indigo-500/25 p-3 rounded-xl text-indigo-200 text-[11px] font-mono leading-normal">
                           <strong>Executive Summary Decision:</strong> {realScanData?.recruiterExecutiveSummary || "Highly recommended. Applying the active ATS keywords raises his score parameter to the top 2% of the matching applicant flow."}
                         </p>
                       </div>
                     </div>
 
                     {/* Target Role Alignment Audit */}
-                    <div className="p-5 bg-[#09090B]/40 border border-[#27272A] rounded-2xl space-y-4 md:col-span-2">
-                      <div className="flex items-center gap-2 text-indigo-400 border-b border-[#27272A]/40 pb-2 justify-between">
+                    <div className="p-5 glass-card rounded-2xl space-y-4 md:col-span-2">
+                      <div className="flex items-center gap-2 text-[#818cf8] border-b border-white/10 pb-2 justify-between">
                         <div className="flex items-center gap-2">
                           <Award className="h-4 w-4" />
                           <h4 className="text-xs font-bold uppercase font-mono tracking-wider font-mono">Target Job Role Alignment Audit</h4>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Target Role: {targetRole || "Software Engineer"}</span>
+                        <span className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Target Role: {targetRole || "Software Engineer"}</span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans text-xs">
                         {/* Alignment Score Meter */}
-                        <div className="flex flex-col items-center justify-center p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-2 text-center">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Alignment Match</span>
+                        <div className="flex flex-col items-center justify-center p-4 glass-card rounded-xl space-y-2 text-center">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Alignment Match</span>
                           <span className="text-3xl font-extrabold text-white font-mono">{realScanData?.roleAlignment?.targetRoleAlignmentScore || 65}%</span>
-                          <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-[#27272A]">
+                          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden border border-white/10">
                             <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${realScanData?.roleAlignment?.targetRoleAlignmentScore || 65}%` }}></div>
                           </div>
                         </div>
 
                         {/* Current vs Target Role */}
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-2">
+                        <div className="p-4 glass-card rounded-xl space-y-2">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Apparent Current Role</span>
+                            <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Apparent Current Role</span>
                             <span className="font-bold text-rose-400 text-sm font-mono block mt-0.5">{realScanData?.roleAlignment?.detectedCurrentRole || "Junior Developer / Recent Graduate"}</span>
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block">Desired Target Role</span>
+                            <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">Desired Target Role</span>
                             <span className="font-bold text-emerald-400 text-sm font-mono block mt-0.5">{targetRole || "Software Engineer"}</span>
                           </div>
                         </div>
 
                         {/* Recruiter Strategy Narrative */}
-                        <div className="p-4 bg-[#09090B]/30 border border-[#27272A]/40 rounded-xl space-y-1">
-                          <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider block font-mono">Alignment Critique</span>
+                        <div className="p-4 glass-card rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block font-mono">Alignment Critique</span>
                           <p className="text-slate-300 leading-relaxed text-[11px]">{realScanData?.roleAlignment?.targetRoleAlignmentFeedback || `The resume shows strong programming basics but lacks the production-level software design, cloud deployments, and diagnostic operations metrics standard for heavy-scale ${targetRole || "Software Engineer"} roles.`}</p>
                         </div>
                       </div>
@@ -2100,9 +2100,9 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               {/* 8. DOWNLOAD CENTER */}
               {activeTab === "downloads" && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="border-b border-[#27272A] pb-4">
+                  <div className="border-b border-white/10 pb-4">
                     <h3 className="text-white text-base font-bold tracking-tight">Enterprise Download Center</h3>
-                    <p className="text-[11px] text-slate-400">Export high-fidelity compliant PDF structures and analytical reports of your parsed resume.</p>
+                    <p className="text-[11px] text-slate-300">Export high-fidelity compliant PDF structures and analytical reports of your parsed resume.</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -2114,18 +2114,18 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       { title: "Core Keyword Matching Indexes", format: "Spreadsheet", desc: "Export of matching required, missing, and duplicate keyword densities." },
                       { title: "AI Recruiter Strategy Report", format: "PDF", desc: "The simulated executive summary including first impression and interview probability stats." }
                     ].map((dl) => (
-                      <div key={dl.title} className="p-4 bg-slate-900/50 border border-[#27272A] hover:border-slate-700 rounded-xl flex flex-col justify-between space-y-3 transition-all duration-150">
+                      <div key={dl.title} className="p-4 glass-card hover:bg-white/[0.08] rounded-2xl flex flex-col justify-between space-y-3 transition-all duration-150">
                         <div className="space-y-1">
-                          <span className="text-[9.5px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-bold w-max block">
+                          <span className="text-[9.5px] font-mono text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-lg font-bold w-max block">
                             {dl.format}
                           </span>
                           <h4 className="text-xs font-bold text-white pt-1">{dl.title}</h4>
-                          <p className="text-[10px] text-slate-500 leading-normal font-sans">{dl.desc}</p>
+                          <p className="text-[10px] text-slate-300 leading-normal font-sans">{dl.desc}</p>
                         </div>
 
                         <button
                           onClick={() => handleDownloadReport(`${dl.title} (${dl.format})`)}
-                          className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-300 rounded-lg text-[10px] font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="w-full py-2 glass-card-hover text-slate-200 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <FileDown className="h-3.5 w-3.5" />
                           <span>Generate Output</span>
@@ -2135,20 +2135,20 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                   </div>
 
                   {/* ATS-Compliant Base Templates Library */}
-                  <div className="pt-6 border-t border-[#27272A]/80 space-y-6">
+                  <div className="pt-6 border-t border-white/10 space-y-6">
                     <div>
-                      <div className="flex items-center gap-2 text-indigo-400">
+                      <div className="flex items-center gap-2 text-[#818cf8]">
                         <Sparkles className="h-4 w-4" />
-                        <h4 className="text-sm font-bold uppercase font-mono tracking-wider text-indigo-400">ATS-Compliant Base Resume Templates</h4>
+                        <h4 className="text-sm font-bold uppercase font-mono tracking-wider text-indigo-300">ATS-Compliant Base Resume Templates</h4>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">Copy or download industry-certified, single-column plain-text templates to guarantee 95%+ parser readability.</p>
+                      <p className="text-[11px] text-slate-300 mt-1">Copy or download industry-certified, single-column plain-text templates to guarantee 95%+ parser readability.</p>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Left Sidebar: Selectors & Tips */}
                       <div className="lg:col-span-4 space-y-4">
                         <div className="space-y-2">
-                          <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider block font-bold">Available Job Frameworks</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider block font-bold">Available Job Frameworks</span>
                           <div className="space-y-2">
                             {RESUME_TEMPLATES.map((tmpl) => {
                               const isSelected = tmpl.id === selectedTemplateId;
@@ -2156,14 +2156,14 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                                 <button
                                   key={tmpl.id}
                                   onClick={() => setSelectedTemplateId(tmpl.id)}
-                                  className={`w-full p-3.5 text-left rounded-xl border transition-all flex flex-col gap-1 cursor-pointer ${
+                                  className={`w-full p-3.5 text-left rounded-2xl border transition-all flex flex-col gap-1 cursor-pointer ${
                                     isSelected
-                                      ? "bg-indigo-500/10 border-indigo-500 text-white"
-                                      : "bg-slate-900/40 border-[#27272A] hover:border-slate-700 text-slate-300"
+                                      ? "bg-indigo-500/20 border-indigo-500 text-white shadow-lg"
+                                      : "glass-card hover:bg-white/[0.08] text-slate-300"
                                   }`}
                                 >
                                   <span className="text-xs font-bold font-mono">{tmpl.name}</span>
-                                  <span className="text-[10px] text-slate-400 font-sans leading-normal line-clamp-2">{tmpl.description}</span>
+                                  <span className="text-[10px] text-slate-300 font-sans leading-normal line-clamp-2">{tmpl.description}</span>
                                 </button>
                               );
                             })}
@@ -2171,12 +2171,12 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                         </div>
 
                         {/* Tips & Tricks Panel */}
-                        <div className="p-4 bg-slate-900/30 border border-[#27272A]/60 rounded-xl space-y-3">
-                          <h5 className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <div className="p-4 glass-card rounded-2xl space-y-3">
+                          <h5 className="text-[10px] text-[#818cf8] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
                             <Info className="h-3.5 w-3.5" />
                             Optimization Insights
                           </h5>
-                          <ul className="space-y-2 font-sans text-[10.5px] text-slate-400 leading-normal">
+                          <ul className="space-y-2 font-sans text-[10.5px] text-slate-300 leading-normal">
                             {(RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0]).tips.map((tip, idx) => (
                               <li key={idx} className="flex gap-2">
                                 <span className="text-indigo-400 font-bold font-mono">0{idx + 1}.</span>
@@ -2188,12 +2188,12 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                       </div>
 
                       {/* Right Workspace: Template Code Previewer */}
-                      <div className="lg:col-span-8 bg-[#09090B]/50 border border-[#27272A] rounded-2xl overflow-hidden flex flex-col h-[520px]">
+                      <div className="lg:col-span-8 glass-panel rounded-3xl overflow-hidden flex flex-col h-[520px]">
                         {/* Control Bar */}
-                        <div className="p-3 bg-[#09090B]/80 border-b border-[#27272A] flex flex-col sm:flex-row justify-between sm:items-center gap-2 shrink-0">
+                        <div className="p-3.5 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-2 shrink-0">
                           <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                            <span className="text-[10px] font-bold text-slate-300 uppercase font-mono">
+                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                            <span className="text-[10px] font-bold text-slate-200 uppercase font-mono">
                               {(RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0]).name}
                             </span>
                           </div>
@@ -2201,12 +2201,12 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleCopyTemplate(RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0])}
-                              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-300 rounded-lg text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                              className="px-3 py-1.5 glass-card-hover text-slate-200 rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                               {copiedTemplateId === selectedTemplateId ? (
                                 <>
                                   <Check className="h-3.5 w-3.5 text-emerald-400" />
-                                  <span className="text-emerald-400 font-sans">Copied!</span>
+                                  <span className="text-emerald-300 font-sans">Copied!</span>
                                 </>
                               ) : (
                                 <>
@@ -2218,7 +2218,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
                             <button
                               onClick={() => handleDownloadTemplateFile(RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0])}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white rounded-lg text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                              className="px-3 py-1.5 glass-btn-primary text-white rounded-xl text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                               <FileDown className="h-3.5 w-3.5" />
                               <span>Download Template (.txt)</span>
@@ -2227,7 +2227,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
                         </div>
 
                         {/* Text Scroll Viewport */}
-                        <div className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-300 leading-relaxed bg-[#030303]/60 selection:bg-indigo-500/20 whitespace-pre-wrap">
+                        <div className="p-5 overflow-y-auto flex-1 font-mono text-[10.5px] text-slate-200 leading-relaxed bg-black/40 selection:bg-indigo-500/20 whitespace-pre-wrap">
                           {(RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0]).rawText}
                         </div>
                       </div>

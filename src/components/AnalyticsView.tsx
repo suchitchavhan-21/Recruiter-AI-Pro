@@ -408,24 +408,24 @@ export default function AnalyticsView({
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight font-sans">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight font-sans">
             Candidate Dashboard
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Track evaluation histories, optimize keyword matches, and schedule personalized practice mocks.
           </p>
         </div>
 
         {/* Dashboard Sub-Segment Selectors */}
-        <div className="flex bg-[#111827] border border-[#27272A] p-1.5 rounded-xl gap-1">
+        <div className="flex glass-dock p-1.5 rounded-2xl gap-1">
           <button
             onClick={() => setActiveSubTab("overview")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
               activeSubTab === "overview"
-                ? "bg-[#6D5EF8] text-white"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#6D5EF8] text-white shadow-md"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <Compass className="h-3.5 w-3.5" />
@@ -433,10 +433,10 @@ export default function AnalyticsView({
           </button>
           <button
             onClick={() => setActiveSubTab("performance")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
               activeSubTab === "performance"
-                ? "bg-[#6D5EF8] text-white"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#6D5EF8] text-white shadow-md"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <BarChart3 className="h-3.5 w-3.5" />
@@ -444,10 +444,10 @@ export default function AnalyticsView({
           </button>
           <button
             onClick={() => setActiveSubTab("ats")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
               activeSubTab === "ats"
-                ? "bg-[#6D5EF8] text-white"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#6D5EF8] text-white shadow-md"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
@@ -460,48 +460,48 @@ export default function AnalyticsView({
       {activeSubTab === "overview" && (
         <div className="space-y-6 animate-fade-in">
           {/* Personalized Greeting Card */}
-          <div className="rounded-[18px] border border-[#27272A] bg-gradient-to-br from-[#111827] via-[#09090B] to-[#111827] p-6 md:p-8 relative overflow-hidden">
+          <div className="rounded-2xl glass-panel p-6 md:p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-[#6D5EF8]/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 space-y-4">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#6D5EF8]" />
-                <span className="text-[9px] font-mono tracking-wider text-slate-400 uppercase font-bold">Preparation Summary</span>
+                <span className="text-[9px] font-mono tracking-wider text-slate-500 dark:text-slate-400 uppercase font-bold">Preparation Summary</span>
               </div>
               
-              <h1 className="text-xl md:text-3xl font-bold text-white tracking-tight">
+              <h1 className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Welcome back, {userFirstName} 👋
               </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-                <div className="bg-[#09090B]/60 border border-[#27272A]/80 p-4 rounded-xl space-y-1">
+                <div className="glass-card p-4 rounded-xl space-y-1">
                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Today's Goal</span>
-                  <span className="text-xs font-bold text-white block">Practice Interviews</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Practice Interviews</span>
                 </div>
-                <div className="bg-[#09090B]/60 border border-[#27272A]/80 p-4 rounded-xl space-y-1">
+                <div className="glass-card p-4 rounded-xl space-y-1">
                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Average Score</span>
-                  <span className="text-xs font-bold text-emerald-400 block">{averageScore}% Proficiency</span>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block">{averageScore}% Proficiency</span>
                 </div>
-                <div className="bg-[#09090B]/60 border border-[#27272A]/80 p-4 rounded-xl space-y-1">
+                <div className="glass-card p-4 rounded-xl space-y-1">
                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Current Streak</span>
-                  <span className="text-xs font-bold text-amber-400 block">{currentStreak} Days Consistent</span>
+                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block">{currentStreak} Days Consistent</span>
                 </div>
-                <div className="bg-[#09090B]/60 border border-[#27272A]/80 p-4 rounded-xl space-y-1">
+                <div className="glass-card p-4 rounded-xl space-y-1">
                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Weak Area</span>
-                  <span className="text-xs font-bold text-rose-400 block">{weakArea}</span>
+                  <span className="text-xs font-bold text-rose-600 dark:text-rose-400 block">{weakArea}</span>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#27272A]/40">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200/60 dark:border-white/10">
                 <button
                   onClick={onStartInterview}
-                  className="px-5 py-2.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#6D5EF8]/15 flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#6D5EF8]/20 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Practice Google Behavioral Interview</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setActiveSubTab("performance")}
-                  className="px-5 py-2.5 bg-[#111827] hover:bg-slate-900 border border-[#27272A] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer text-center"
+                  className="px-5 py-2.5 glass-pill hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-all cursor-pointer text-center"
                 >
                   Explore Weak Areas
                 </button>
@@ -513,46 +513,46 @@ export default function AnalyticsView({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Column: Upcoming Schedule & History */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="bg-[#111827] border border-[#27272A] p-6 rounded-[18px] space-y-4">
-                <h3 className="text-white text-xs font-bold tracking-wider uppercase font-mono text-slate-400 flex items-center gap-2">
+              <div className="glass-panel p-6 rounded-2xl space-y-4">
+                <h3 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-[#6D5EF8]" />
                   Upcoming Mock Sessions
                 </h3>
                 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3.5 bg-[#09090B]/50 rounded-xl border border-[#27272A] hover:border-slate-800 transition-colors">
+                  <div className="flex items-center justify-between p-3.5 glass-card rounded-xl">
                     <div className="flex items-center gap-3">
                       <span className="text-lg">🤖</span>
                       <div>
-                        <h4 className="text-xs font-bold text-white">OpenAI Lead SRE Simulation</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">OpenAI Lead SRE Simulation</h4>
                         <p className="text-[10px] text-slate-500">Scheduled: Today, 3:00 PM (15 mins)</p>
                       </div>
                     </div>
-                    <span className="text-[9px] font-bold text-[#6D5EF8] bg-[#6D5EF8]/10 px-2 py-0.5 rounded border border-[#6D5EF8]/20">Priority A</span>
+                    <span className="text-[9px] font-bold text-[#6D5EF8] bg-[#6D5EF8]/10 px-2 py-0.5 rounded-full border border-[#6D5EF8]/20">Priority A</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3.5 bg-[#09090B]/50 rounded-xl border border-[#27272A] hover:border-slate-800 transition-colors">
+                  <div className="flex items-center justify-between p-3.5 glass-card rounded-xl">
                     <div className="flex items-center gap-3">
                       <span className="text-lg">💳</span>
                       <div>
-                        <h4 className="text-xs font-bold text-white">Stripe Staff Backend Challenge</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">Stripe Staff Backend Challenge</h4>
                         <p className="text-[10px] text-slate-500">Scheduled: Tomorrow, 11:00 AM (25 mins)</p>
                       </div>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700/85">Setup Ready</span>
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 glass-pill px-2 py-0.5 rounded-full">Setup Ready</span>
                   </div>
                 </div>
               </div>
 
               {/* ATS Quick Score Card */}
-              <div className="bg-[#111827] border border-[#27272A] p-6 rounded-[18px] flex items-center justify-between gap-6">
+              <div className="glass-panel p-6 rounded-2xl flex items-center justify-between gap-6">
                 <div className="space-y-2">
                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Resume Calibration Index</span>
-                  <h4 className="text-xs font-bold text-white">Resume Compatibility Index</h4>
-                  <p className="text-[10px] text-slate-400 leading-normal max-w-md">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Resume Compatibility Index</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-normal max-w-md">
                     {resumeScore > 0 ? (
                       <>
-                        Your resume has <strong className="text-white">{resumeScore}% ATS compatibility</strong> with an outstanding <strong className="text-emerald-400">{atsMatch}% semantic match</strong> for engineering positions.
+                        Your resume has <strong className="text-slate-900 dark:text-white">{resumeScore}% ATS compatibility</strong> with an outstanding <strong className="text-emerald-600 dark:text-emerald-400">{atsMatch}% semantic match</strong> for engineering positions.
                       </>
                     ) : (
                       <>
@@ -569,7 +569,7 @@ export default function AnalyticsView({
                   </button>
                 </div>
                 <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-[#6D5EF8]/20 flex flex-col items-center justify-center shrink-0">
-                  <span className="text-lg font-bold text-white">{resumeScore}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white">{resumeScore}</span>
                   <span className="text-[7px] text-[#6D5EF8] font-bold font-mono">INDEX SCORE</span>
                 </div>
               </div>
@@ -577,36 +577,36 @@ export default function AnalyticsView({
 
             {/* Right Column: Recommendations */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="bg-[#111827] border border-[#27272A] p-6 rounded-[18px] space-y-4 h-full flex flex-col justify-between">
+              <div className="glass-panel p-6 rounded-2xl space-y-4 h-full flex flex-col justify-between">
                 <div className="space-y-4">
-                  <h3 className="text-white text-xs font-bold tracking-wider uppercase font-mono text-slate-400 flex items-center gap-2">
+                  <h3 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-[#22C55E]" />
                     Recommended Study Topics
                   </h3>
 
                   <div className="space-y-3.5">
                     {recommendedTopics.map((topic, i) => (
-                      <div key={i} className="p-3.5 bg-[#09090B]/30 rounded-xl border border-[#27272A] space-y-1">
+                      <div key={i} className="p-3.5 glass-card rounded-xl space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className={`text-[9px] font-bold uppercase font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/10 ${topic.color}`}>
+                          <span className={`text-[9px] font-bold uppercase font-mono px-2 py-0.5 rounded-full border ${topic.color}`}>
                             {topic.category}
                           </span>
                           <span className="text-[9px] font-mono text-slate-500">
                             {sessionsHistory.length > 0 ? "Target Focus" : "Fundamentals"}
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-slate-200">{topic.title}</h4>
-                        <p className="text-[10px] text-slate-500 leading-relaxed">{topic.desc}</p>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{topic.title}</h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{topic.desc}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-[#09090B] p-3.5 rounded-xl border border-[#27272A] flex gap-2.5 items-start mt-4">
+                <div className="glass-card p-3.5 rounded-xl flex gap-2.5 items-start mt-4">
                   <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-[10px] font-bold text-slate-300">Action Recommended</h4>
-                    <p className="text-[9.5px] text-slate-400 mt-1 leading-relaxed">
+                    <h4 className="text-[10px] font-bold text-slate-800 dark:text-slate-300">Action Recommended</h4>
+                    <p className="text-[9.5px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                       {sessionsHistory.length > 0 
                         ? `Practicing consistent mock interviews on your weak ${weakArea.toLowerCase()} topics yields 40% higher recall speeds.`
                         : "Launch a simulation practice session to let Recruiter AI analyze your profile and construct tailored recommendations."

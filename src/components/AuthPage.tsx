@@ -333,24 +333,28 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
   ];
 
   return (
-    <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none font-sans overflow-x-hidden">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 bg-[#111827]/40 border border-[#27272A] rounded-[32px] overflow-hidden backdrop-blur-xl shadow-2xl p-4 sm:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#07090E] text-slate-800 dark:text-slate-200 flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none font-sans overflow-x-hidden relative">
+      {/* Background ambient orbs */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#6D5EF8]/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none" />
+
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 glass-panel rounded-3xl overflow-hidden shadow-2xl p-4 sm:p-8 relative z-10">
         
         {/* Left Column: Visual Illustration and Features SaaS Column */}
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-8 p-6 lg:p-8 bg-gradient-to-br from-[#1E1B4B]/70 to-[#0F172A]/80 border border-[#27272A]/50 rounded-[24px]">
+        <div className="lg:col-span-5 flex flex-col justify-between space-y-8 p-6 lg:p-8 glass-card rounded-2xl">
           <div className="space-y-6">
             <div className="flex items-center gap-2.5">
-              <span className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
-                <Sparkles className="h-4.5 w-4.5 animate-pulse" />
+              <span className="w-9 h-9 rounded-xl bg-[#6D5EF8] flex items-center justify-center text-white shadow-lg shadow-[#6D5EF8]/20">
+                <Sparkles className="h-4.5 w-4.5" />
               </span>
-              <span className="text-xs font-bold uppercase tracking-widest font-mono text-violet-400">Recruiter AI Coach</span>
+              <span className="text-xs font-bold uppercase tracking-widest font-mono text-[#6D5EF8]">Recruiter AI Coach</span>
             </div>
 
             <div className="space-y-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
-                Prepare for your <span className="bg-gradient-to-r from-violet-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">Dream Job</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                Prepare for your <span className="bg-gradient-to-r from-violet-500 via-[#6D5EF8] to-cyan-500 bg-clip-text text-transparent">Dream Job</span>
               </h1>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
                 Enterprise-grade technical simulations, custom mock assessments, and interactive coaching loops validated by real FAANG hiring standards.
               </p>
             </div>
@@ -358,44 +362,44 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
             {/* Feature lists */}
             <div className="space-y-4 pt-2">
               <div className="flex gap-3 items-start">
-                <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+                <span className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
                   <Cpu className="h-4 w-4" />
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-200">AI Interviews</h4>
-                  <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">Interactive speech-to-text live chat simulated by expert technical personas.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">AI Interviews</h4>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Interactive speech-to-text live chat simulated by expert technical personas.</p>
                 </div>
               </div>
 
               <div className="flex gap-3 items-start">
-                <span className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0">
+                <span className="p-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
                   <FileCheck className="h-4 w-4" />
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-200">ATS Scanner & Resume Review</h4>
-                  <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">Instantly evaluate and score resume match rates with tailored improvements.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">ATS Scanner & Resume Review</h4>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Instantly evaluate and score resume match rates with tailored improvements.</p>
                 </div>
               </div>
 
               <div className="flex gap-3 items-start">
-                <span className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 shrink-0">
+                <span className="p-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 shrink-0">
                   <Award className="h-4 w-4" />
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-200">Mock Interviews & Progress Tracking</h4>
-                  <p className="text-[10.5px] text-slate-400 leading-relaxed mt-0.5">Log every simulation scorecard and behavioral Answer Bank securely.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">Mock Interviews & Progress Tracking</h4>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Log every simulation scorecard and behavioral Answer Bank securely.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-[#27272A]/60 pt-6">
-            <div className="flex justify-between items-center bg-slate-950/40 p-3 rounded-xl border border-[#27272A]/30">
+          <div className="border-t border-slate-200/60 dark:border-white/10 pt-6">
+            <div className="flex justify-between items-center glass-pill p-3 rounded-xl">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Enterprise Security Layer</span>
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">Enterprise Security Layer</span>
               </div>
-              <span className="text-[9px] font-mono text-violet-400 uppercase">JWT + HTTP Only</span>
+              <span className="text-[9px] font-mono text-[#6D5EF8] uppercase">JWT + HTTP Only</span>
             </div>
           </div>
         </div>
@@ -406,11 +410,11 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
           {/* VERIFICATION SPECIAL ASSISTANCE BANNER */}
           {unverifiedUser && (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-3.5 text-xs font-sans">
-              <div className="flex items-center gap-2 text-amber-400 font-bold">
+              <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold">
                 <Inbox className="h-4 w-4" />
                 <span>Verification Assistance Outbox</span>
               </div>
-              <p className="text-slate-300 leading-relaxed text-[11px]">
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
                 We processed a registration token for <strong>{unverifiedUser.email}</strong>. 
                 Since this application is running in an AI Studio sandboxed container environment, 
                 you can verify your email address immediately by clicking the button below!
@@ -421,7 +425,7 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                     type="button"
                     onClick={handleInstantVerifyAndLogin}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-xs cursor-pointer shadow-md shadow-violet-500/10 hover:shadow-violet-500/20 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white font-bold rounded-xl transition-all text-xs cursor-pointer shadow-md shadow-[#6D5EF8]/20 disabled:opacity-50"
                   >
                     <span>Verify & Log In Instantly</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -430,7 +434,7 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                     href={unverifiedUser.verificationLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#27272A] hover:bg-[#3F3F46] text-slate-300 font-bold rounded-xl transition-all text-xs cursor-pointer border border-[#3F3F46]"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 glass-pill hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all text-xs cursor-pointer"
                   >
                     <span>Open Link in New Tab</span>
                   </a>
@@ -447,12 +451,12 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
           {view === "login" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Access Your Suite</h2>
-                <p className="text-xs text-slate-400 mt-1">Provide your credentials below or continue with enterprise federations.</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Access Your Suite</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Provide your credentials below or continue with enterprise federations.</p>
               </div>
 
               {loginError && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex gap-2.5 items-start text-[11px] text-rose-400 font-mono">
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex gap-2.5 items-start text-[11px] text-rose-600 dark:text-rose-400 font-mono">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <span>{loginError}</span>
                 </div>
@@ -460,14 +464,14 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider">Email Address</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase font-mono tracking-wider">Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                    <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                     <input
                       type="email"
                       required
                       placeholder="you@example.com"
-                      className="w-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-xl py-3 pl-10 pr-4 text-xs focus:outline-none focus:border-violet-500 font-sans"
+                      className="w-full glass-input rounded-xl py-3 pl-10 pr-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-sans"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                     />
@@ -476,29 +480,29 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider">Password</label>
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase font-mono tracking-wider">Password</label>
                     <button
                       type="button"
                       onClick={() => setView("forgot")}
-                      className="text-[10px] text-violet-400 hover:text-violet-300 uppercase font-mono tracking-wider focus:outline-none cursor-pointer"
+                      className="text-[10px] text-[#6D5EF8] hover:underline uppercase font-mono tracking-wider focus:outline-none cursor-pointer"
                     >
                       Forgot Password?
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                    <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       placeholder="••••••••"
-                      className="w-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-xl py-3 pl-10 pr-10 text-xs focus:outline-none focus:border-violet-500 font-sans"
+                      className="w-full glass-input rounded-xl py-3 pl-10 pr-10 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-sans"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 focus:outline-none cursor-pointer"
+                      className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -506,16 +510,16 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
-                    <KeyRound className="h-3.5 w-3.5 text-violet-400" />
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-[#6D5EF8]" />
                     <span>Admin Access Key (Optional)</span>
                   </label>
                   <div className="relative">
-                    <KeyRound className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                    <KeyRound className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                     <input
                       type="password"
                       placeholder="Required only for administrator role"
-                      className="w-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-xl py-3 pl-10 pr-4 text-xs focus:outline-none focus:border-violet-500 font-sans"
+                      className="w-full glass-input rounded-xl py-3 pl-10 pr-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-sans"
                       value={loginAdminKey}
                       onChange={(e) => setLoginAdminKey(e.target.value)}
                     />
@@ -528,16 +532,16 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded border-[#27272A] bg-[#09090B] text-violet-600 focus:ring-violet-500 focus:ring-offset-0 h-4 w-4"
+                      className="rounded border-slate-300 dark:border-white/10 text-[#6D5EF8] focus:ring-[#6D5EF8] focus:ring-offset-0 h-4 w-4 cursor-pointer"
                     />
-                    <span className="text-[11px] text-slate-400 font-sans">Remember me for 30 days</span>
+                    <span className="text-[11px] text-slate-600 dark:text-slate-400 font-sans">Remember me for 30 days</span>
                   </label>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-violet-500/15 cursor-pointer disabled:opacity-50"
+                  className="w-full bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-[#6D5EF8]/20 cursor-pointer disabled:opacity-50"
                 >
                   {isLoading ? "Validating Session..." : "Sign In to Dashboard"}
                   <ArrowRight className="h-4 w-4" />
@@ -545,9 +549,9 @@ export default function AuthPage({ onLoginSuccess, showNotification }: AuthPageP
               </form>
 
               <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-[#27272A]"></div>
+                <div className="flex-grow border-t border-slate-200/60 dark:border-white/10"></div>
                 <span className="flex-shrink mx-4 text-[10px] text-slate-500 uppercase font-mono tracking-widest">or continue with</span>
-                <div className="flex-grow border-t border-[#27272A]"></div>
+                <div className="flex-grow border-t border-slate-200/60 dark:border-white/10"></div>
               </div>
 
               {/* Social Login buttons */}

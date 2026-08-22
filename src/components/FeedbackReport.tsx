@@ -43,10 +43,10 @@ export default function FeedbackReport({
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Return to home button */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center border-b border-slate-200/60 dark:border-white/10 pb-5">
         <button
           onClick={onBackToDashboard}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-[#27272A] rounded-xl text-[10.5px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5 cursor-pointer"
+          className="px-3.5 py-1.5 glass-pill hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-[10.5px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Exit Feedback Workspace</span>
@@ -59,62 +59,62 @@ export default function FeedbackReport({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         
         {/* Gauge Card */}
-        <div className="md:col-span-4 bg-[#111827] border border-[#27272A] p-6 rounded-[18px] flex flex-col justify-between items-center text-center">
+        <div className="md:col-span-4 glass-panel p-6 rounded-2xl flex flex-col justify-between items-center text-center">
           <div className="w-full text-left">
             <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider block">Calibrated Verdict</span>
-            <h3 className="text-sm font-bold text-white font-sans mt-0.5">Recruiter Assessment Score</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white font-sans mt-0.5">Recruiter Assessment Score</h3>
           </div>
 
           <div className="relative w-28 h-28 my-6 flex items-center justify-center select-none">
             <svg className="w-full h-full transform -rotate-90">
-              <circle cx="56" cy="56" r="48" stroke="#1F2937" strokeWidth="8" fill="transparent" />
+              <circle cx="56" cy="56" r="48" stroke="currentColor" className="text-slate-200 dark:text-white/10" strokeWidth="8" fill="transparent" />
               <circle cx="56" cy="56" r="48" stroke={scoreColorHex} strokeWidth="8" fill="transparent" strokeDasharray="301" strokeDashoffset={301 - (301 * score) / 100} strokeLinecap="round" />
             </svg>
             <div className="absolute text-center">
-              <span className="text-2xl font-bold text-white">{score}%</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">{score}%</span>
               <span className="text-[8px] text-slate-500 font-mono block mt-0.5">PROFICIENCY</span>
             </div>
           </div>
 
-          <div className={`px-4 py-1.5 rounded-lg border text-xs font-bold font-mono tracking-wide ${ratingColor}`}>
+          <div className={`px-4 py-1.5 rounded-xl border text-xs font-bold font-mono tracking-wide ${ratingColor}`}>
             {evaluation.overallRating}
           </div>
         </div>
 
         {/* Narrative Summary card */}
-        <div className="md:col-span-8 bg-[#111827] border border-[#27272A] p-6 rounded-[18px] flex flex-col justify-between">
+        <div className="md:col-span-8 glass-panel p-6 rounded-2xl flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider">Board Commentary</span>
-              <span className="text-[10px] text-indigo-400 font-mono font-bold flex items-center gap-1">
+              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono font-bold flex items-center gap-1">
                 <Sparkles className="h-3.5 w-3.5" />
                 Verified AI Feedback
               </span>
             </div>
             
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-sans">
+            <p className="text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
               {evaluation.overallFeedback}
             </p>
           </div>
 
           {/* Calibrated skill indicators */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-[#27272A]/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200/60 dark:border-white/10">
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] font-mono">
-                <span className="text-slate-400">Technical Domain Accuracy</span>
-                <span className="text-white font-bold">{technicalAccuracy}%</span>
+                <span className="text-slate-500 dark:text-slate-400">Technical Domain Accuracy</span>
+                <span className="text-slate-900 dark:text-white font-bold">{technicalAccuracy}%</span>
               </div>
-              <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${technicalAccuracy}%` }} />
               </div>
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] font-mono">
-                <span className="text-slate-400">STAR Structure Consistency</span>
-                <span className="text-white font-bold">{starConsistency}%</span>
+                <span className="text-slate-500 dark:text-slate-400">STAR Structure Consistency</span>
+                <span className="text-slate-900 dark:text-white font-bold">{starConsistency}%</span>
               </div>
-              <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${starConsistency}%` }} />
               </div>
             </div>

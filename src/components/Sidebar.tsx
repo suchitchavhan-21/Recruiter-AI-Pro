@@ -38,10 +38,10 @@ export default function Sidebar({
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-[#09090B]/70 backdrop-blur-xl border-r border-white/10 text-slate-200 p-5 shrink-0 z-20 shadow-[0_0_40px_0_rgba(0,0,0,0.5)]">
+    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 glass-panel border-r border-white/10 text-slate-200 p-5 shrink-0 z-20 shadow-[0_0_40px_0_rgba(0,0,0,0.5)]">
       {/* Brand Logo */}
       <div className="flex items-center gap-2.5 mb-8 px-2 select-none">
-        <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-[#6D5EF8] via-indigo-500 to-purple-400 flex items-center justify-center text-white shadow-lg shadow-[#6D5EF8]/30 ring-1 ring-white/20">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#6D5EF8] via-indigo-500 to-purple-400 flex items-center justify-center text-white shadow-lg shadow-[#6D5EF8]/30 ring-1 ring-white/30">
           <Sparkles className="h-4.5 w-4.5 animate-pulse" />
         </div>
         <div>
@@ -61,14 +61,14 @@ export default function Sidebar({
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer backdrop-blur-md ${
                 isActive
-                  ? "bg-white/10 text-white border border-white/20 shadow-[0_4px_16px_0_rgba(109,94,248,0.25)] font-bold"
-                  : "text-slate-400 hover:text-slate-100 hover:bg-white/5 border border-transparent"
+                  ? "bg-white/15 text-white border border-white/25 shadow-[0_4px_20px_0_rgba(109,94,248,0.28)] font-bold ring-1 ring-white/10"
+                  : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.06] border border-transparent"
               }`}
             >
               <Icon className={`h-4.5 w-4.5 transition-colors ${isActive ? "text-[#818cf8]" : "text-slate-400 group-hover:text-slate-200"}`} />
               <span className="flex-1 text-left">{item.label}</span>
               {isActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#818cf8] shadow-[0_0_10px_#818cf8]" />
               )}
             </button>
           );
@@ -79,7 +79,7 @@ export default function Sidebar({
       <div className="p-1 mb-4">
         <button
           onClick={() => setActiveTab("interview")}
-          className="w-full py-2.5 px-4 bg-gradient-to-r from-[#6D5EF8]/90 to-indigo-600/90 hover:from-[#6D5EF8] hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-[0_8px_20px_0_rgba(109,94,248,0.35)] flex items-center justify-center gap-2 cursor-pointer border border-white/20 backdrop-blur-md active:scale-98"
+          className="w-full py-2.5 px-4 glass-btn-primary text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Mic className="h-3.5 w-3.5" />
           <span>Practice Session</span>
@@ -90,9 +90,9 @@ export default function Sidebar({
       <div className="border-t border-white/10 pt-4 mt-auto">
         <div 
           onClick={onOpenProfile}
-          className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 cursor-pointer group transition-all backdrop-blur-md"
+          className="flex items-center gap-3 p-2 rounded-xl glass-card hover:bg-white/10 border border-white/10 cursor-pointer group transition-all"
         >
-          <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-900 border border-white/15 flex items-center justify-center text-sm shadow shrink-0">
+          <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-900 border border-white/20 flex items-center justify-center text-sm shadow shrink-0">
             {currentUser?.profilePhoto ? (
               <img src={currentUser.profilePhoto} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (

@@ -528,18 +528,18 @@ Requirements:
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       {/* Tab selection header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight font-sans">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight font-sans">
             SaaS Study & Preparation Hub
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Build STAR story sheets, browse target role templates, review distributed systems layouts, and practice core algorithms.
           </p>
         </div>
 
         {/* Sub Navigation */}
-        <div className="flex flex-wrap gap-1.5 bg-[#111827] border border-[#27272A] p-1.5 rounded-xl">
+        <div className="flex flex-wrap gap-1.5 glass-dock p-1.5 rounded-2xl">
           {[
             { id: "star_builder", label: "STAR Worksheet" },
             { id: "templates", label: "Role Templates" },
@@ -550,10 +550,10 @@ Requirements:
             <button
               key={sub.id}
               onClick={() => setActiveSubTab(sub.id as any)}
-              className={`px-3 py-2 rounded-lg text-[9.5px] font-bold uppercase tracking-wider font-mono transition-all cursor-pointer ${
+              className={`px-3 py-2 rounded-xl text-[9.5px] font-bold uppercase tracking-wider font-mono transition-all cursor-pointer ${
                 activeSubTab === sub.id
-                  ? "bg-[#6D5EF8] text-white"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-[#6D5EF8] text-white shadow-md"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               {sub.label}
@@ -565,19 +565,19 @@ Requirements:
       {/* SUB-TAB 1: STAR STORY WORKSHEET BUILDER */}
       {activeSubTab === "star_builder" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-[#111827] border border-[#27272A] p-6 rounded-[18px] space-y-5 shadow-sm">
+          <div className="lg:col-span-7 glass-panel p-6 rounded-2xl space-y-5 shadow-sm">
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">STAR Formulation Portal</span>
-              <h3 className="text-white text-base font-bold tracking-tight mt-0.5 font-sans">Interactive Story Optimization Worksheet</h3>
+              <span className="text-[10px] font-bold text-[#6D5EF8] uppercase font-mono tracking-wider">STAR Formulation Portal</span>
+              <h3 className="text-slate-900 dark:text-white text-base font-bold tracking-tight mt-0.5 font-sans">Interactive Story Optimization Worksheet</h3>
             </div>
 
             <form onSubmit={handleGradeSTAR} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono mb-1.5">Story / Context Title</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono mb-1.5">Story / Context Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Scaling checkout cache clusters under mutation storms"
-                  className="w-full bg-[#09090B] border border-[#27272A] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#6D5EF8]"
+                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   value={storyTitle}
                   onChange={(e) => setStoryTitle(e.target.value)}
                 />
@@ -585,22 +585,22 @@ Requirements:
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-400 font-mono mb-1.5">Situation (Context & Tension)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 font-mono mb-1.5">Situation (Context & Tension)</label>
                   <textarea
                     rows={4}
                     placeholder="Describe the context, the scale bottleneck, database lock storms, or project friction..."
-                    className="w-full bg-[#09090B] border border-[#27272A]/70 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
+                    className="w-full glass-input rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed placeholder-slate-400 dark:placeholder-slate-500"
                     value={situation}
                     onChange={(e) => setSituation(e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono mb-1.5">Task (Your Personal Directive)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-mono mb-1.5">Task (Your Personal Directive)</label>
                   <textarea
                     rows={4}
                     placeholder="What was your specific mandate? Why was it challenging and what were the scaling constraints..."
-                    className="w-full bg-[#09090B] border border-[#27272A]/70 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
+                    className="w-full glass-input rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed placeholder-slate-400 dark:placeholder-slate-500"
                     value={task}
                     onChange={(e) => setTask(e.target.value)}
                   />
@@ -609,22 +609,22 @@ Requirements:
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400 font-mono mb-1.5">Action (Your Engineering Work)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 font-mono mb-1.5">Action (Your Engineering Work)</label>
                   <textarea
                     rows={5}
                     placeholder="What specific actions did you take? Explain technologies used (Redis lock, mTLS, CSS layers), trade-offs, and design compromises..."
-                    className="w-full bg-[#09090B] border border-[#27272A]/70 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
+                    className="w-full glass-input rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed placeholder-slate-400 dark:placeholder-slate-500"
                     value={action}
                     onChange={(e) => setAction(e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-rose-400 font-mono mb-1.5">Result (Quantifiable Outcome)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 font-mono mb-1.5">Result (Quantifiable Outcome)</label>
                   <textarea
                     rows={5}
                     placeholder="What was the result? Quantify performance savings (e.g. CPU load reduced by 40%, latency down to 80ms, 0 transaction failures)..."
-                    className="w-full bg-[#09090B] border border-[#27272A]/70 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
+                    className="w-full glass-input rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed placeholder-slate-400 dark:placeholder-slate-500"
                     value={result}
                     onChange={(e) => setResult(e.target.value)}
                   />
@@ -634,7 +634,7 @@ Requirements:
               <button
                 type="submit"
                 disabled={isEvaluating}
-                className="w-full bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#6D5EF8]/15 disabled:opacity-50"
+                className="w-full bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#6D5EF8]/20 disabled:opacity-50"
               >
                 {isEvaluating ? (
                   <>

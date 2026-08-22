@@ -381,65 +381,65 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
   };
 
   return (
-    <div className="bg-[#111827] border border-[#27272A] rounded-2xl overflow-hidden shadow-2xl space-y-0 animate-fade-in max-w-3xl mx-auto">
+    <div className="glass-panel rounded-3xl overflow-hidden shadow-2xl space-y-0 animate-fade-in max-w-3xl mx-auto">
       {/* Calibration Header */}
-      <div className="p-6 border-b border-[#27272A]/70 bg-gradient-to-r from-indigo-950/20 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-[#6D5EF8]/10 border border-[#6D5EF8]/20 text-xs text-[#6D5EF8]">
+            <span className="p-1.5 rounded-xl glass-pill text-xs text-[#818cf8]">
               <Sliders className="h-4 w-4" />
             </span>
             <h3 className="text-sm font-extrabold text-white uppercase font-mono tracking-wider">
               AI Voice & Mic Calibration Suite
             </h3>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-slate-300">
             Tune speech-to-text filters, sound gains, pace meters, and synthesis variables for optimal hands-free interview simulation.
           </p>
         </div>
 
         {/* Dynamic Status Badges */}
         <div className="flex items-center gap-2 text-[10px] font-mono">
-          <span className={`px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+          <span className={`px-3 py-1 rounded-full border flex items-center gap-1.5 ${
             micStream 
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
-              : "bg-slate-900 border-[#27272A] text-slate-500"
+              ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.2)]" 
+              : "glass-pill text-slate-400"
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${micStream ? "bg-emerald-400 animate-ping" : "bg-slate-700"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${micStream ? "bg-emerald-400 animate-ping" : "bg-slate-500"}`} />
             {micStream ? "Hardware Connected" : "Hardware Offline"}
           </span>
         </div>
       </div>
 
       {/* Step Wizard Buttons */}
-      <div className="grid grid-cols-3 border-b border-[#27272A]/50 bg-[#09090B]/40 text-xs font-mono text-center">
+      <div className="grid grid-cols-3 border-b border-white/10 bg-white/[0.02] text-xs font-mono text-center">
         <button
           onClick={() => { setActiveStep("hardware"); startMicStream(); }}
-          className={`py-3 transition-colors cursor-pointer border-r border-[#27272A]/40 font-bold flex items-center justify-center gap-1.5 ${
-            activeStep === "hardware" ? "bg-[#111827] text-[#6D5EF8] border-b-2 border-b-[#6D5EF8]" : "text-slate-500 hover:text-slate-300"
+          className={`py-3.5 transition-all cursor-pointer border-r border-white/10 font-bold flex items-center justify-center gap-1.5 ${
+            activeStep === "hardware" ? "bg-white/10 text-white border-b-2 border-b-[#818cf8]" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Activity className="h-3.5 w-3.5" />
+          <Activity className="h-3.5 w-3.5 text-[#818cf8]" />
           <span>1. Hardware Setup</span>
         </button>
 
         <button
           onClick={() => { setActiveStep("fidelity"); startMicStream(); }}
-          className={`py-3 transition-colors cursor-pointer border-r border-[#27272A]/40 font-bold flex items-center justify-center gap-1.5 ${
-            activeStep === "fidelity" ? "bg-[#111827] text-[#6D5EF8] border-b-2 border-b-[#6D5EF8]" : "text-slate-500 hover:text-slate-300"
+          className={`py-3.5 transition-all cursor-pointer border-r border-white/10 font-bold flex items-center justify-center gap-1.5 ${
+            activeStep === "fidelity" ? "bg-white/10 text-white border-b-2 border-b-[#818cf8]" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Mic className="h-3.5 w-3.5" />
+          <Mic className="h-3.5 w-3.5 text-[#818cf8]" />
           <span>2. Speech Metrics</span>
         </button>
 
         <button
           onClick={() => setActiveStep("synth")}
-          className={`py-3 transition-colors cursor-pointer font-bold flex items-center justify-center gap-1.5 ${
-            activeStep === "synth" ? "bg-[#111827] text-[#6D5EF8] border-b-2 border-b-[#6D5EF8]" : "text-slate-500 hover:text-slate-300"
+          className={`py-3.5 transition-all cursor-pointer font-bold flex items-center justify-center gap-1.5 ${
+            activeStep === "synth" ? "bg-white/10 text-white border-b-2 border-b-[#818cf8]" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <Volume2 className="h-3.5 w-3.5" />
+          <Volume2 className="h-3.5 w-3.5 text-[#818cf8]" />
           <span>3. Synthesis Tuner</span>
         </button>
       </div>
@@ -449,15 +449,15 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
 
         {/* IFRAME CAUTION HELPER IF MIC DOCKED */}
         {sttStatus === "error" && (
-          <div className="p-4 bg-amber-500/5 border border-amber-500/20 text-slate-300 rounded-xl space-y-2 text-xs leading-normal">
-            <div className="flex gap-2 items-center text-amber-400 font-bold">
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 text-slate-200 rounded-2xl space-y-2 text-xs leading-normal">
+            <div className="flex gap-2 items-center text-amber-300 font-bold">
               <AlertTriangle className="h-4.5 w-4.5 shrink-0" />
               <span>Browser Sandbox / Permissions Notice</span>
             </div>
             <p>
               Microphone capture request was block-interrupted or browser support is limited.
             </p>
-            <p className="text-slate-400 text-[11px]">
+            <p className="text-slate-300 text-[11px]">
               <strong>Solution:</strong> Because you are using AI Studio's preview iframe, browsers frequently block microphone access for secondary frame sandboxes. Please click the <strong>"Open App in a New Tab"</strong> button in the top right header (or visit your developer URL directly) to allow Chrome or Safari to activate speech APIs instantly.
             </p>
           </div>
@@ -468,27 +468,27 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
           <div className="space-y-5 animate-fade-in">
             <div className="space-y-1.5">
               <h4 className="text-xs font-bold text-white font-sans">Hardware Capture & Noise Filtration</h4>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-300 leading-normal font-normal">
                 Test if your microphone captures signals clearly. Use the ambient filter tool during silence to calibrate a gate threshold, filtering out background hums.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Mic activation & Level visualizer */}
-              <div className="bg-[#09090B] border border-[#27272A] rounded-xl p-4.5 space-y-4">
+              <div className="glass-card rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider">Live Capture Meter</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider">Live Capture Meter</span>
                   {micStream ? (
                     <button
                       onClick={stopMicStream}
-                      className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-mono cursor-pointer transition-colors"
+                      className="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-lg text-[10px] font-mono cursor-pointer transition-colors"
                     >
                       Disconnect Stream
                     </button>
                   ) : (
                     <button
                       onClick={startMicStream}
-                      className="px-2.5 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-[#6D5EF8] border border-indigo-500/20 rounded-lg text-[10px] font-mono cursor-pointer transition-colors"
+                      className="px-2.5 py-1 glass-btn-primary text-white rounded-lg text-[10px] font-mono cursor-pointer transition-all"
                     >
                       Connect Mic
                     </button>
@@ -497,7 +497,7 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
 
                 {/* Level meter graphic */}
                 <div className="space-y-2">
-                  <div className="h-3 bg-slate-950 rounded-full overflow-hidden border border-[#27272A] relative">
+                  <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/10 relative">
                     <div 
                       className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 transition-all duration-75"
                       style={{ width: `${audioLevel * 100}%` }}
@@ -505,38 +505,38 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                     
                     {/* Noise floor marker */}
                     <div 
-                      className="absolute top-0 bottom-0 w-0.5 bg-rose-500"
+                      className="absolute top-0 bottom-0 w-0.5 bg-rose-500 shadow-[0_0_6px_#f43f5e]"
                       style={{ left: `${noiseFloor * 100}%` }}
                       title={`Noise Floor Threshold: ${noiseFloor}`}
                     />
                   </div>
 
-                  <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                  <div className="flex justify-between text-[9px] text-slate-400 font-mono">
                     <span>SILENT</span>
-                    <span className="text-rose-400 font-bold">Ambient Noise Gate ({noiseFloor})</span>
+                    <span className="text-rose-300 font-bold">Ambient Noise Gate ({noiseFloor})</span>
                     <span>LOUD</span>
                   </div>
                 </div>
 
-                <div className="text-[10.5px] text-slate-400 leading-relaxed space-y-1">
+                <div className="text-[10.5px] text-slate-300 leading-relaxed space-y-1 font-normal">
                   <p>✔ Speaking level should ideally push the meter past the red gate.</p>
                   <p>✔ Adjust your physical mic placement if volume levels feel weak.</p>
                 </div>
               </div>
 
               {/* Ambient Noise Gate Calibration */}
-              <div className="bg-[#09090B] border border-[#27272A] rounded-xl p-4.5 space-y-4 flex flex-col justify-between">
+              <div className="glass-card rounded-2xl p-5 space-y-4 flex flex-col justify-between">
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider block">Background Gate Calibration</span>
-                  <p className="text-[11px] text-slate-400 leading-normal">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider block">Background Gate Calibration</span>
+                  <p className="text-[11px] text-slate-300 leading-normal font-normal">
                     Click the calibrator button, then remain completely silent for 3 seconds. The engine will sample background hums and adjust the audio sensitivity automatically.
                   </p>
                 </div>
 
                 <div className="space-y-3 pt-2">
                   {isCalibratingNoise ? (
-                    <div className="p-3 bg-[#6D5EF8]/10 border border-[#6D5EF8]/25 rounded-xl text-center space-y-2">
-                      <div className="w-5 h-5 border-2 border-[#6D5EF8] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div className="p-3 bg-indigo-500/20 border border-indigo-500/40 rounded-xl text-center space-y-2">
+                      <div className="w-5 h-5 border-2 border-[#818cf8] border-t-transparent rounded-full animate-spin mx-auto"></div>
                       <span className="text-[11px] font-mono font-bold text-white block">
                         Sampling silence... Keep quiet for {noiseCountdown}s
                       </span>
@@ -544,7 +544,7 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                   ) : (
                     <button
                       onClick={triggerNoiseCalibration}
-                      className="w-full py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-[#6D5EF8] hover:text-[#6D5EF8]/90 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full py-2.5 glass-btn-secondary text-indigo-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <RefreshCw className="h-4 w-4" />
                       <span>Calibrate Gate Floor</span>
@@ -552,13 +552,13 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                   )}
 
                   <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono">
-                    <div className="p-2 bg-slate-950 border border-[#27272A]/70 rounded-lg">
-                      <span className="text-slate-500 text-[9px] uppercase block">Gate Threshold</span>
+                    <div className="p-2.5 glass-pill rounded-xl">
+                      <span className="text-slate-400 text-[9px] uppercase block">Gate Threshold</span>
                       <span className="text-white font-extrabold text-xs block mt-0.5">{noiseFloor}</span>
                     </div>
-                    <div className="p-2 bg-slate-950 border border-[#27272A]/70 rounded-lg">
-                      <span className="text-slate-500 text-[9px] uppercase block">Rec. Signal Gain</span>
-                      <span className="text-emerald-400 font-extrabold text-xs block mt-0.5">+{gainValue}x</span>
+                    <div className="p-2.5 glass-pill rounded-xl">
+                      <span className="text-slate-400 text-[9px] uppercase block">Rec. Signal Gain</span>
+                      <span className="text-emerald-300 font-extrabold text-xs block mt-0.5">+{gainValue}x</span>
                     </div>
                   </div>
                 </div>
@@ -572,18 +572,18 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
           <div className="space-y-5 animate-fade-in">
             <div className="space-y-1.5">
               <h4 className="text-xs font-bold text-white font-sans">Accuracy Transcription & Speaking Pace</h4>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-300 leading-normal font-normal">
                 Speak the standardized calibration sentence below using your system microphone. The system analyzes phonetic distance to estimate your speech-to-text accuracy and measure your speaking pace.
               </p>
             </div>
 
             {/* Test Sentence Card */}
-            <div className="p-4 bg-[#09090B] border border-[#27272A] rounded-xl space-y-3.5 relative">
-              <span className="absolute top-3 right-3 text-[9px] text-[#6D5EF8] font-mono uppercase font-bold tracking-wider bg-[#6D5EF8]/10 px-2 py-0.5 border border-[#6D5EF8]/15 rounded">
+            <div className="p-5 glass-card rounded-2xl space-y-3.5 relative">
+              <span className="absolute top-3 right-3 text-[9px] text-[#818cf8] font-mono uppercase font-bold tracking-wider glass-pill px-2.5 py-0.5 rounded-full">
                 Test Prompter
               </span>
-              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Please read aloud:</label>
-              <p className="text-sm font-semibold text-slate-100 italic select-none pl-3 border-l-2 border-[#6D5EF8] leading-relaxed">
+              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Please read aloud:</label>
+              <p className="text-sm font-semibold text-white italic select-none pl-3 border-l-2 border-[#818cf8] leading-relaxed">
                 "{targetSentence}"
               </p>
             </div>
@@ -596,8 +596,8 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                   onClick={handleToggleSTTTest}
                   className={`w-full py-4 rounded-2xl text-xs font-extrabold transition-all cursor-pointer border flex flex-col items-center justify-center gap-2 ${
                     isSTTListening 
-                      ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-400 animate-pulse" 
-                      : "bg-[#6D5EF8] hover:bg-[#6D5EF8]/95 text-white border-none shadow-lg shadow-[#6D5EF8]/20"
+                      ? "bg-red-500/20 hover:bg-red-500/30 border-red-500/40 text-red-300 animate-pulse" 
+                      : "glass-btn-primary text-white border-none shadow-lg"
                   }`}
                 >
                   {isSTTListening ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
@@ -606,19 +606,19 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
 
                 {/* Score Indicators */}
                 <div className="space-y-2.5 font-mono text-[10px]">
-                  <div className="flex items-center justify-between p-2.5 bg-slate-950 border border-[#27272A] rounded-xl">
-                    <span className="text-slate-500 uppercase">STT Accuracy</span>
+                  <div className="flex items-center justify-between p-3 glass-card rounded-xl">
+                    <span className="text-slate-400 uppercase">STT Accuracy</span>
                     <span className={`font-extrabold text-sm ${
-                      sttFidelity === null ? "text-slate-600" : sttFidelity >= 85 ? "text-emerald-400" : sttFidelity >= 60 ? "text-indigo-400" : "text-rose-400"
+                      sttFidelity === null ? "text-slate-500" : sttFidelity >= 85 ? "text-emerald-300" : sttFidelity >= 60 ? "text-indigo-300" : "text-rose-300"
                     }`}>
                       {sttFidelity === null ? "Waiting..." : `${sttFidelity}%`}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-slate-950 border border-[#27272A] rounded-xl">
-                    <span className="text-slate-500 uppercase">Speaking Tempo</span>
+                  <div className="flex items-center justify-between p-3 glass-card rounded-xl">
+                    <span className="text-slate-400 uppercase">Speaking Tempo</span>
                     <span className={`font-extrabold text-sm ${
-                      speakingWPM === null ? "text-slate-600" : "text-white"
+                      speakingWPM === null ? "text-slate-500" : "text-white"
                     }`}>
                       {speakingWPM === null ? "Waiting..." : `${speakingWPM} WPM`}
                     </span>
@@ -627,15 +627,15 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
               </div>
 
               {/* Dynamic Transcript Output block */}
-              <div className="md:col-span-8 bg-[#09090B] border border-[#27272A] rounded-xl p-4.5 flex flex-col justify-between h-[180px]">
+              <div className="md:col-span-8 glass-card rounded-2xl p-5 flex flex-col justify-between h-[180px]">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase font-mono tracking-wider block border-b border-[#27272A] pb-1.5 mb-2">Live Transcript Result</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider block border-b border-white/10 pb-1.5 mb-2">Live Transcript Result</span>
                   {sttTranscript ? (
-                    <p className="text-xs text-indigo-300 leading-relaxed font-sans font-medium line-clamp-4">
+                    <p className="text-xs text-indigo-200 leading-relaxed font-sans font-medium line-clamp-4">
                       "{sttTranscript}"
                     </p>
                   ) : (
-                    <p className="text-[11px] text-slate-600 italic font-mono mt-1">
+                    <p className="text-[11px] text-slate-400 italic font-mono mt-1">
                       {isSTTListening ? "Listening... Speak the test sentence clearly into your mic." : "No live transcript logged. Press record and read the prompter text above to calibrate."}
                     </p>
                   )}
@@ -643,10 +643,10 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
 
                 {/* Cadence assessment helper */}
                 {paceLabel && (
-                  <div className={`p-2.5 rounded-lg border text-[10px] font-mono leading-relaxed flex items-center gap-1.5 mt-2 ${
+                  <div className={`p-2.5 rounded-xl border text-[10px] font-mono leading-relaxed flex items-center gap-1.5 mt-2 ${
                     paceLabel === "Perfect" 
-                      ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" 
-                      : "bg-amber-500/5 border-amber-500/20 text-amber-400"
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" 
+                      : "bg-amber-500/10 border-amber-500/30 text-amber-300"
                   }`}>
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>
@@ -665,35 +665,35 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
           <div className="space-y-5 animate-fade-in">
             <div className="space-y-1.5">
               <h4 className="text-xs font-bold text-white font-sans">Synthetic Voice & Playback Calibration</h4>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <p className="text-[11px] text-slate-300 leading-normal font-normal">
                 Calibrate how the AI interviewer sounds. Choose your preferred local text-to-speech voice engine and adjust speech speed / tone pitch to fit your auditory comfort level.
               </p>
             </div>
 
-            <div className="bg-[#09090B] border border-[#27272A] rounded-xl p-5 space-y-5">
+            <div className="glass-card rounded-2xl p-5 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Voice Model Selector */}
                 <div className="space-y-1.5">
-                  <label htmlFor="voice-model" className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">System Voice Engine Model</label>
+                  <label htmlFor="voice-model" className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">System Voice Engine Model</label>
                   <select
                     id="voice-model"
                     value={selectedVoice}
                     onChange={(e) => setSelectedVoice(e.target.value)}
-                    className="w-full bg-[#111827] border border-[#27272A] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none cursor-pointer focus:border-[#6D5EF8]"
+                    className="w-full glass-input text-slate-200 rounded-xl p-2.5 text-xs focus:outline-none cursor-pointer"
                   >
                     {voices.length > 0 ? (
                       voices.map(v => (
-                        <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>
+                        <option key={v.name} value={v.name} className="bg-slate-900 text-white">{v.name} ({v.lang})</option>
                       ))
                     ) : (
-                      <option value="">Standard Browser Voice (Fallback)</option>
+                      <option value="" className="bg-slate-900 text-white">Standard Browser Voice (Fallback)</option>
                     )}
                   </select>
                 </div>
 
                 {/* Synthesis controls info */}
-                <div className="flex items-center gap-3 bg-indigo-950/20 border border-[#6D5EF8]/10 p-3.5 rounded-xl text-[10.5px] text-slate-400 leading-relaxed font-sans">
-                  <Info className="h-4.5 w-4.5 text-[#6D5EF8] shrink-0" />
+                <div className="flex items-center gap-3 glass-pill p-3.5 rounded-2xl text-[10.5px] text-slate-300 leading-relaxed font-sans">
+                  <Info className="h-4.5 w-4.5 text-[#818cf8] shrink-0" />
                   <p>
                     Synthesis speed and pitches configured below will govern the strict systems architect and mentor recruiter characters in all active mock loops.
                   </p>
@@ -701,11 +701,11 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
               </div>
 
               {/* Sliders */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1 border-t border-[#27272A]/40">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-white/10">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Synthesis Speed / Rate</span>
-                    <span className="text-[11px] text-[#6D5EF8] font-mono font-bold">{synthRate}x</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Synthesis Speed / Rate</span>
+                    <span className="text-[11px] text-[#818cf8] font-mono font-bold">{synthRate}x</span>
                   </div>
                   <input
                     type="range"
@@ -714,15 +714,15 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                     step="0.05"
                     value={synthRate}
                     onChange={(e) => setSynthRate(parseFloat(e.target.value))}
-                    className="w-full accent-[#6D5EF8] bg-slate-900 h-1.5 rounded-lg cursor-pointer"
+                    className="w-full accent-[#818cf8] bg-black/40 h-1.5 rounded-lg cursor-pointer"
                   />
-                  <span className="text-[9px] text-slate-600 font-mono block">Slow/deliberate (0.7x) to fast/responsive (1.3x)</span>
+                  <span className="text-[9px] text-slate-400 font-mono block">Slow/deliberate (0.7x) to fast/responsive (1.3x)</span>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Speaker Pitch / Tone</span>
-                    <span className="text-[11px] text-[#6D5EF8] font-mono font-bold">{synthPitch}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Speaker Pitch / Tone</span>
+                    <span className="text-[11px] text-[#818cf8] font-mono font-bold">{synthPitch}</span>
                   </div>
                   <input
                     type="range"
@@ -731,16 +731,16 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
                     step="0.05"
                     value={synthPitch}
                     onChange={(e) => setSynthPitch(parseFloat(e.target.value))}
-                    className="w-full accent-[#6D5EF8] bg-slate-900 h-1.5 rounded-lg cursor-pointer"
+                    className="w-full accent-[#818cf8] bg-black/40 h-1.5 rounded-lg cursor-pointer"
                   />
-                  <span className="text-[9px] text-slate-600 font-mono block">Deep authoritative (0.8) to energetic friendly (1.2)</span>
+                  <span className="text-[9px] text-slate-400 font-mono block">Deep authoritative (0.8) to energetic friendly (1.2)</span>
                 </div>
               </div>
 
               {/* Play test Synthesis */}
               <button
                 onClick={handlePlayTestSynth}
-                className="w-full py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-[#6D5EF8] border border-indigo-500/20 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 glass-btn-secondary text-[#818cf8] hover:text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-2"
               >
                 {isPlayingTestSynth ? <Square className="h-4 w-4 shrink-0" /> : <Play className="h-4 w-4 shrink-0" />}
                 <span>{isPlayingTestSynth ? "Stop Voice Playback" : "Speak Diagnostic Voice Sample"}</span>
@@ -752,15 +752,15 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
       </div>
 
       {/* Save Settings Footer */}
-      <div className="p-4.5 bg-[#09090B] border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex gap-2 items-center text-[10px] text-slate-500 font-mono">
-          <ShieldCheck className="h-4 w-4 text-[#6D5EF8]" />
+      <div className="p-5 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex gap-2 items-center text-[10px] text-slate-400 font-mono">
+          <ShieldCheck className="h-4 w-4 text-[#818cf8]" />
           <span>SaaS Calibration Framework v1.4 • Locally Docked</span>
         </div>
 
         <button
           onClick={handleSaveFullCalibration}
-          className="w-full sm:w-auto px-6 py-2.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold shadow-md shadow-[#6D5EF8]/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          className="w-full sm:w-auto px-6 py-2.5 glass-btn-primary text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
         >
           <CheckCircle2 className="h-4 w-4" />
           <span>Save Voice Profile Settings</span>

@@ -147,17 +147,17 @@ export default function ProfileSettings({
   return (
     <div className="space-y-8 animate-fade-in font-sans select-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight">Candidate Profile</h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-xl">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">Candidate Profile</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
             Update personal information, calibrate speech parameters, and manage candidate details.
           </p>
         </div>
         {onLogout && (
           <button
             onClick={onLogout}
-            className="w-full sm:w-auto py-2 px-3.5 bg-rose-500/10 hover:bg-rose-500/15 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/5"
+            className="w-full sm:w-auto py-2 px-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-500/5"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Log Out Session</span>
@@ -167,13 +167,13 @@ export default function ProfileSettings({
 
       {/* ACTIVE CANDIDATE PROFILE CARD */}
       {currentUser && (
-        <div className="bg-gradient-to-r from-[#111827] via-[#111827] to-indigo-950/20 border border-[#27272A] rounded-[18px] p-6 relative overflow-hidden flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 shadow-xl">
+        <div className="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 shadow-xl">
           <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none" />
           
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             <div 
               onClick={() => setIsPreviewOpen(true)}
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-[#6D5EF8] relative shrink-0 select-none shadow-lg hover:scale-105 hover:border-violet-400 active:scale-95 cursor-pointer transition-all duration-200 group/avatar bg-[#09090B]"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-[#6D5EF8] relative shrink-0 select-none shadow-lg hover:scale-105 hover:border-violet-400 active:scale-95 cursor-pointer transition-all duration-200 group/avatar bg-slate-900"
               title="Click to view full size"
             >
               <img src={profilePhoto} alt="Candidate Avatar" className="w-full h-full object-cover transition-all duration-300 group-hover/avatar:scale-110" referrerPolicy="no-referrer" />
@@ -181,45 +181,45 @@ export default function ProfileSettings({
                 <Camera className="h-4 w-4 mb-1 text-violet-400" />
                 View Large
               </div>
-              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#111827] rounded-full shadow-md z-10" />
+              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-[#111827] rounded-full shadow-md z-10" />
             </div>
             
             <div className="text-center sm:text-left space-y-1.5">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h3 className="text-lg font-bold text-white tracking-tight font-sans">{currentUser.name || currentUser.fullName}</h3>
-                <span className="text-[9px] font-bold text-emerald-400 uppercase font-mono bg-emerald-500/10 px-2.5 py-0.5 border border-emerald-500/20 rounded-full">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight font-sans">{currentUser.name || currentUser.fullName}</h3>
+                <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase font-mono bg-emerald-500/10 px-2.5 py-0.5 border border-emerald-500/20 rounded-full">
                   Verified
                 </span>
               </div>
               
-              <div className="space-y-1 text-slate-300">
-                <p className="text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 text-slate-300">
+              <div className="space-y-1 text-slate-600 dark:text-slate-300">
+                <p className="text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 text-slate-700 dark:text-slate-300">
                   <Award className="h-3.5 w-3.5 text-[#6D5EF8]" />
                   <span>Track: <strong className="text-[#6D5EF8]">{currentUser.role === "admin" ? "System Administrator" : "Candidate Engineer"}</strong></span>
                 </p>
-                <p className="text-[11px] text-slate-400 flex items-center justify-center sm:justify-start gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-slate-500" />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center sm:justify-start gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-slate-400" />
                   <span>{currentUser.email}</span>
                 </p>
               </div>
 
               <div className="pt-2 text-[10px] text-slate-500 flex items-center justify-center sm:justify-start gap-1.5 font-mono">
-                <Calendar className="h-3.5 w-3.5 text-slate-600" />
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
                 <span>Joined Workspace: {currentUser.joinedAt ? new Date(currentUser.joinedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Recently"}</span>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto md:border-l md:border-[#27272A]/80 md:pl-8 pt-4 md:pt-0">
-            <div className="bg-[#09090B]/40 border border-[#27272A]/60 p-3 rounded-xl text-center md:text-left min-w-[90px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto md:border-l md:border-slate-200/60 dark:md:border-white/10 md:pl-8 pt-4 md:pt-0">
+            <div className="glass-card p-3 rounded-xl text-center md:text-left min-w-[90px]">
               <span className="text-[8.5px] font-bold font-mono text-slate-500 uppercase block tracking-wider">Simulations</span>
-              <span className="text-base font-extrabold text-white font-mono mt-0.5 block">{sessionsHistory?.length || 0}</span>
+              <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono mt-0.5 block">{sessionsHistory?.length || 0}</span>
             </div>
             
-            <div className="bg-[#09090B]/40 border border-[#27272A]/60 p-3 rounded-xl text-center md:text-left min-w-[90px]">
+            <div className="glass-card p-3 rounded-xl text-center md:text-left min-w-[90px]">
               <span className="text-[8.5px] font-bold font-mono text-slate-500 uppercase block tracking-wider">Avg Score</span>
-              <span className="text-base font-extrabold text-emerald-400 font-mono mt-0.5 block">
+              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">
                 {sessionsHistory && sessionsHistory.length > 0 
                   ? `${Math.round(sessionsHistory.reduce((acc, curr) => acc + (curr.score || 0), 0) / sessionsHistory.length)}%`
                   : "N/A"
@@ -227,14 +227,14 @@ export default function ProfileSettings({
               </span>
             </div>
 
-            <div className="bg-[#09090B]/40 border border-[#27272A]/60 p-3 rounded-xl text-center md:text-left min-w-[90px]">
+            <div className="glass-card p-3 rounded-xl text-center md:text-left min-w-[90px]">
               <span className="text-[8.5px] font-bold font-mono text-slate-500 uppercase block tracking-wider">STAR Stories</span>
               <span className="text-base font-extrabold text-[#6D5EF8] font-mono mt-0.5 block">{savedStarStories?.length || 0}</span>
             </div>
 
-            <div className="bg-[#09090B]/40 border border-[#27272A]/60 p-3 rounded-xl text-center md:text-left min-w-[90px]">
+            <div className="glass-card p-3 rounded-xl text-center md:text-left min-w-[90px]">
               <span className="text-[8.5px] font-bold font-mono text-slate-500 uppercase block tracking-wider">Applications</span>
-              <span className="text-base font-extrabold text-amber-500 font-mono mt-0.5 block">{applications?.length || 0}</span>
+              <span className="text-base font-extrabold text-amber-600 dark:text-amber-500 font-mono mt-0.5 block">{applications?.length || 0}</span>
             </div>
           </div>
         </div>
@@ -246,8 +246,8 @@ export default function ProfileSettings({
         <div className="lg:col-span-7 space-y-6">
           
           {/* Edit Profile Form */}
-          <div className="bg-[#111827] border border-[#27272A] p-6 rounded-[18px] space-y-5 shadow-xl">
-            <h3 className="text-white text-xs font-bold tracking-wider uppercase font-mono text-slate-400 flex items-center gap-2">
+          <div className="glass-panel p-6 rounded-2xl space-y-5 shadow-xl">
+            <h3 className="text-xs font-bold tracking-wider uppercase font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
               <Settings className="h-4 w-4 text-[#6D5EF8]" />
               Manage Candidate Profile Settings
             </h3>
@@ -255,12 +255,12 @@ export default function ProfileSettings({
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Full Name *</label>
+                  <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">Full Name *</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
-                      className="w-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-lg py-2.5 pl-9 pr-4 text-xs focus:outline-none focus:border-[#6D5EF8]"
+                      className="w-full glass-input rounded-xl py-2.5 pl-9 pr-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                     />
@@ -268,16 +268,16 @@ export default function ProfileSettings({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Phone Number</label>
+                  <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">Phone Number</label>
                   <div className="flex gap-2">
                     <div className="relative w-24 shrink-0">
                       <select
-                        className="w-full h-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-lg py-2 px-2 text-xs focus:outline-none focus:border-[#6D5EF8] appearance-none font-sans cursor-pointer"
+                        className="w-full h-full glass-input rounded-xl py-2 px-2 text-xs text-slate-800 dark:text-slate-200 appearance-none font-sans cursor-pointer"
                         value={countryCode}
                         onChange={(e) => setCountryCode(e.target.value)}
                       >
                         {COUNTRY_CODES.map((item) => (
-                          <option key={item.code} value={item.code} className="bg-[#09090B] text-slate-200">
+                          <option key={item.code} value={item.code} className="bg-slate-900 text-white">
                             {item.flag} {item.code}
                           </option>
                         ))}
@@ -289,11 +289,11 @@ export default function ProfileSettings({
                       </div>
                     </div>
                     <div className="relative flex-1">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
                         placeholder="(555) 019-2834"
-                        className="w-full bg-[#09090B] border border-[#27272A] text-slate-200 rounded-lg py-2.5 pl-9 pr-4 text-xs focus:outline-none focus:border-[#6D5EF8]"
+                        className="w-full glass-input rounded-xl py-2.5 pl-9 pr-4 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                         value={nationalNumber}
                         onChange={(e) => setNationalNumber(e.target.value)}
                       />
@@ -304,11 +304,11 @@ export default function ProfileSettings({
 
               {/* Avatar Selector */}
               <div className="space-y-2">
-                <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">Profile Avatar Selection</label>
-                <div className="flex items-center gap-4 bg-[#09090B] border border-[#27272A] rounded-xl p-3 w-fit">
+                <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">Profile Avatar Selection</label>
+                <div className="flex items-center gap-4 glass-card rounded-2xl p-3 w-fit">
                   <div 
                     onClick={() => setIsPreviewOpen(true)}
-                    className="w-14 h-14 rounded-xl overflow-hidden border border-[#27272A] hover:border-violet-400 cursor-pointer active:scale-95 transition-all relative group/preview shrink-0 bg-slate-900 shadow-inner"
+                    className="w-14 h-14 rounded-xl overflow-hidden border border-slate-300 dark:border-white/10 hover:border-violet-400 cursor-pointer active:scale-95 transition-all relative group/preview shrink-0 bg-slate-900 shadow-inner"
                     title="Click to view full size"
                   >
                     <img src={profilePhoto} alt="Selection Preview" className="w-full h-full object-cover transition-transform duration-250 group-hover/preview:scale-110" referrerPolicy="no-referrer" />

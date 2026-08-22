@@ -268,14 +268,14 @@ Core Competencies Required:
       </div>
 
       {/* Main Form Box */}
-      <div className="bg-[#111827] border border-[#27272A] rounded-[18px] p-6 md:p-8 min-h-[420px] flex flex-col justify-between relative overflow-hidden shadow-xl">
+      <div className="glass-panel rounded-[24px] p-6 md:p-8 min-h-[440px] flex flex-col justify-between relative overflow-hidden shadow-2xl">
         {/* Step Contents */}
         <div className="flex-1 pb-8">
           
           {/* STEP 1: COMPANY SELECTION */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-2xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-2xl font-medium">
                 Choose a world-class target employer preset or specify your own custom workplace. We map real interview trends specifically for this brand.
               </p>
 
@@ -296,8 +296,8 @@ Core Competencies Required:
                     onClick={() => setCompanyFilter(tag.id as any)}
                     className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider font-mono transition-all cursor-pointer ${
                       companyFilter === tag.id
-                        ? "bg-[#6D5EF8] text-white"
-                        : "bg-[#09090B] text-slate-400 hover:text-slate-200 border border-[#27272A]"
+                        ? "glass-btn-primary text-white shadow-md"
+                        : "glass-pill text-slate-300 hover:text-white"
                     }`}
                   >
                     {tag.label}
@@ -313,23 +313,23 @@ Core Competencies Required:
                     <button
                       key={c.id}
                       onClick={() => handleSelectCompany(c.id)}
-                      className={`p-4 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-28 relative overflow-hidden ${
+                      className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-28 relative overflow-hidden ${
                         isSelected
-                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
-                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                          ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                          : "glass-card glass-card-hover"
                       }`}
                     >
                       <div className="flex justify-between items-start w-full">
-                        <span className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${c.logoColor} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                        <span className={`w-8 h-8 rounded-xl bg-gradient-to-tr ${c.logoColor} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-md ring-1 ring-white/20`}>
                           {c.name.charAt(0)}
                         </span>
                         {isSelected && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
                         )}
                       </div>
                       <div>
                         <h4 className="text-xs font-bold text-white truncate">{c.name}</h4>
-                        <span className="text-[9px] text-slate-500 font-mono block truncate mt-0.5">{c.industry}</span>
+                        <span className="text-[9px] text-slate-400 font-mono block truncate mt-0.5">{c.industry}</span>
                       </div>
                     </button>
                   );
@@ -338,38 +338,38 @@ Core Competencies Required:
                 {/* Custom Workplace Option */}
                 <button
                   onClick={() => handleSelectCompany("custom")}
-                  className={`p-4 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-28 ${
+                  className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-28 ${
                     selectedCompanyId === "custom"
-                      ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
-                      : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                      ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                      : "glass-card glass-card-hover"
                   }`}
                 >
                   <div className="flex justify-between items-start w-full">
-                    <span className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 text-sm font-bold">
+                    <span className="w-8 h-8 rounded-xl glass-pill flex items-center justify-center text-slate-200 text-sm font-bold">
                       🏢
                     </span>
                     {selectedCompanyId === "custom" && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
                     )}
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white">Custom / Other</h4>
-                    <span className="text-[9px] text-slate-500 font-mono block mt-0.5">Define your own company</span>
+                    <span className="text-[9px] text-slate-400 font-mono block mt-0.5">Define your own company</span>
                   </div>
                 </button>
               </div>
 
               {/* Custom input details */}
               {selectedCompanyId === "custom" && (
-                <div className="p-4 bg-[#09090B] border border-[#27272A] rounded-xl space-y-3 max-w-md animate-slide-up">
-                  <label htmlFor="custom-company-input" className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <div className="p-4 glass-card rounded-xl space-y-3 max-w-md animate-slide-up">
+                  <label htmlFor="custom-company-input" className="block text-[9px] font-bold uppercase tracking-wider text-slate-300 font-mono">
                     Enter Employer Name *
                   </label>
                   <input
                     id="custom-company-input"
                     type="text"
                     placeholder="e.g. Anthropic, Linear, Figma, Vercel"
-                    className="w-full bg-[#111827] border border-[#27272A] rounded-lg py-2.5 px-3 text-xs text-white placeholder-slate-650 focus:outline-none focus:border-[#6D5EF8]"
+                    className="w-full glass-input rounded-xl py-2.5 px-3 text-xs text-white placeholder-slate-400 focus:outline-none"
                     value={customCompanyName}
                     onChange={(e) => setCustomCompanyName(e.target.value)}
                   />
@@ -381,7 +381,7 @@ Core Competencies Required:
           {/* STEP 2: ROLE SELECTION */}
           {currentStep === 2 && (
             <div className="space-y-5 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                 Select your target career track. We have mapped core technical competencies and typical questions expected for these positions at {getActiveCompanyDisplay()}.
               </p>
 
@@ -393,40 +393,40 @@ Core Competencies Required:
                       <button
                         key={role.title}
                         onClick={() => handleSelectRole(role)}
-                        className={`w-full p-4 rounded-xl text-left border transition-all cursor-pointer flex items-center justify-between gap-4 ${
+                        className={`w-full p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between gap-4 ${
                           isSelected
-                            ? "bg-[#6D5EF8]/5 border-[#6D5EF8]"
-                            : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                            ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                            : "glass-card glass-card-hover"
                         }`}
                       >
                         <div>
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider font-mono ${
-                            role.category === "Engineering" ? "bg-indigo-500/10 text-indigo-400" :
-                            role.category === "Product" ? "bg-emerald-500/10 text-emerald-400" :
-                            role.category === "Systems" ? "bg-amber-500/10 text-amber-400" :
-                            "bg-purple-500/10 text-purple-400"
+                            role.category === "Engineering" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" :
+                            role.category === "Product" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" :
+                            role.category === "Systems" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" :
+                            "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                           }`}>
                             {role.category}
                           </span>
                           <h4 className="text-xs font-bold text-white mt-1.5">{role.title}</h4>
                         </div>
                         {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-[#6D5EF8] flex items-center justify-center text-white text-[10px]">✓</div>
+                          <div className="w-5 h-5 rounded-full bg-[#6D5EF8] flex items-center justify-center text-white text-[10px] shadow-[0_0_8px_#6D5EF8]">✓</div>
                         )}
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="p-4 bg-[#09090B] border border-[#27272A] rounded-xl space-y-3 max-w-md">
-                  <label htmlFor="custom-role-input" className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <div className="p-4 glass-card rounded-xl space-y-3 max-w-md">
+                  <label htmlFor="custom-role-input" className="block text-[9px] font-bold uppercase tracking-wider text-slate-300 font-mono">
                     Target Role Title *
                   </label>
                   <input
                     id="custom-role-input"
                     type="text"
                     placeholder="e.g. Senior Frontend Engineer, Staff PM"
-                    className="w-full bg-[#111827] border border-[#27272A] rounded-lg py-2.5 px-3 text-xs text-white placeholder-slate-650 focus:outline-none focus:border-[#6D5EF8]"
+                    className="w-full glass-input rounded-xl py-2.5 px-3 text-xs text-white placeholder-slate-400 focus:outline-none"
                     value={customRoleName}
                     onChange={(e) => setCustomRoleName(e.target.value)}
                   />
@@ -439,7 +439,7 @@ Core Competencies Required:
           {currentStep === 3 && (
             <div className="space-y-5 animate-fade-in">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                <p className="text-xs text-slate-400 leading-normal max-w-xl">
+                <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                   Paste the job listing requirements. Our AI parses keyword targets to formulate real-world questions.
                 </p>
                 
@@ -447,7 +447,7 @@ Core Competencies Required:
                   <button
                     type="button"
                     onClick={handleUrlFetchClick}
-                    className="px-2.5 py-1.5 bg-[#09090B] border border-[#27272A] text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1.5 glass-pill text-slate-200 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                   >
                     <Globe className="h-3 w-3 text-sky-400" />
                     <span>Import URL</span>
@@ -455,7 +455,7 @@ Core Competencies Required:
                   <button
                     type="button"
                     onClick={handleUploadClick}
-                    className="px-2.5 py-1.5 bg-[#09090B] border border-[#27272A] text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1.5 glass-pill text-slate-200 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                   >
                     <Upload className="h-3 w-3 text-emerald-400" />
                     <span>Upload PDF</span>
@@ -464,9 +464,9 @@ Core Competencies Required:
                     <button
                       type="button"
                       onClick={handleAutoFill}
-                      className="px-2.5 py-1.5 bg-slate-900 border border-[#27272A] text-slate-300 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1.5 glass-pill text-slate-200 hover:text-white rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
                     >
-                      <Sparkles className="h-3 w-3 text-[#6D5EF8]" />
+                      <Sparkles className="h-3 w-3 text-[#818cf8]" />
                       <span>Autofill Template</span>
                     </button>
                   )}
@@ -477,7 +477,7 @@ Core Competencies Required:
                 id="wizard-jd-textarea"
                 rows={9}
                 placeholder="Paste requirements, stack, daily responsibilities, or click 'Autofill' above..."
-                className="w-full bg-[#09090B] border border-[#27272A] rounded-xl p-4 text-xs text-slate-250 placeholder-slate-650 leading-relaxed focus:outline-none focus:border-[#6D5EF8] font-mono"
+                className="w-full glass-input rounded-2xl p-4 text-xs text-slate-100 placeholder-slate-400 leading-relaxed focus:outline-none font-mono"
                 value={jdText}
                 onChange={(e) => setJdText(e.target.value)}
               />
@@ -487,7 +487,7 @@ Core Competencies Required:
           {/* STEP 4: INTERVIEW STYLE (6 Styles) */}
           {currentStep === 4 && (
             <div className="space-y-6 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                 Choose the focus of this mock simulation. We tailor candidate assessment rubrics and focus keywords according to this choice.
               </p>
 
@@ -505,21 +505,21 @@ Core Competencies Required:
                     <button
                       key={style.id}
                       onClick={() => setSelectedStyle(style.id as any)}
-                      className={`p-4 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-40 ${
+                      className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-40 ${
                         isSelected
-                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
-                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                          ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                          : "glass-card glass-card-hover"
                       }`}
                     >
                       <div className="flex justify-between items-center w-full">
                         <span className="text-lg">{style.icon}</span>
                         {isSelected && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
                         )}
                       </div>
                       <div className="space-y-0.5">
                         <h4 className="text-xs font-bold text-white leading-snug">{style.title}</h4>
-                        <p className="text-[9.5px] text-slate-500 leading-relaxed line-clamp-2">{style.desc}</p>
+                        <p className="text-[9.5px] text-slate-300 leading-relaxed line-clamp-2 font-normal">{style.desc}</p>
                       </div>
                     </button>
                   );
@@ -531,7 +531,7 @@ Core Competencies Required:
           {/* STEP 5: DIFFICULTY SELECTION (6 Difficulties) */}
           {currentStep === 5 && (
             <div className="space-y-6 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                 Select your target difficulty. Higher levels present stricter AI evaluations, follow-ups, and structural critiques.
               </p>
 
@@ -549,17 +549,17 @@ Core Competencies Required:
                     <button
                       key={diff.id}
                       onClick={() => setSelectedDifficulty(diff.id as any)}
-                      className={`p-4 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-36 ${
+                      className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-36 ${
                         isSelected
-                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8]"
-                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                          ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                          : "glass-card glass-card-hover"
                       }`}
                     >
                       <div>
                         <h4 className="text-xs font-bold text-white">{diff.title}</h4>
-                        <span className="text-[9px] text-slate-500 font-mono block mt-0.5">{diff.info}</span>
+                        <span className="text-[9px] text-indigo-300 font-mono block mt-0.5">{diff.info}</span>
                       </div>
-                      <p className="text-[9px] text-slate-400 leading-relaxed line-clamp-2 mt-1.5">{diff.desc}</p>
+                      <p className="text-[9px] text-slate-300 leading-relaxed line-clamp-2 mt-1.5">{diff.desc}</p>
                     </button>
                   );
                 })}
@@ -570,7 +570,7 @@ Core Competencies Required:
           {/* STEP 6: AI INTERVIEW PANEL SIZE */}
           {currentStep === 6 && (
             <div className="space-y-6 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                 Select your preferred interview panel style. A larger panel creates a highly realistic, interactive experience with multiple voices and perspectives.
               </p>
 
@@ -585,21 +585,21 @@ Core Competencies Required:
                     <button
                       key={panel.id}
                       onClick={() => setInterviewerCount(panel.id)}
-                      className={`p-5 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-44 ${
+                      className={`p-5 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-44 ${
                         isSelected
-                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
-                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                          ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                          : "glass-card glass-card-hover"
                       }`}
                     >
                       <div className="flex justify-between items-center w-full">
                         <span className="text-2xl">{panel.icon}</span>
                         {isSelected && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
                         )}
                       </div>
                       <div className="space-y-1">
                         <h4 className="text-xs font-bold text-white">{panel.title}</h4>
-                        <p className="text-[9.5px] text-slate-400 leading-relaxed">{panel.desc}</p>
+                        <p className="text-[9.5px] text-slate-300 leading-relaxed font-normal">{panel.desc}</p>
                       </div>
                     </button>
                   );
@@ -607,8 +607,8 @@ Core Competencies Required:
               </div>
 
               {/* Dynamic Panel Members Preview Card */}
-              <div className="p-5 bg-slate-950/60 border border-[#27272A]/80 rounded-xl space-y-3">
-                <h4 className="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider">Meet Your Panel Members</h4>
+              <div className="p-5 glass-card rounded-2xl space-y-3">
+                <h4 className="text-[10px] font-mono text-indigo-300 font-bold uppercase tracking-wider">Meet Your Panel Members</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {(() => {
                     const list = [
@@ -629,21 +629,21 @@ Core Competencies Required:
                     let selectedList = [];
                     if (!interviewerCount || interviewerCount === 1) {
                       if (mappedPersona === "architect") {
-                        selectedList = [list[1]]; // David
+                        selectedList = [list[1]];
                       } else if (mappedPersona === "product_leader") {
-                        selectedList = [list[2]]; // Marcus
+                        selectedList = [list[2]];
                       } else {
-                        selectedList = [list[0]]; // Sarah
+                        selectedList = [list[0]];
                       }
                     } else if (interviewerCount === 2) {
-                      selectedList = [list[0], list[1]]; // Sarah & David
+                      selectedList = [list[0], list[1]];
                     } else {
                       selectedList = list.slice(0, interviewerCount);
                     }
 
                     return selectedList.map((member) => (
-                      <div key={member.id} className="flex items-center gap-3 p-2 bg-slate-900 border border-[#27272A] rounded-lg">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shadow-sm shrink-0">
+                      <div key={member.id} className="flex items-center gap-3 p-2.5 glass-card rounded-xl">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm shrink-0">
                           <img 
                             src={member.img} 
                             alt={member.name} 
@@ -653,7 +653,7 @@ Core Competencies Required:
                         </div>
                         <div>
                           <h5 className="text-[11px] font-bold text-white">{member.name}</h5>
-                          <p className="text-[9px] text-slate-400 font-mono">{member.role} ({member.focus})</p>
+                          <p className="text-[9px] text-slate-300 font-mono">{member.role} ({member.focus})</p>
                         </div>
                       </div>
                     ));
@@ -666,7 +666,7 @@ Core Competencies Required:
           {/* STEP 7: INTERVIEWER PERSONALITY (7 Personas) */}
           {currentStep === 7 && (
             <div className="space-y-6 animate-fade-in">
-              <p className="text-xs text-slate-400 leading-normal max-w-xl">
+              <p className="text-xs text-slate-300 leading-normal max-w-xl font-medium">
                 Select your lead interviewer's style profile. This affects their questioning demeanor, feedback tone, and prompt criteria.
               </p>
 
@@ -685,24 +685,24 @@ Core Competencies Required:
                     <button
                       key={p.id}
                       onClick={() => setSelectedPersona(p.id as any)}
-                      className={`p-4 text-left rounded-xl border transition-all cursor-pointer flex flex-col justify-between h-48 ${
+                      className={`p-4 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between h-48 ${
                         isSelected
-                          ? "bg-[#6D5EF8]/10 border-[#6D5EF8] shadow-md shadow-[#6D5EF8]/5"
-                          : "bg-[#09090B]/60 border-[#27272A] hover:bg-[#09090B]"
+                          ? "bg-indigo-500/20 border-indigo-400/60 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20"
+                          : "glass-card glass-card-hover"
                       }`}
                     >
                       <div className="flex justify-between items-center w-full">
                         <span className="text-lg">{p.emoji}</span>
                         {isSelected && (
-                          <span className="w-2 h-2 rounded-full bg-[#6D5EF8]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#818cf8] shadow-[0_0_8px_#818cf8]" />
                         )}
                       </div>
                       <div className="space-y-1 mt-2">
                         <h4 className="text-xs font-bold text-white truncate leading-tight">{p.title}</h4>
-                        <span className="text-[8.5px] text-amber-400 font-bold bg-amber-500/5 border border-amber-500/10 px-1.5 py-0.5 rounded block max-w-max font-mono">
+                        <span className="text-[8.5px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded block max-w-max font-mono">
                           {p.style}
                         </span>
-                        <p className="text-[9.5px] text-slate-500 leading-normal line-clamp-3 mt-1">{p.desc}</p>
+                        <p className="text-[9.5px] text-slate-300 leading-normal line-clamp-3 mt-1 font-normal">{p.desc}</p>
                       </div>
                     </button>
                   );
@@ -714,64 +714,64 @@ Core Competencies Required:
           {/* STEP 8: READY TO LAUNCH */}
           {currentStep === 8 && (
             <div className="space-y-6 animate-fade-in max-w-xl mx-auto text-center">
-              <div className="w-12 h-12 bg-[#6D5EF8]/10 border border-[#6D5EF8]/20 rounded-full flex items-center justify-center text-white text-lg mx-auto mb-4">
+              <div className="w-12 h-12 glass-pill rounded-2xl flex items-center justify-center text-white text-lg mx-auto mb-4">
                 🚀
               </div>
               
               <h3 className="text-lg font-bold text-white tracking-tight">Configuration Complete</h3>
-              <p className="text-xs text-slate-400">Review your final interview receipt prior to kicking off the simulation.</p>
+              <p className="text-xs text-slate-300">Review your final interview receipt prior to kicking off the simulation.</p>
 
               {/* Receipt Visualizer */}
-              <div className="bg-[#09090B] border border-[#27272A] rounded-2xl p-5 text-left space-y-4 font-mono text-[11px] text-slate-300">
-                <div className="flex justify-between border-b border-[#27272A]/80 pb-2 text-[10px] font-bold text-[#6D5EF8]">
+              <div className="glass-card rounded-2xl p-5 text-left space-y-4 font-mono text-[11px] text-slate-200">
+                <div className="flex justify-between border-b border-white/10 pb-2 text-[10px] font-bold text-[#818cf8]">
                   <span>TRACKING METRIC</span>
                   <span>CALIBRATION</span>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Target Employer:</span>
+                  <span className="text-slate-400">Target Employer:</span>
                   <span className="text-white font-bold">{getActiveCompanyDisplay()}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Position Title:</span>
+                  <span className="text-slate-400">Position Title:</span>
                   <span className="text-white font-bold truncate max-w-[200px]">{getActiveRoleDisplay()}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Interview Style:</span>
-                  <span className="text-indigo-400 font-bold uppercase">{selectedStyle}</span>
+                  <span className="text-slate-400">Interview Style:</span>
+                  <span className="text-indigo-300 font-bold uppercase">{selectedStyle}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Difficulty Grade:</span>
-                  <span className="text-emerald-400 font-bold uppercase">{selectedDifficulty} Level</span>
+                  <span className="text-slate-400">Difficulty Grade:</span>
+                  <span className="text-emerald-300 font-bold uppercase">{selectedDifficulty} Level</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">AI Personality:</span>
-                  <span className="text-amber-400 font-bold uppercase">{selectedPersona}</span>
+                  <span className="text-slate-400">AI Personality:</span>
+                  <span className="text-amber-300 font-bold uppercase">{selectedPersona}</span>
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Panel Size:</span>
-                  <span className="text-indigo-400 font-bold uppercase">
+                  <span className="text-slate-400">Panel Size:</span>
+                  <span className="text-indigo-300 font-bold uppercase">
                     {interviewerCount === 1 ? "1 (Single)" : interviewerCount === 2 ? "2 (Duo Panel)" : "3 (Full Panel)"}
                   </span>
                 </div>
 
-                <div className="flex justify-between border-t border-[#27272A] pt-3 text-[10px] text-slate-500 leading-normal">
+                <div className="flex justify-between border-t border-white/10 pt-3 text-[10px] text-slate-400 leading-normal">
                   <div className="flex gap-1.5 items-start">
-                    <Info className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <Info className="h-3.5 w-3.5 text-slate-300 shrink-0 mt-0.5" />
                     <span>Real-time speech recognition is active. You may respond either by typing or by speaking using your system microphone.</span>
                   </div>
                 </div>
               </div>
 
               {isAnalyzing ? (
-                <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
-                  <div className="w-5 h-5 border-2 border-[#6D5EF8] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <span className="text-xs font-mono text-slate-400 animate-pulse block">Web Searching Industry Trends & Synthesizing Questions...</span>
+                <div className="p-4 glass-card rounded-xl space-y-2">
+                  <div className="w-5 h-5 border-2 border-[#818cf8] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <span className="text-xs font-mono text-slate-300 animate-pulse block">Web Searching Industry Trends & Synthesizing Questions...</span>
                 </div>
               ) : null}
             </div>
@@ -780,11 +780,11 @@ Core Competencies Required:
         </div>
 
         {/* Wizard Controls */}
-        <div className="flex justify-between border-t border-[#27272A] pt-4 mt-auto">
+        <div className="flex justify-between border-t border-white/10 pt-4 mt-auto">
           <button
             onClick={handlePrevStep}
             disabled={currentStep === 1 || isAnalyzing}
-            className="px-4 py-2 bg-[#111827] border border-[#27272A] hover:bg-slate-900 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 glass-btn-secondary text-slate-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="h-4 w-4" />
             <span>Back</span>
@@ -793,7 +793,7 @@ Core Competencies Required:
           {currentStep < totalSteps ? (
             <button
               onClick={handleNextStep}
-              className="px-4 py-2 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+              className="px-4 py-2 glass-btn-primary text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
             >
               <span>Continue</span>
               <ChevronRight className="h-4 w-4" />
@@ -802,7 +802,7 @@ Core Competencies Required:
             <button
               onClick={handleStart}
               disabled={isAnalyzing}
-              className="px-6 py-2.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-[#6D5EF8]/15 disabled:opacity-50"
+              className="px-6 py-2.5 glass-btn-primary text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg disabled:opacity-50"
             >
               <Zap className="h-4 w-4" />
               <span>Begin Simulation</span>
