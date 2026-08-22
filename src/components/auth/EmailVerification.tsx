@@ -17,7 +17,7 @@ export function EmailVerification({
   onDismiss
 }: EmailVerificationProps) {
   return (
-    <div className="p-4 bg-emerald-950/40 backdrop-blur-md border border-emerald-500/30 rounded-xl text-left space-y-2.5 shadow-lg shadow-emerald-950/30">
+    <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-left space-y-2.5 shadow-lg shadow-emerald-950/30">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-emerald-300 font-semibold text-xs sm:text-sm">
           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />

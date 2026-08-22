@@ -156,10 +156,9 @@ export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
   return (
     <div className="min-h-screen w-full glass-auth-root flex flex-col justify-center items-center p-3 sm:p-5 md:p-6 lg:p-8 xl:p-10 font-sans relative">
       
-      {/* Ambient Lighting Orbs */}
+      {/* Ambient Lighting Orbs (Behind panels, never underneath text) */}
       <div className="glass-auth-glow-1" />
       <div className="glass-auth-glow-2" />
-      <div className="glass-auth-glow-3" />
 
       {/* Master Centered Glass Card */}
       <div className="w-full max-w-[1200px] my-auto glass-auth-container overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative z-10">
