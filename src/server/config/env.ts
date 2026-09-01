@@ -19,7 +19,7 @@ function getOrGenerateSecret(envVarName: string, fallbackName: string): string {
 }
 
 export const ENV = {
-  PORT: 3000,
+  PORT: parseInt(process.env.PORT || "3000", 10),
   NODE_ENV: process.env.NODE_ENV || "development",
   APP_URL: process.env.APP_URL || "http://localhost:3000",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
