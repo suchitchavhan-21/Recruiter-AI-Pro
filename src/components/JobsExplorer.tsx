@@ -22,10 +22,42 @@ import {
   Check,
   FileCheck,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  Loader2,
+  AlertTriangle,
+  HelpCircle
 } from "lucide-react";
 import { JobApplication, SavedSTARStory, UserProfile } from "../types";
 import { COMPANY_PRESETS } from "../data/companyRoles";
+import { apiFetch } from "../lib/api";
+
+interface RequirementMatch {
+  requirementId: string;
+  requirementText: string;
+  category: "must_have" | "preferred" | "responsibility";
+  status: "strong_match" | "partial_match" | "missing";
+  confidence: number;
+  evidence: Array<{
+    text: string;
+    sourceType: string;
+    sourceSection?: string;
+    similarity: number;
+  }>;
+}
+
+interface ATSScoreData {
+  score: number;
+  confidence: number;
+  breakdown: {
+    mustHave: number;
+    preferred: number;
+    responsibilities: number;
+  };
+  matchedRequirements: RequirementMatch[];
+  partialRequirements: RequirementMatch[];
+  missingRequirements: RequirementMatch[];
+  limitations: string[];
+}
 
 interface JobsExplorerProps {
   applications: JobApplication[];
@@ -44,7 +76,7 @@ export default function JobsExplorer({
   savedStarStories = [],
   currentUser = null
 }: JobsExplorerProps) {
-  // Navigation: "feed" (Live Jobs Board) vs "tracker" (My Application Tracker)
+  // Navigation: "feed" (Job Openings) vs "tracker" (Application Tracker)
   const [activeSubTab, setActiveSubTab] = useState<"feed" | "tracker">("feed");
   
   // Search & Filter
@@ -53,21 +85,24 @@ export default function JobsExplorer({
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Custom application modal states (LinkedIn / Naukri Easy Apply)
+  // Evidence-based ATS Score state per job
+  const [atsScores, setAtsScores] = useState<Record<string, ATSScoreData>>({});
+  const [atsLoading, setAtsLoading] = useState<Record<string, boolean>>({});
+
+  // Record Application modal states
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
-  const [applyPlatform, setApplyPlatform] = useState<"linkedin" | "naukri">("linkedin");
   
-  // Multi-step form states
-  const [applyStep, setApplyStep] = useState<1 | 2 | 3 | 4>(1);
+  // Form states
   const [applicantPhone, setApplicantPhone] = useState("");
   const [selectedStoryId, setSelectedStoryId] = useState<string>("none");
   const [coverCommentary, setCoverCommentary] = useState("");
-  const [applyConsent, setApplyConsent] = useState(true);
-  
-  // Simulated submission loader sequence
-  const [submissionProgress, setSubmissionProgress] = useState(0);
-  const [submissionStepMsg, setSubmissionStepMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
+
+  // Status updating state in tracker
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const sectors = [
     { id: "all", label: "All Sectors" },
@@ -77,11 +112,10 @@ export default function JobsExplorer({
     { id: "Security", label: "Security & Trust" }
   ];
 
-  // Derive static list of live job opportunities directly from company presets
+  // Derive static list of practice job opportunities directly from company presets
   const liveJobsList = React.useMemo(() => {
     return COMPANY_PRESETS.flatMap((comp) => {
       return comp.roles.map((role, idx) => {
-        // Construct detailed skills and metadata based on presets
         let skills = ["Systems Design", "Software Architecture", "API Engineering"];
         let location = "Remote, US";
         let salary = "$140,000 - $190,000";
@@ -144,11 +178,48 @@ export default function JobsExplorer({
           difficultyBadge: idx % 3 === 0 ? "Expert" : idx % 3 === 1 ? "Senior" : "Mid",
           category: role.category,
           industryContext: comp.industry,
-          department
+          department,
+          isPreset: true
         };
       });
     });
   }, []);
+
+  // Fetch evidence-based ATS score for a job description
+  const loadATSScoreForJob = async (jobId: string, jdText: string, roleTitle: string) => {
+    if (atsScores[jobId] || atsLoading[jobId]) return;
+
+    setAtsLoading(prev => ({ ...prev, [jobId]: true }));
+
+    try {
+      const res = await apiFetch("/api/resumes/ats-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobDescription: jdText,
+          jobId,
+          role: roleTitle
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAtsScores(prev => ({ ...prev, [jobId]: data }));
+      }
+    } catch (err) {
+      console.error("Failed to load evidence-based ATS score:", err);
+    } finally {
+      setAtsLoading(prev => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleToggleExpand = (job: any) => {
+    const nextId = expandedId === job.id ? null : job.id;
+    setExpandedId(nextId);
+    if (nextId) {
+      loadATSScoreForJob(job.id, job.jdFullText, job.roleTitle);
+    }
+  };
 
   const handleToggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -157,7 +228,7 @@ export default function JobsExplorer({
     );
   };
 
-  // Filtered live jobs list
+  // Filtered job list
   const filteredLiveJobs = liveJobsList.filter((job) => {
     const matchesSearch = 
       job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,116 +243,65 @@ export default function JobsExplorer({
     return matchesSearch && matchesSector;
   });
 
-  // Filtered applied tracker list (all applications actually applied by user or seeded)
-  const submittedApplications = applications.filter(app => {
-    // Treat any app starting with referral- or where applicant email matches user's active email,
-    // or if the list has been seeded
-    return app.id.startsWith("referral-") || app.applicantName !== "Anonymous Candidate";
-  });
-
-  // Calculate simulated ATS match score dynamically based on user context
-  const getATSScoreInfo = (job: any) => {
-    // Base score based on active profile matching
-    let score = 75;
-    let reasons: string[] = [];
-
-    if (currentUser) {
-      // Check if target role title matches some words
-      const userRoleLower = currentUser.roleTitle?.toLowerCase() || "";
-      const jobRoleLower = job.roleTitle.toLowerCase();
-      
-      const wordsMatch = userRoleLower.split(" ").some(w => w.length > 3 && jobRoleLower.includes(w));
-      if (wordsMatch) {
-        score += 10;
-        reasons.push("Target job title matches profile specialization (+10%)");
-      } else {
-        reasons.push("Profile role specialized in separate category");
-      }
-    }
-
-    // Story booster
-    if (selectedStoryId !== "none") {
-      score += 15;
-      reasons.push("Verified STAR Story attached as quantified behavioral proof (+15% Priority ATS Booster!)");
-    } else {
-      reasons.push("No STAR story linked. Linking a behavioral proof increases rating by 15%.");
-    }
-
-    // Add small random but consistent seed to make it feel organic
-    const charSum = job.roleTitle.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    score += (charSum % 8);
-
-    score = Math.min(score, 99);
-
-    return { score, reasons };
-  };
-
-  const handleOpenEasyApply = (job: any, platform: "linkedin" | "naukri") => {
+  // Open real application recording dialog
+  const handleOpenRecordModal = (job: any) => {
     setSelectedJob(job);
-    setApplyPlatform(platform);
-    setApplyStep(1);
-    setApplicantPhone("");
+    setApplicantPhone(currentUser?.phoneNumber || "");
     setSelectedStoryId(savedStarStories.length > 0 ? savedStarStories[0].id : "none");
     setCoverCommentary("");
-    setSubmissionProgress(0);
+    setSubmitError(null);
+    setSubmitSuccessMsg(null);
     setIsApplyModalOpen(true);
+    loadATSScoreForJob(job.id, job.jdFullText, job.roleTitle);
   };
 
-  const handleExecuteEasyApply = () => {
+  // Execute authenticated application creation in PostgreSQL
+  const handleExecuteRecordApplication = async () => {
     if (!selectedJob) return;
 
-    // Advance to loading screen
-    setApplyStep(4);
-    setSubmissionProgress(5);
-    setSubmissionStepMsg("Loading live credentials...");
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Stage 1
-    setTimeout(() => {
-      setSubmissionProgress(35);
-      setSubmissionStepMsg(`Syncing active profile: ${currentUser?.name || "Active Candidate"}...`);
-    }, 600);
+    try {
+      const matchScore = atsScores[selectedJob.id]?.score || undefined;
 
-    // Stage 2
-    setTimeout(() => {
-      setSubmissionProgress(70);
-      const hasStory = selectedStoryId !== "none";
-      setSubmissionStepMsg(hasStory 
-        ? "Parsing and calibrating attached behavioral STAR story against requirements..." 
-        : "Checking competencies alignment matrices..."
-      );
-    }, 1300);
+      const res = await apiFetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company: selectedJob.companyName,
+          role: selectedJob.roleTitle,
+          roleCategory: selectedJob.category || "Engineering",
+          applicantName: currentUser?.name || currentUser?.fullName || "Candidate",
+          applicantEmail: currentUser?.email || "candidate@example.com",
+          coverLetter: coverCommentary || undefined,
+          matchScore,
+          notes: selectedJob.jdFullText
+        })
+      });
 
-    // Stage 3
-    setTimeout(() => {
-      setSubmissionProgress(90);
-      setSubmissionStepMsg(`Routing direct loop bypass to hiring coordinators at ${selectedJob.companyName}...`);
-    }, 2000);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || "Failed to record application in database.");
+      }
 
-    // Completion
-    setTimeout(() => {
-      setSubmissionProgress(100);
-      
-      const hasStory = selectedStoryId !== "none";
-      const linkedStory = savedStarStories.find(s => s.id === selectedStoryId);
-      const scoreObj = getATSScoreInfo(selectedJob);
+      const data = await res.json();
+      const appRecord = data.application;
 
-      // Construct a new application record
       const newApp: JobApplication = {
-        id: "referral-" + Date.now(),
-        timestamp: new Date().toISOString(),
+        id: appRecord.id,
+        timestamp: appRecord.appliedAt || new Date().toISOString(),
         companyId: selectedJob.companyId,
-        companyName: selectedJob.companyName,
-        roleTitle: selectedJob.roleTitle,
-        roleCategory: selectedJob.roleCategory,
-        applicantName: currentUser?.name || "Active Candidate",
-        applicantEmail: currentUser?.email || "candidate@example.com",
-        coverLetter: coverCommentary || "",
-        status: hasStory ? "Interview Scheduled" : "Screening",
-        appliedSlot: applyPlatform === "linkedin" ? "LinkedIn Easy Apply" : "Naukri Fast-Track Apply",
-        screeningFeedback: hasStory 
-          ? `Fast-Track Approved! Linked behavioral case study ('${linkedStory?.title || "Behavioral Impact"}') successfully parsed our high-scale ATS filters with a verified score of ${scoreObj.score}%. A hiring recruiter will reach out directly.`
-          : `Application received via ${applyPlatform === "linkedin" ? "LinkedIn" : "Naukri.com"}. Match rating is ${scoreObj.score}%. Practice technical simulation mock sessions to raise your rating to 90%+ and unlock direct referrals.`,
-        matchScore: scoreObj.score,
+        companyName: appRecord.company,
+        roleTitle: appRecord.role,
+        roleCategory: appRecord.roleCategory || "Engineering",
+        applicantName: appRecord.applicantName,
+        applicantEmail: appRecord.applicantEmail,
+        coverLetter: appRecord.coverLetter || "",
+        status: appRecord.status || "Submitted",
+        appliedSlot: "Recorded Application",
+        screeningFeedback: `Application recorded for ${appRecord.role} at ${appRecord.company}. Status: ${appRecord.status}.`,
+        matchScore: typeof appRecord.matchScore === "number" ? appRecord.matchScore : 0,
         jdFullText: selectedJob.jdFullText,
         skillsRequired: selectedJob.skillsRequired,
         location: selectedJob.location,
@@ -294,16 +314,54 @@ export default function JobsExplorer({
       };
 
       if (onSaveApplications) {
-        onSaveApplications([newApp, ...applications]);
+        onSaveApplications([newApp, ...applications.filter(a => a.id !== newApp.id)]);
       }
 
       setIsApplyModalOpen(false);
       setActiveSubTab("tracker");
       setExpandedId(newApp.id);
-    }, 2600);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to record application.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Style helper for logos
+  // Update application status via authenticated PATCH API
+  const handleUpdateApplicationStatus = async (appId: string, newStatus: JobApplication["status"]) => {
+    setUpdatingStatusId(appId);
+    try {
+      const res = await apiFetch(`/api/jobs/${appId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const updatedRecord = data.application;
+        const updatedList = applications.map(a => {
+          if (a.id === appId) {
+            return {
+              ...a,
+              status: updatedRecord?.status || newStatus
+            };
+          }
+          return a;
+        });
+
+        if (onSaveApplications) {
+          onSaveApplications(updatedList);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update application status:", err);
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  // Style helper for company logos
   const getCompanyLogo = (companyName: string) => {
     const logos: Record<string, { char: string; bg: string }> = {
       "Google": { char: "G", bg: "from-blue-500 via-red-500 to-yellow-500 text-white" },
@@ -320,21 +378,21 @@ export default function JobsExplorer({
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
-      {/* Intro section */}
+      {/* Intro header section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200/60 dark:border-white/10 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="glass-pill px-2.5 py-0.5 text-[#6D5EF8] text-[9px] font-bold font-mono uppercase tracking-wider">
-              Live Recruiting Integrations
+              Practice Presets & Scenarios
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold uppercase">Online & Synced</span>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold uppercase">PostgreSQL Backed</span>
           </div>
           <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight font-sans">
-            Job Board & Application Center
+            Job Explorer & Application Tracker
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Browse real positions mapped to premium recruitment pools. Submit direct applications mimicking LinkedIn Easy Apply and Naukri.com, then track response pipelines live!
+            Explore practice role scenarios and track applications recorded in your private Recruiter AI Pro workspace.
           </p>
         </div>
 
@@ -349,7 +407,7 @@ export default function JobsExplorer({
             }`}
           >
             <Briefcase className="h-3.5 w-3.5" />
-            <span>Live Job Openings</span>
+            <span>Practice Job Scenarios</span>
             <span className="ml-1 text-[9px] font-mono font-extrabold bg-black/20 dark:bg-white/10 px-1.5 py-0.5 rounded-md text-inherit">
               {filteredLiveJobs.length}
             </span>
@@ -364,12 +422,12 @@ export default function JobsExplorer({
             }`}
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Applications Tracker</span>
-            {submittedApplications.length > 0 && (
+            <span>My Application Tracker</span>
+            {applications.length > 0 && (
               <span className={`ml-1 text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
                 activeSubTab === "tracker" ? "bg-white text-[#6D5EF8]" : "bg-[#6D5EF8]/20 text-[#6D5EF8]"
               }`}>
-                {submittedApplications.length}
+                {applications.length}
               </span>
             )}
           </button>
@@ -384,7 +442,7 @@ export default function JobsExplorer({
               <Search className="absolute inset-y-0 left-3 h-4 w-4 text-slate-400 my-auto pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search live positions by company, role keyword, required stack, or location..."
+                placeholder="Search practice scenarios by company, role title, required stack, or location..."
                 className="w-full glass-input rounded-xl py-2.5 pl-9 pr-4 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -412,15 +470,19 @@ export default function JobsExplorer({
                 const isExpanded = expandedId === job.id;
                 const logoInfo = getCompanyLogo(job.companyName);
                 
-                // Check if user already applied to this specific job
+                // Check if user already recorded an application for this role
                 const hasApplied = applications.some(
-                  app => app.companyId === job.companyId && app.roleTitle === job.roleTitle && (app.id.startsWith("referral-") || app.applicantName !== "Anonymous Candidate")
+                  app => app.companyName.toLowerCase() === job.companyName.toLowerCase() && 
+                         app.roleTitle.toLowerCase() === job.roleTitle.toLowerCase()
                 );
+
+                const atsData = atsScores[job.id];
+                const isAtsLoading = atsLoading[job.id];
 
                 return (
                   <div
                     key={job.id}
-                    onClick={() => setExpandedId(isExpanded ? null : job.id)}
+                    onClick={() => handleToggleExpand(job)}
                     className={`glass-card-hover rounded-2xl transition-all overflow-hidden cursor-pointer ${
                       isExpanded ? "ring-2 ring-[#6D5EF8]/50 shadow-xl" : ""
                     }`}
@@ -430,7 +492,6 @@ export default function JobsExplorer({
                       
                       {/* Left Column: Brand & Role Metadata */}
                       <div className="flex gap-4 items-center min-w-0 flex-1">
-                        {/* Elegant Logo */}
                         <span className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${logoInfo.bg} flex items-center justify-center text-sm font-black text-white shrink-0 select-none shadow-md`}>
                           {logoInfo.char}
                         </span>
@@ -443,6 +504,9 @@ export default function JobsExplorer({
                             <span className="text-[10px] text-[#6D5EF8] font-mono font-bold glass-pill px-2 py-0.5">
                               {job.companyName}
                             </span>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-400 text-[8px] font-mono font-bold uppercase tracking-wider">
+                              Practice Preset
+                            </span>
                             {job.remoteBadge && (
                               <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-mono font-bold uppercase tracking-wider">
                                 Remote Eligible
@@ -450,12 +514,11 @@ export default function JobsExplorer({
                             )}
                             {hasApplied && (
                               <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[#6D5EF8] text-[8px] font-mono font-extrabold uppercase tracking-wider flex items-center gap-1">
-                                <Check className="h-2 w-2" /> Applied
+                                <Check className="h-2 w-2" /> Application Recorded
                               </span>
                             )}
                           </div>
 
-                          {/* Info badges */}
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-400 font-mono">
                             <span className="text-slate-500 font-medium">{job.department}</span>
                             <span className="text-slate-700">•</span>
@@ -472,48 +535,34 @@ export default function JobsExplorer({
                         </div>
                       </div>
 
-                      {/* Right Column: Interactive apply triggers */}
+                      {/* Right Column: Actions */}
                       <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-center" onClick={(e) => e.stopPropagation()}>
                         
-                        {/* Practice AI Interview direct */}
+                        {/* Simulate Interview Loop */}
                         <button
                           onClick={() => onPracticeJob(job.companyName, job.roleTitle, job.jdFullText || "")}
                           className="px-3.5 py-2 bg-indigo-500/10 hover:bg-indigo-500/25 text-[#6D5EF8] border border-indigo-500/20 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
                           title="Practice direct simulated questions calibrated to this role"
                         >
                           <Zap className="h-3.5 w-3.5" />
-                          <span>Simulate</span>
+                          <span>Simulate Loop</span>
                         </button>
 
-                        {/* LinkedIn Easy Apply Trigger */}
+                        {/* Record Application Trigger */}
                         <button
-                          onClick={() => handleOpenEasyApply(job, "linkedin")}
+                          onClick={() => handleOpenRecordModal(job)}
                           disabled={hasApplied}
                           className={`px-3.5 py-2 text-[10.5px] font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                             hasApplied 
                               ? "bg-slate-900 border border-[#27272A] text-slate-500 cursor-not-allowed" 
-                              : "bg-[#0A66C2] hover:bg-[#004182] text-white"
+                              : "bg-[#6D5EF8] hover:bg-[#5B4DF0] text-white shadow-md"
                           }`}
                         >
-                          <span className="font-sans font-black text-xs">in</span>
-                          <span>Easy Apply</span>
+                          <FileCheck className="h-3.5 w-3.5" />
+                          <span>{hasApplied ? "Recorded" : "Record Application"}</span>
                         </button>
 
-                        {/* Naukri Fast-Track Apply Trigger */}
-                        <button
-                          onClick={() => handleOpenEasyApply(job, "naukri")}
-                          disabled={hasApplied}
-                          className={`px-3.5 py-2 text-[10.5px] font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                            hasApplied 
-                              ? "bg-slate-900 border border-[#27272A] text-slate-500 cursor-not-allowed" 
-                              : "bg-amber-600 hover:bg-amber-700 text-white"
-                          }`}
-                        >
-                          <Award className="h-3.5 w-3.5 text-white/90" />
-                          <span>Fast Apply</span>
-                        </button>
-
-                        {/* Save Bookmark */}
+                        {/* Bookmark */}
                         <button
                           onClick={(e) => handleToggleBookmark(job.id, e)}
                           className={`p-2 rounded-xl border transition-colors cursor-pointer ${
@@ -525,9 +574,9 @@ export default function JobsExplorer({
                           <Bookmark className="h-3.5 w-3.5" fill={isBookmarked ? "currentColor" : "none"} />
                         </button>
 
-                        {/* Toggle expand Details */}
+                        {/* Toggle expand */}
                         <button
-                          onClick={() => setExpandedId(isExpanded ? null : job.id)}
+                          onClick={() => handleToggleExpand(job)}
                           className="p-2 bg-[#09090B] border border-[#27272A] rounded-xl text-slate-500 hover:text-slate-300 transition-colors"
                         >
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
@@ -536,22 +585,22 @@ export default function JobsExplorer({
 
                     </div>
 
-                    {/* Expanded Details Section */}
+                    {/* Expanded Details Section: Evidence-Based ATS Breakdown */}
                     {isExpanded && (
                       <div className="px-5 pb-5 pt-1 border-t border-[#27272A]/50 bg-[#09090B]/30 space-y-4 animate-slide-up" onClick={(e) => e.stopPropagation()}>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 pt-3">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-3">
                           
-                          {/* Left Column: Requirements details */}
-                          <div className="lg:col-span-2 space-y-3">
+                          {/* Left Column: Job Description Text */}
+                          <div className="lg:col-span-6 space-y-3">
                             <div className="space-y-1">
-                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Job Description & Core Scope</h5>
-                              <p className="text-[11px] text-slate-300 leading-relaxed max-w-4xl whitespace-pre-line font-sans">
+                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Job Description Scope</h5>
+                              <p className="text-[11px] text-slate-300 leading-relaxed whitespace-pre-line font-sans max-h-72 overflow-y-auto pr-2">
                                 {job.jdFullText}
                               </p>
                             </div>
 
                             <div className="space-y-1.5 pt-1">
-                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono font-sans">Required Core Competencies</h5>
+                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Key Stack Focus</h5>
                               <div className="flex flex-wrap gap-1.5">
                                 {job.skillsRequired.map(skill => (
                                   <span key={skill} className="px-2.5 py-0.5 bg-[#111827] border border-[#27272A] rounded-lg text-[9.5px] text-indigo-300 font-mono">
@@ -562,37 +611,94 @@ export default function JobsExplorer({
                             </div>
                           </div>
 
-                          {/* Right Column: ATS Score Estimator */}
-                          <div className="bg-[#111827]/80 border border-[#27272A] rounded-2xl p-4 space-y-3">
+                          {/* Right Column: Evidence-Based ATS Breakdown */}
+                          <div className="lg:col-span-6 bg-[#111827]/90 border border-[#27272A] rounded-2xl p-4 space-y-3.5">
                             <div className="flex items-center justify-between border-b border-[#27272A]/55 pb-2.5">
-                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">ATS Match Assessment</h5>
-                              <span className="text-[9px] font-semibold text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded">Real-time</span>
+                              <div className="flex items-center gap-1.5">
+                                <Shield className="h-3.5 w-3.5 text-[#6D5EF8]" />
+                                <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-300 font-mono">Evidence-Based ATS Match</h5>
+                              </div>
+                              <span className="text-[9px] font-semibold text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                Grounded RAG
+                              </span>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="w-11 h-11 rounded-full border-2 border-emerald-500/30 flex items-center justify-center bg-emerald-500/5 select-none shrink-0">
-                                <span className="text-xs font-mono font-extrabold text-emerald-400">{getATSScoreInfo(job).score}%</span>
+                            {isAtsLoading ? (
+                              <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                                <Loader2 className="h-6 w-6 animate-spin text-[#6D5EF8]" />
+                                <span className="text-[10px] font-mono">Evaluating candidate vector embeddings...</span>
                               </div>
-                              <div>
-                                <h6 className="text-[11px] font-bold text-white font-sans">High Probability Match</h6>
-                                <p className="text-[9.5px] text-slate-400">Excellent target role alignment estimated.</p>
-                              </div>
-                            </div>
+                            ) : atsData ? (
+                              <div className="space-y-3 animate-fade-in">
+                                {/* Overall Match Score Radial */}
+                                <div className="flex items-center gap-4 bg-[#09090B]/60 p-3 rounded-xl border border-[#27272A]/60">
+                                  <div className="w-12 h-12 rounded-full border-2 border-indigo-500/40 flex items-center justify-center bg-indigo-500/10 select-none shrink-0">
+                                    <span className="text-sm font-mono font-black text-indigo-400">{atsData.score}%</span>
+                                  </div>
+                                  <div>
+                                    <h6 className="text-xs font-bold text-white font-sans">
+                                      {atsData.score >= 80 ? "Strong Candidate Evidence Match" : atsData.score >= 50 ? "Moderate Evidence Coverage" : "Requires Additional Experience Evidence"}
+                                    </h6>
+                                    <p className="text-[9.5px] text-slate-400 font-mono mt-0.5">
+                                      Confidence: {Math.round(atsData.confidence * 100)}% • Grounded in candidate private index
+                                    </p>
+                                  </div>
+                                </div>
 
-                            <div className="space-y-1.5 text-[9px] text-slate-400 font-mono leading-normal pt-1.5">
-                              {getATSScoreInfo(job).reasons.map((reason, rIdx) => (
-                                <p key={rIdx} className="flex items-start gap-1">
-                                  <span className="text-[#6D5EF8] shrink-0">✔</span>
-                                  <span>{reason}</span>
+                                {/* Category Breakdown */}
+                                <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                                  <div className="bg-[#09090B] p-2 rounded-xl border border-[#27272A]/60">
+                                    <span className="text-[8.5px] text-slate-500 block uppercase">Must-Have</span>
+                                    <span className="text-xs font-bold text-indigo-300">{atsData.breakdown.mustHave}%</span>
+                                  </div>
+                                  <div className="bg-[#09090B] p-2 rounded-xl border border-[#27272A]/60">
+                                    <span className="text-[8.5px] text-slate-500 block uppercase">Preferred</span>
+                                    <span className="text-xs font-bold text-indigo-300">{atsData.breakdown.preferred}%</span>
+                                  </div>
+                                  <div className="bg-[#09090B] p-2 rounded-xl border border-[#27272A]/60">
+                                    <span className="text-[8.5px] text-slate-500 block uppercase">Duties</span>
+                                    <span className="text-xs font-bold text-indigo-300">{atsData.breakdown.responsibilities}%</span>
+                                  </div>
+                                </div>
+
+                                {/* Matched Requirements with Provenance */}
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                  {atsData.matchedRequirements.slice(0, 3).map((match, mIdx) => (
+                                    <div key={mIdx} className="text-[9.5px] p-2 rounded-lg bg-[#09090B]/40 border border-emerald-500/15 text-slate-300 space-y-1">
+                                      <div className="flex items-center justify-between text-emerald-400 font-mono">
+                                        <span className="font-bold flex items-center gap-1">
+                                          <span>✔</span>
+                                          <span>{match.requirementText}</span>
+                                        </span>
+                                        <span className="text-[8.5px] opacity-80">{Math.round(match.confidence * 100)}% match</span>
+                                      </div>
+                                      {match.evidence[0] && (
+                                        <p className="text-[9px] text-slate-400 italic pl-3 border-l border-emerald-500/30">
+                                          "{match.evidence[0].text.substring(0, 120)}..."
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+
+                                  {/* Missing Requirements */}
+                                  {atsData.missingRequirements.slice(0, 2).map((missing, msIdx) => (
+                                    <div key={msIdx} className="text-[9.5px] p-2 rounded-lg bg-[#09090B]/40 border border-amber-500/15 text-slate-400 flex items-start gap-1.5">
+                                      <span className="text-amber-400 shrink-0 font-bold">⚠</span>
+                                      <span className="font-mono text-[9px]">{missing.requirementText} (No direct indexed evidence)</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Honesty Disclaimer */}
+                                <p className="text-[8.5px] text-slate-500 italic leading-normal border-t border-[#27272A]/40 pt-2 font-mono">
+                                  {atsData.limitations[0]}
                                 </p>
-                              ))}
-                            </div>
-
-                            <div className="pt-2">
-                              <p className="text-[9.5px] text-slate-500 leading-normal italic font-sans">
-                                *Tip: Create or link your saved STAR story during application to trigger the Priority 1 ATS Fast-Track referral bypass.
-                              </p>
-                            </div>
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-slate-500 text-[10px] font-mono">
+                                Expand this scenario to analyze candidate evidence alignment.
+                              </div>
+                            )}
                           </div>
 
                         </div>
@@ -606,7 +712,7 @@ export default function JobsExplorer({
                 <span className="text-3xl block select-none">🔍</span>
                 <h4 className="text-xs font-bold text-white">No Matching Openings Found</h4>
                 <p className="text-[10.5px] text-slate-500 max-w-xs mx-auto leading-relaxed">
-                  We couldn't locate active roles matching your search string. Try clearing your filters or testing alternative keywords!
+                  We couldn't locate practice roles matching your search string. Try clearing your filters or testing alternative keywords!
                 </p>
               </div>
             )}
@@ -621,34 +727,41 @@ export default function JobsExplorer({
                 <FileCheck className="h-5 w-5" />
               </span>
               <div>
-                <h4 className="text-xs font-bold text-white font-sans">Dynamic Response Pipeline</h4>
+                <h4 className="text-xs font-bold text-white font-sans">Authoritative Application Tracker</h4>
                 <p className="text-[10px] text-slate-400 leading-normal">
-                  Track resume screening, executive referrals, and mock calibrations. Status updates auto-reflect live actions.
+                  Persisted directly to your PostgreSQL workspace database. Manage real-world interview progression below.
                 </p>
               </div>
             </div>
             
             <div className="flex items-center gap-4 text-xs font-mono">
               <div className="text-center bg-[#09090B] border border-[#27272A] px-3 py-1.5 rounded-lg">
-                <span className="text-slate-500 text-[9px] block">TOTAL SUBMISSIONS</span>
-                <span className="text-sm font-extrabold text-white">{submittedApplications.length}</span>
+                <span className="text-slate-500 text-[9px] block">RECORDED APPLICATIONS</span>
+                <span className="text-sm font-extrabold text-white">{applications.length}</span>
               </div>
               <div className="text-center bg-[#09090B] border border-[#27272A] px-3 py-1.5 rounded-lg">
-                <span className="text-slate-500 text-[9px] block">MEETING SCHEDULED</span>
-                <span className="text-sm font-extrabold text-[#6D5EF8]">{submittedApplications.filter(a => a.status === "Interview Scheduled").length}</span>
+                <span className="text-slate-500 text-[9px] block">INTERVIEW SCHEDULED</span>
+                <span className="text-sm font-extrabold text-[#6D5EF8]">
+                  {applications.filter(a => a.status === "Interview Scheduled").length}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="space-y-3.5">
-            {submittedApplications.length > 0 ? (
-              submittedApplications.map((app) => {
+            {applications.length > 0 ? (
+              applications.map((app) => {
                 const logoInfo = getCompanyLogo(app.companyName);
                 const isExpanded = expandedId === app.id;
+                const isUpdating = updatingStatusId === app.id;
 
-                // Define pipeline step active indices
-                const statusSteps = ["Submitted", "Screening", "Interview Scheduled", "Offered"];
-                const activeStepIndex = statusSteps.indexOf(app.status || "Submitted");
+                const statusOptions: Array<JobApplication["status"]> = [
+                  "Submitted",
+                  "Screening",
+                  "Interview Scheduled",
+                  "Offered",
+                  "Closed"
+                ];
 
                 return (
                   <div
@@ -661,7 +774,6 @@ export default function JobsExplorer({
                     {/* Header bar of application tracking card */}
                     <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex gap-4 items-center min-w-0">
-                        {/* Graded Company icon */}
                         <span className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${logoInfo.bg} flex items-center justify-center text-xs font-black shrink-0 select-none shadow-md`}>
                           {logoInfo.char}
                         </span>
@@ -673,7 +785,7 @@ export default function JobsExplorer({
                           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
                             <span className="font-semibold text-indigo-400">{app.companyName}</span>
                             <span>•</span>
-                            <span className="text-slate-500">{app.appliedSlot || "Standard Direct Apply"}</span>
+                            <span className="text-slate-500">Recorded Application</span>
                             <span>•</span>
                             <span className="text-slate-500">
                               {app.timestamp ? new Date(app.timestamp).toLocaleDateString() : "Just now"}
@@ -682,116 +794,77 @@ export default function JobsExplorer({
                         </div>
                       </div>
 
-                      {/* Right info block: match score rating and dropdown */}
-                      <div className="flex items-center justify-between md:justify-end gap-3 self-stretch md:self-center">
+                      {/* Right info block: match score rating and status editor */}
+                      <div className="flex items-center justify-between md:justify-end gap-3 self-stretch md:self-center" onClick={(e) => e.stopPropagation()}>
                         {/* ATS MATCH SCORE RADIAL PILL */}
-                        <div className="flex items-center gap-1.5 bg-[#09090B] border border-[#27272A] px-2.5 py-1 rounded-xl">
-                          <span className="text-[9px] font-bold text-slate-500 font-mono uppercase tracking-wider">ATS Score:</span>
-                          <span className={`text-[10.5px] font-extrabold font-mono ${
-                            app.matchScore >= 90 ? "text-emerald-400" : app.matchScore >= 80 ? "text-indigo-400" : "text-amber-400"
-                          }`}>
-                            {app.matchScore || 78}%
-                          </span>
+                        {typeof app.matchScore === "number" && app.matchScore > 0 && (
+                          <div className="flex items-center gap-1.5 bg-[#09090B] border border-[#27272A] px-2.5 py-1 rounded-xl">
+                            <span className="text-[9px] font-bold text-slate-500 font-mono uppercase tracking-wider">ATS Score:</span>
+                            <span className={`text-[10.5px] font-extrabold font-mono ${
+                              app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 60 ? "text-indigo-400" : "text-amber-400"
+                            }`}>
+                              {app.matchScore}%
+                            </span>
+                          </div>
+                        )}
+
+                        {/* STATUS DROPDOWN SELECTOR */}
+                        <div className="relative">
+                          <select
+                            disabled={isUpdating}
+                            value={app.status || "Submitted"}
+                            onChange={(e) => handleUpdateApplicationStatus(app.id, e.target.value as any)}
+                            className="bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl py-1 px-2.5 text-[10px] font-bold font-mono focus:outline-none focus:border-[#6D5EF8] cursor-pointer"
+                          >
+                            {statusOptions.map(opt => (
+                              <option key={opt} value={opt} className="bg-slate-900 text-white">
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
-                        {/* STATUS PILL */}
-                        <span className={`px-2.5 py-1 text-[9px] font-bold uppercase font-mono tracking-wider rounded-xl border ${
-                          app.status === "Interview Scheduled" 
-                            ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" 
-                            : app.status === "Screening" 
-                            ? "bg-[#6D5EF8]/10 border-[#6D5EF8]/25 text-[#6D5EF8]" 
-                            : "bg-slate-900 border-[#27272A] text-slate-400"
-                        }`}>
-                          {app.status || "Submitted"}
-                        </span>
-
                         {/* CHEVRON TOGGLE */}
-                        <button className="p-1 text-slate-500 hover:text-slate-300">
+                        <button 
+                          onClick={() => setExpandedId(isExpanded ? null : app.id)}
+                          className="p-1 text-slate-500 hover:text-slate-300"
+                        >
                           <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>
                       </div>
                     </div>
 
-                    {/* Expand Pipeline Progression Details */}
+                    {/* Expand Pipeline Details */}
                     {isExpanded && (
-                      <div className="px-5 pb-5 pt-2 border-t border-[#27272A]/40 bg-[#09090B]/30 space-y-5" onClick={(e) => e.stopPropagation()}>
-                        
-                        {/* DYNAMIC PIPELINE GRAPHICS */}
-                        <div className="space-y-2 pt-2">
-                          <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Live Application Stage Pipeline</h5>
-                          
-                          <div className="relative pt-1 pb-4">
-                            {/* Connector Line backing */}
-                            <div className="absolute top-[23px] left-[15%] right-[15%] h-0.5 bg-slate-800" />
-                            {/* Active connection line overlay */}
-                            <div 
-                              className="absolute top-[23px] left-[15%] h-0.5 bg-gradient-to-r from-[#6D5EF8] to-emerald-400 transition-all duration-500"
-                              style={{ width: `${Math.min(activeStepIndex * 23.3, 70)}%` }}
-                            />
-
-                            <div className="grid grid-cols-4 text-center relative z-10">
-                              {statusSteps.map((stepName, stepIdx) => {
-                                const isCompleted = stepIdx < activeStepIndex;
-                                const isActive = stepIdx === activeStepIndex;
-                                
-                                return (
-                                  <div key={stepName} className="flex flex-col items-center gap-1.5">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold font-mono transition-all ${
-                                      isActive 
-                                        ? "bg-[#6D5EF8] text-white border-4 border-[#6D5EF8]/25 scale-110 shadow"
-                                        : isCompleted 
-                                        ? "bg-emerald-500 text-white border-2 border-emerald-500/25" 
-                                        : "bg-slate-900 text-slate-600 border border-[#27272A]"
-                                    }`}>
-                                      {isCompleted ? "✓" : stepIdx + 1}
-                                    </div>
-                                    <span className={`text-[10px] font-bold ${
-                                      isActive ? "text-[#6D5EF8]" : isCompleted ? "text-emerald-400" : "text-slate-500"
-                                    }`}>
-                                      {stepName}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Recruiter comments and feedback bubble */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                          
-                          <div className="md:col-span-8 bg-[#111827] border border-[#27272A] rounded-xl p-4 space-y-2 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-[#6D5EF8]/30 flex items-center justify-center">
-                                <span className="w-1 h-1 rounded-full bg-[#6D5EF8]" />
-                              </span>
-                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">ATS & Recruiter Direct Feedback</h5>
-                            </div>
+                      <div className="px-5 pb-5 pt-2 border-t border-[#27272A]/40 bg-[#09090B]/30 space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pt-2">
+                          <div className="md:col-span-8 bg-[#111827] border border-[#27272A] rounded-xl p-4 space-y-2">
+                            <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Application Notes & Record Details</h5>
                             <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                              {app.screeningFeedback || "Your credentials have been logged in the direct hiring database. A calibration coordinator will check details shortly."}
+                              {app.coverLetter ? `Cover Letter / Notes: ${app.coverLetter}` : "No additional pitch notes attached to this application."}
+                            </p>
+                            <p className="text-[9.5px] text-slate-500 font-mono">
+                              Applicant: {app.applicantName} ({app.applicantEmail})
                             </p>
                           </div>
 
-                          <div className="md:col-span-4 bg-[#111827] border border-[#27272A]/60 rounded-xl p-4 flex flex-col justify-between gap-3">
+                          <div className="md:col-span-4 bg-[#111827] border border-[#27272A] rounded-xl p-4 flex flex-col justify-between gap-3">
                             <div>
-                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Recommended Practice Action</h5>
+                              <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Prepare Interview</h5>
                               <p className="text-[10px] text-slate-400 leading-normal mt-1">
-                                Complete a targeted AI recruitment loop to increase your rating and lock in interview guarantees.
+                                Launch an adaptive mock interview calibrated to {app.companyName} requirements.
                               </p>
                             </div>
                             
                             <button
                               onClick={() => onPracticeJob(app.companyName, app.roleTitle, app.jdFullText || "")}
-                              className="w-full py-2 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-[10.5px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                              className="w-full py-2 bg-[#6D5EF8] hover:bg-[#5B4DF0] text-white rounded-xl text-[10.5px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
                             >
                               <Zap className="h-3.5 w-3.5" />
-                              <span>Simulate Loop Now</span>
+                              <span>Simulate Interview</span>
                             </button>
                           </div>
-
                         </div>
-
                       </div>
                     )}
                   </div>
@@ -800,15 +873,15 @@ export default function JobsExplorer({
             ) : (
               <div className="p-12 text-center bg-[#111827] border border-[#27272A] rounded-[24px] space-y-3">
                 <span className="text-3xl block select-none">📁</span>
-                <h4 className="text-xs font-bold text-white">No Submitted Applications Yet</h4>
+                <h4 className="text-xs font-bold text-white">No Recorded Applications Yet</h4>
                 <p className="text-[10.5px] text-slate-500 max-w-sm mx-auto leading-relaxed">
-                  You haven't applied to any live positions in this session yet. Explore our open positions feed and click "Easy Apply" to instantly submit your credentials!
+                  You haven't recorded any job applications in your database yet. Explore the practice scenarios feed and click "Record Application" to log a submission!
                 </p>
                 <button
                   onClick={() => setActiveSubTab("feed")}
-                  className="px-4 py-2 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2 bg-[#6D5EF8] hover:bg-[#5B4DF0] text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
-                  Browse Available Openings
+                  Browse Practice Roles
                 </button>
               </div>
             )}
@@ -816,279 +889,128 @@ export default function JobsExplorer({
         </div>
       )}
 
-      {/* DETAILED MODAL: LINKEDIN EASY APPLY & NAUKRI FAST-TRACK STEPPER DIALOG */}
+      {/* RECORD APPLICATION MODAL */}
       {isApplyModalOpen && selectedJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-[#111827] border border-[#27272A] max-w-lg w-full rounded-2xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
             
-            {/* Design header branding based on platform */}
-            {applyPlatform === "linkedin" ? (
-              <div className="flex items-center justify-between border-b border-[#27272A] pb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-[#0A66C2] text-white flex items-center justify-center font-bold text-lg select-none">in</span>
-                  <div>
-                    <h3 className="text-xs font-extrabold text-white uppercase font-mono tracking-wider flex items-center gap-1.5">
-                      <span>LinkedIn Profile Template (Practice Simulation)</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    </h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Simulate application dispatch & record tracker</p>
-                  </div>
-                </div>
-                <span className="text-[9px] font-mono font-bold text-slate-400 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
-                  Practice Tracker
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#27272A] pb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-[#6D5EF8] text-white flex items-center justify-center font-bold text-sm select-none">
+                  <FileCheck className="h-4 w-4" />
                 </span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between border-b border-[#27272A] pb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center select-none">
-                    <Award className="h-4.5 w-4.5" />
-                  </span>
-                  <div>
-                    <h3 className="text-xs font-extrabold text-white uppercase font-mono tracking-wider flex items-center gap-1.5">
-                      <span>Naukri Format (Practice Simulation)</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    </h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Simulate referral matchmaker & save to tracker</p>
-                  </div>
-                </div>
-                <span className="text-[9px] font-mono font-bold text-slate-400 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
-                  Practice Tracker
-                </span>
-              </div>
-            )}
-
-            {/* Stepper progress headers */}
-            {applyStep < 4 && (
-              <div className="flex items-center justify-between bg-[#09090B] border border-[#27272A]/80 p-2 rounded-xl text-[9px] font-mono">
-                <span className={`px-2 py-0.5 rounded ${applyStep === 1 ? "bg-[#6D5EF8] text-white font-bold" : "text-slate-500"}`}>1. Contact</span>
-                <span className="text-slate-700">➔</span>
-                <span className={`px-2 py-0.5 rounded ${applyStep === 2 ? "bg-[#6D5EF8] text-white font-bold" : "text-slate-500"}`}>2. STAR Story</span>
-                <span className="text-slate-700">➔</span>
-                <span className={`px-2 py-0.5 rounded ${applyStep === 3 ? "bg-[#6D5EF8] text-white font-bold" : "text-slate-500"}`}>3. Commentary</span>
-              </div>
-            )}
-
-            {/* Step 1: Verification Form */}
-            {applyStep === 1 && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="bg-[#09090B]/50 border border-[#27272A]/60 p-3 rounded-xl">
-                  <p className="text-[10px] text-slate-400 leading-normal">
-                    You are applying for: <strong className="text-white">{selectedJob.roleTitle}</strong> at <strong className="text-white">{selectedJob.companyName}</strong>. Please confirm your linked credentials below.
+                <div>
+                  <h3 className="text-xs font-extrabold text-white uppercase font-mono tracking-wider">
+                    Record Application
+                  </h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Save application metadata to your private workspace database
                   </p>
                 </div>
+              </div>
+              <span className="text-[9px] font-mono font-bold text-slate-400 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
+                PostgreSQL Tracker
+              </span>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Applicant Name</label>
-                    <div className="relative">
-                      <User className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
-                      <input
-                        type="text"
-                        disabled
-                        value={currentUser?.name || "Active Candidate"}
-                        className="w-full bg-[#09090B]/60 border border-[#27272A] text-slate-400 rounded-xl py-2.5 pl-9 pr-3 text-xs focus:outline-none cursor-not-allowed font-medium"
-                      />
-                    </div>
-                  </div>
+            {/* Error notice if submission failed */}
+            {submitError && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs font-mono flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{submitError}</span>
+              </div>
+            )}
 
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Email Address</label>
-                    <div className="relative">
-                      <Mail className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
-                      <input
-                        type="email"
-                        disabled
-                        value={currentUser?.email || "candidate@example.com"}
-                        className="w-full bg-[#09090B]/60 border border-[#27272A] text-slate-400 rounded-xl py-2.5 pl-9 pr-3 text-xs focus:outline-none cursor-not-allowed font-medium"
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* Form details */}
+            <div className="space-y-4">
+              <div className="bg-[#09090B]/50 border border-[#27272A]/60 p-3 rounded-xl">
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  Recording application for: <strong className="text-white">{selectedJob.roleTitle}</strong> at <strong className="text-white">{selectedJob.companyName}</strong>.
+                </p>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono block">Contact Phone Number</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Applicant Name</label>
                   <div className="relative">
-                    <Phone className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
+                    <User className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
                     <input
-                      type="tel"
-                      placeholder="+91 XXXXX XXXXX or +1 (555) 019-2834"
-                      className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl py-2.5 pl-9 pr-3 text-xs focus:outline-none focus:border-[#6D5EF8] transition-colors"
-                      value={applicantPhone}
-                      onChange={(e) => setApplicantPhone(e.target.value)}
-                      required
+                      type="text"
+                      disabled
+                      value={currentUser?.name || currentUser?.fullName || "Active Candidate"}
+                      className="w-full bg-[#09090B]/60 border border-[#27272A] text-slate-400 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none cursor-not-allowed font-medium"
                     />
                   </div>
-                  <p className="text-[9px] text-slate-500 font-mono">Will be verified by SMS on submission.</p>
                 </div>
 
-                <div className="flex justify-between items-center pt-3 border-t border-[#27272A]/40">
-                  <button
-                    onClick={() => setIsApplyModalOpen(false)}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => setApplyStep(2)}
-                    disabled={!applicantPhone.trim()}
-                    className="px-5 py-2 bg-[#6D5EF8] disabled:bg-slate-900 disabled:border-[#27272A] disabled:text-slate-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                  >
-                    <span>Next: Attach Story</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Attach STAR Story */}
-            {applyStep === 2 && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Linked Workbook STAR Stories</label>
-                    <span className="text-[8px] font-mono text-indigo-400 uppercase font-bold bg-[#6D5EF8]/10 px-2 py-0.5 border border-[#6D5EF8]/15 rounded-full">
-                      Bypasses ATS Screening
-                    </span>
-                  </div>
-                  
-                  <select
-                    value={selectedStoryId}
-                    onChange={(e) => setSelectedStoryId(e.target.value)}
-                    className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-[#6D5EF8] cursor-pointer"
-                  >
-                    {savedStarStories.length > 0 ? (
-                      <>
-                        {savedStarStories.map(story => (
-                          <option key={story.id} value={story.id}>
-                            {story.title || "Untitled STAR story"} ({story.company || "General"})
-                          </option>
-                        ))}
-                        <option value="none">Apply with general resume only (No STAR story attachment)</option>
-                      </>
-                    ) : (
-                      <option value="none">No saved STAR stories in workbook (Applying via resume)</option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Display active selection review */}
-                {selectedStoryId !== "none" ? (
-                  <div className="bg-[#09090B] border border-[#27272A] p-4 rounded-xl space-y-2 relative">
-                    <span className="absolute top-2.5 right-2.5 text-[8.5px] font-bold text-emerald-400 font-mono flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/15 px-2 py-0.5 rounded-full select-none">
-                      ✔ Match Boost +15%
-                    </span>
-                    <h4 className="text-xs font-bold text-white font-sans truncate max-w-[300px]">
-                      {savedStarStories.find(s => s.id === selectedStoryId)?.title || "Selected STAR Story"}
-                    </h4>
-                    <p className="text-[10px] text-slate-400 line-clamp-3 leading-relaxed font-sans italic">
-                      "{savedStarStories.find(s => s.id === selectedStoryId)?.result || "Attached behavioral case study."}"
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-[#1C1917]/25 border border-[#44403C]/35 p-4 rounded-xl space-y-2 flex gap-3.5 items-start">
-                    <span className="text-xl shrink-0 select-none">💡</span>
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-slate-200">Increase your matching probability!</h4>
-                      <p className="text-[10px] text-slate-400 leading-normal">
-                        Attaching a saved STAR behavioral study instantly increases your profile's parsing rating to 90%+ and flags you as high-priority inside hiring portals.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-3 border-t border-[#27272A]/40">
-                  <button
-                    onClick={() => setApplyStep(1)}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Back
-                  </button>
-                  
-                  <button
-                    onClick={() => setApplyStep(3)}
-                    className="px-5 py-2 bg-[#6D5EF8] text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                  >
-                    <span>Next: Commentary</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Brief Cover Commentary */}
-            {applyStep === 3 && (
-              <div className="space-y-4 animate-fade-in">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Cover Pitch / Commentary (Optional)</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Provide a brief statement explaining your architectural fit for this specific position..."
-                    className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
-                    value={coverCommentary}
-                    onChange={(e) => setCoverCommentary(e.target.value)}
-                  />
-                  <p className="text-[9px] text-slate-500 font-mono">Suggested focus: High scalability, distributed pipelines, and team leading.</p>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
+                    <input
+                      type="email"
+                      disabled
+                      value={currentUser?.email || "candidate@example.com"}
+                      className="w-full bg-[#09090B]/60 border border-[#27272A] text-slate-400 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none cursor-not-allowed font-medium"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div className="flex items-start gap-2.5 bg-[#09090B]/30 border border-[#27272A]/60 p-3 rounded-xl">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono block">Contact Phone Number (Optional)</label>
+                <div className="relative">
+                  <Phone className="absolute inset-y-0 left-3 h-3.5 w-3.5 text-slate-600 my-auto pointer-events-none" />
                   <input
-                    id="apply-consent"
-                    type="checkbox"
-                    className="mt-0.5 rounded accent-[#6D5EF8] cursor-pointer"
-                    checked={applyConsent}
-                    onChange={(e) => setApplyConsent(e.target.checked)}
-                  />
-                  <label htmlFor="apply-consent" className="text-[9.5px] text-slate-400 leading-normal select-none cursor-pointer">
-                    I consent to share my active profile details, workbook activity statistics, and attached STAR credentials directly with corporate hiring coordinators.
-                  </label>
-                </div>
-
-                <div className="flex justify-between items-center pt-3 border-t border-[#27272A]/40">
-                  <button
-                    onClick={() => setApplyStep(2)}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Back
-                  </button>
-                  
-                  <button
-                    onClick={handleExecuteEasyApply}
-                    disabled={!applyConsent}
-                    className="px-6 py-2.5 bg-gradient-to-r from-[#6D5EF8] to-indigo-600 disabled:from-slate-950 disabled:to-slate-950 disabled:text-slate-600 disabled:border-[#27272A] disabled:border text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-lg"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span>Submit Easy Application</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Submission progress loader */}
-            {applyStep === 4 && (
-              <div className="py-8 space-y-6 text-center animate-fade-in select-none">
-                <div className="relative w-20 h-20 mx-auto">
-                  {/* Glowing spinner */}
-                  <div className="absolute inset-0 rounded-full border-4 border-[#27272A]" />
-                  <div className="absolute inset-0 rounded-full border-4 border-t-[#6D5EF8] border-r-indigo-500 animate-spin" />
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold font-mono text-indigo-400">
-                    {submissionProgress}%
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 max-w-xs mx-auto">
-                  <h4 className="text-xs font-bold text-white font-sans">Processing Professional Application</h4>
-                  <p className="text-[10px] text-slate-500 font-mono tracking-wide">{submissionStepMsg}</p>
-                </div>
-
-                <div className="w-full bg-[#09090B] border border-[#27272A] rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-[#6D5EF8] to-emerald-400 h-1.5 transition-all duration-300"
-                    style={{ width: `${submissionProgress}%` }}
+                    type="tel"
+                    placeholder="+1 (555) 019-2834"
+                    className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl py-2 pl-9 pr-3 text-xs focus:outline-none focus:border-[#6D5EF8] transition-colors"
+                    value={applicantPhone}
+                    onChange={(e) => setApplicantPhone(e.target.value)}
                   />
                 </div>
               </div>
-            )}
+
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono">Cover Pitch / Application Notes (Optional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Record your application pitch, referral details, or submission notes..."
+                  className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
+                  value={coverCommentary}
+                  onChange={(e) => setCoverCommentary(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-[#27272A]/40">
+                <button
+                  onClick={() => setIsApplyModalOpen(false)}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  onClick={handleExecuteRecordApplication}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-[#6D5EF8] hover:bg-[#5B4DF0] disabled:bg-slate-900 disabled:text-slate-600 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Recording...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Record Application</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
           </div>
         </div>

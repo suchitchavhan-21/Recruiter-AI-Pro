@@ -42,7 +42,7 @@ export async function submitApplicationHandler(req: AuthenticatedRequest, res: R
     applicantEmail,
     status: "Submitted",
     coverLetter,
-    matchScore: matchScore || 85,
+    matchScore: typeof matchScore === "number" ? Math.max(0, Math.min(100, Math.round(matchScore))) : undefined,
     notes,
     appliedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -53,14 +53,14 @@ export async function submitApplicationHandler(req: AuthenticatedRequest, res: R
   await insertActivity({
     userId: req.user.userId,
     activityType: "JOB_APPLIED",
-    activityName: "Job Application Submitted",
-    description: `Submitted application for ${role} at ${company}.`,
+    activityName: "Application Recorded",
+    description: `Recorded application for ${role} at ${company}.`,
     metadata: { company, role }
   });
 
   return res.status(201).json({
     success: true,
-    message: "Application submitted successfully.",
+    message: "Application recorded successfully.",
     application: appRecord
   });
 }
@@ -103,6 +103,7 @@ export async function updateStatusHandler(req: AuthenticatedRequest, res: Respon
 
   return res.status(200).json({
     success: true,
-    message: `Application status updated to ${status}.`
+    message: `Application status updated to ${status}.`,
+    application: updated
   });
 }

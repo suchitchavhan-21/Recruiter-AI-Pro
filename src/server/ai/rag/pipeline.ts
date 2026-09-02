@@ -137,6 +137,8 @@ export async function deleteResumeVectors(
   return await store.deleteByDocumentId(resumeId, userId);
 }
 
+import { calculateEvidenceBasedATSScore } from "../ats/evidenceScorer";
+
 /**
  * Evaluates candidate evidence against Job Description requirements using grounded RAG retrieval.
  */
@@ -155,57 +157,35 @@ export async function matchJDWithCandidateEvidence(params: {
   }>;
   missingSkills: string[];
 }> {
-  // Extract key technical requirements from JD
-  const lines = params.jdText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 15 && l.length < 200);
-  const sampleRequirements = lines.slice(0, 6);
+  const atsResult = await calculateEvidenceBasedATSScore(params);
 
-  if (sampleRequirements.length === 0) {
-    sampleRequirements.push("Experience building scalable backend services and APIs");
-    sampleRequirements.push("Proficiency in modern TypeScript or JavaScript");
-  }
-
-  const matchedRequirements: Array<{
-    requirement: string;
-    evidence: string;
-    confidence: number;
-    supported: boolean;
-    section: string;
-  }> = [];
-
-  let totalScore = 0;
-  const missingSkills: string[] = [];
-
-  for (const req of sampleRequirements) {
-    const results = await retrieveCandidateEvidence(params.userId, req, 2);
-    if (results.length > 0 && results[0].similarity >= 0.45) {
-      const topMatch = results[0];
-      const confidence = Math.round(topMatch.similarity * 100);
-      matchedRequirements.push({
-        requirement: req,
-        evidence: topMatch.content.substring(0, 150) + "...",
-        confidence,
-        supported: true,
-        section: topMatch.section
-      });
-      totalScore += confidence;
-    } else {
-      matchedRequirements.push({
-        requirement: req,
-        evidence: "No direct candidate evidence found in resume.",
-        confidence: results[0] ? Math.round(results[0].similarity * 100) : 20,
-        supported: false,
-        section: "N/A"
-      });
-      missingSkills.push(req.substring(0, 40));
-      totalScore += 25;
-    }
-  }
-
-  const overallMatchScore = Math.max(10, Math.min(98, Math.round(totalScore / sampleRequirements.length)));
+  const matchedList = [
+    ...atsResult.matchedRequirements.map(m => ({
+      requirement: m.requirementText,
+      evidence: m.evidence[0]?.text || "Direct match found in candidate profile.",
+      confidence: Math.round(m.confidence * 100),
+      supported: true,
+      section: m.evidence[0]?.sourceSection || "Resume"
+    })),
+    ...atsResult.partialRequirements.map(m => ({
+      requirement: m.requirementText,
+      evidence: m.evidence[0]?.text || "Partial match found in candidate profile.",
+      confidence: Math.round(m.confidence * 100),
+      supported: true,
+      section: m.evidence[0]?.sourceSection || "Resume"
+    })),
+    ...atsResult.missingRequirements.map(m => ({
+      requirement: m.requirementText,
+      evidence: "No direct candidate evidence found in indexed resume.",
+      confidence: Math.round(m.confidence * 100),
+      supported: false,
+      section: "N/A"
+    }))
+  ];
 
   return {
-    overallMatchScore,
-    matchedRequirements,
-    missingSkills
+    overallMatchScore: atsResult.score,
+    matchedRequirements: matchedList,
+    missingSkills: atsResult.missingRequirements.map(m => m.requirementText.substring(0, 60))
   };
 }

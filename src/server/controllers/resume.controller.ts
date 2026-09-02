@@ -208,6 +208,8 @@ export async function deleteResumeHandler(req: AuthenticatedRequest, res: Respon
   });
 }
 
+import { calculateEvidenceBasedATSScore } from "../ai/ats/evidenceScorer";
+
 // 5. MATCH RESUME EVIDENCE WITH JOB DESCRIPTION
 export async function matchJDEvidenceHandler(req: AuthenticatedRequest, res: Response) {
   if (!req.user?.userId) {
@@ -235,6 +237,43 @@ export async function matchJDEvidenceHandler(req: AuthenticatedRequest, res: Res
     return res.status(500).json({
       success: false,
       error: { code: "MATCH_FAILED", message: err.message || "Failed to evaluate candidate evidence." }
+    });
+  }
+}
+
+// 6. CALCULATE EVIDENCE-BASED ATS SCORE
+export async function calculateATSScoreHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const { jobDescription, jd, jobId, role, targetRole } = req.body;
+  const rawJd = jobDescription || jd;
+
+  if (!rawJd || typeof rawJd !== "string" || rawJd.trim().length < 10) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "INVALID_INPUT", message: "Valid job description text is required (minimum 10 characters)." }
+    });
+  }
+
+  try {
+    const atsResult = await calculateEvidenceBasedATSScore({
+      userId: req.user.userId,
+      jdText: rawJd.trim(),
+      jobId,
+      role: role || targetRole
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...atsResult
+    });
+  } catch (err: any) {
+    console.error("[ATS SCORE ERROR]:", err);
+    return res.status(500).json({
+      success: false,
+      error: { code: "SCORING_FAILED", message: err.message || "Failed to compute evidence-based ATS score." }
     });
   }
 }

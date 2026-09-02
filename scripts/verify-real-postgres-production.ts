@@ -1,6 +1,7 @@
 import http from "http";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { spawn, ChildProcess } from "child_process";
 import { generateEmbedding } from "../src/server/ai/embeddings/provider";
 
@@ -10,9 +11,9 @@ const PROD_ENV = {
   ...process.env,
   NODE_ENV: "production",
   PORT: String(PROD_PORT),
-  DATABASE_URL: "postgresql://embedded/recruiter_ai_pro",
-  JWT_SECRET: "prod_secure_static_jwt_secret_token_key_2026_v2_recruiter",
-  JWT_REFRESH_SECRET: "prod_secure_static_refresh_secret_token_key_2026_v2_recruiter",
+  DATABASE_URL: process.env.DATABASE_URL || "postgresql://embedded/recruiter_ai_pro",
+  JWT_SECRET: process.env.TEST_JWT_SECRET || crypto.randomBytes(32).toString("hex"),
+  JWT_REFRESH_SECRET: process.env.TEST_JWT_REFRESH_SECRET || crypto.randomBytes(32).toString("hex"),
   EMBEDDING_MODEL: "gemini-embedding-2"
 };
 

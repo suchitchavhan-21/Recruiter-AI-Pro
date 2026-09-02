@@ -126,6 +126,7 @@ export function createExpressApp(): express.Application {
   app.use("/api/resumes", resumeRouter);
   app.use("/api/resume", resumeRouter);
   app.use("/api/applications", jobsRouter);
+  app.use("/api/jobs", jobsRouter);
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/admin", adminRouter);
 
@@ -179,6 +180,9 @@ export function createExpressApp(): express.Application {
   app.post("/api/applications", requireAuth, validateBody(applyJobSchema), submitApplicationHandler);
   app.get("/api/applications", requireAuth, listApplicationsHandler);
   app.patch("/api/applications/:id/status", requireAuth, validateBody(updateStatusSchema), updateStatusHandler);
+  app.post("/api/jobs", requireAuth, validateBody(applyJobSchema), submitApplicationHandler);
+  app.get("/api/jobs", requireAuth, listApplicationsHandler);
+  app.patch("/api/jobs/:id/status", requireAuth, validateBody(updateStatusSchema), updateStatusHandler);
 
   // Analytics Bridges
   app.get("/api/dashboard", requireAuth, getDashboardAnalyticsHandler);

@@ -128,6 +128,45 @@ export default function App() {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  const fetchUserApplications = async () => {
+    try {
+      const res = await apiFetch("/api/jobs");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.applications)) {
+          setApplications(data.applications.map((app: any) => ({
+            id: app.id,
+            timestamp: app.appliedAt || app.timestamp || new Date().toISOString(),
+            companyId: app.company?.toLowerCase().replace(/[^a-z0-9]/g, "") || "company",
+            companyName: app.company,
+            roleTitle: app.role,
+            roleCategory: app.roleCategory || "Engineering",
+            applicantName: app.applicantName,
+            applicantEmail: app.applicantEmail,
+            coverLetter: app.coverLetter || "",
+            status: app.status || "Submitted",
+            appliedSlot: "Recorded Application",
+            screeningFeedback: `Application recorded for ${app.role} at ${app.company}. Current status: ${app.status || "Submitted"}.`,
+            matchScore: typeof app.matchScore === "number" ? app.matchScore : 0,
+            jdFullText: app.notes || "",
+            skillsRequired: [],
+            location: "Remote / Hybrid",
+            salaryRange: "$140,000 - $200,000",
+            remoteBadge: true,
+            difficultyBadge: "Senior",
+            category: app.roleCategory || "Engineering",
+            industryContext: "Technology"
+          })));
+          return;
+        }
+      }
+      setApplications([]);
+    } catch (err) {
+      console.error("Failed to fetch applications:", err);
+      setApplications([]);
+    }
+  };
+
   // Fetch workspace data locally on mount
   const checkActiveAuthSession = async () => {
     try {
@@ -148,17 +187,20 @@ export default function App() {
             profilePhoto: userObj.profilePhoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
             phoneNumber: userObj.phoneNumber || ""
           });
+          await fetchUserApplications();
         } else {
           setCurrentUser(null);
+          setApplications([]);
         }
       } else {
         setCurrentUser(null);
+        setApplications([]);
       }
     } catch (err) {
       console.error("Auth session check failed:", err);
       setCurrentUser(null);
+      setApplications([]);
     }
-    setApplications(seedApplicationsList());
   };
 
   const handleUpdateCurrentUser = (updated: any) => {
@@ -177,47 +219,14 @@ export default function App() {
     try {
       await apiFetch("/api/logout", { method: "POST" });
       setCurrentUser(null);
+      setApplications([]);
       setActiveTab("home");
       showNotification("Session logged out successfully.", "success");
     } catch (err) {
       console.error("Logout failed:", err);
       setCurrentUser(null);
+      setApplications([]);
     }
-  };
-
-  // Seed standard opportunities inside the jobs dashboard
-  const seedApplicationsList = () => {
-    const list: JobApplication[] = [];
-    COMPANY_PRESETS.forEach(comp => {
-      comp.roles.forEach((role, idx) => {
-        list.push({
-          id: `${comp.id}-role-${idx}`,
-          timestamp: new Date(Date.now() - idx * 3 * 3600 * 1000).toISOString(),
-          companyId: comp.id,
-          companyName: comp.name,
-          roleTitle: role.title,
-          roleCategory: role.category,
-          applicantName: currentUser?.name || "Anonymous Candidate",
-          applicantEmail: currentUser?.email || "candidate@example.com",
-          coverLetter: "",
-          status: idx % 3 === 0 ? "Interview Scheduled" : "Screening",
-          appliedSlot: idx % 2 === 0 ? "Fast-Track Referral Slot (Priority A)" : "Standard Direct Application Slot",
-          screeningFeedback: "ATS Match: calibrated. Complete your mock interview loop with AI recruiter to schedule coordinator call.",
-          matchScore: idx % 2 === 0 ? 89 : 82,
-          jdFullText: role.text,
-          skillsRequired: comp.id === "google" ? ["JAX", "Distributed Infrastructure", "LLMs", "Systems Design"] : 
-                          comp.id === "stripe" ? ["SQL", "PCI-DSS", "mTLS Encryption", "Double-Entry Ledger"] : 
-                          ["Software Architecture", "Systems Design", "Technical Communication", "API Design"],
-          location: comp.id === "google" ? "Mountain View, CA" : comp.id === "stripe" ? "San Francisco, CA" : "Remote, US",
-          salaryRange: comp.id === "google" ? "$185,000 - $240,000" : comp.id === "stripe" ? "$170,000 - $210,000" : "$160,000 - $200,000",
-          remoteBadge: idx % 2 === 0,
-          difficultyBadge: idx % 3 === 0 ? "Staff" : idx % 3 === 1 ? "Senior" : "Mid",
-          category: role.category,
-          industryContext: comp.industry
-        });
-      });
-    });
-    return list;
   };
 
   // Mount logic

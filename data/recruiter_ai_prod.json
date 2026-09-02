@@ -66,10 +66,466 @@
       "accountStatus": "active",
       "createdAt": "2026-09-02T18:08:40.584Z",
       "updatedAt": "2026-09-02T18:08:40.834Z"
+    },
+    {
+      "id": "35cda1d5-f2d9-4990-add2-d70e8cbb6493",
+      "fullName": "Alice Applicant",
+      "email": "applicant_a_1788380657403@example.com",
+      "phoneNumber": "+15555433101",
+      "passwordHash": "$2b$10$tt.m9Mft7uNPWIt71jPJzOK1rDMowUzYnWhZiK3nppoGw5uRbFhPK",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": false,
+      "verificationToken": "650b2f8bc822cf23b0343c560a4fd3bc8b97f2d251722854097010e169b88393",
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:24:17.558Z",
+      "updatedAt": "2026-09-02T20:24:17.558Z"
+    },
+    {
+      "id": "febaf611-17a7-4b5b-8bdc-86c4b251427f",
+      "fullName": "Bob Applicant",
+      "email": "applicant_b_1788380657587@example.com",
+      "phoneNumber": "+15557605053",
+      "passwordHash": "$2b$10$bNLW5U24LAIZTgalKgmqce1dxMfvgnqle3xGQHRu488Iray53qrVK",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": false,
+      "verificationToken": "cad8667cd0ca9ed71e7a07045eb73bcd0383284572a3b702c9436bff3b83e741",
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:24:17.702Z",
+      "updatedAt": "2026-09-02T20:24:17.702Z"
+    },
+    {
+      "id": "45599e0e-7cba-4bec-8d9b-d9a8d72b7345",
+      "fullName": "Alice Applicant",
+      "email": "applicant_a_1788380715233@example.com",
+      "phoneNumber": "+15559725933",
+      "passwordHash": "$2b$10$lscoYVB.Loj.yucAv3RMWejKpQQLOQhdbHAg.5FHYL3cIe/k.VGEe",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:25:15.411Z",
+      "updatedAt": "2026-09-02T20:25:16.479Z",
+      "lastLogin": "2026-09-02T20:25:16.479Z"
+    },
+    {
+      "id": "96f8808f-659c-43b1-a1a3-8ea446cd76ab",
+      "fullName": "Bob Applicant",
+      "email": "applicant_b_1788380716509@example.com",
+      "phoneNumber": "+15554183455",
+      "passwordHash": "$2b$10$6xnoSNsK4MI9D60621kG5O60OqbWMDDTjnWg0kZ3/QkqUwT0AdZ9K",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:25:16.629Z",
+      "updatedAt": "2026-09-02T20:25:16.823Z",
+      "lastLogin": "2026-09-02T20:25:16.823Z"
+    },
+    {
+      "id": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "fullName": "Alice Applicant",
+      "email": "applicant_a_1788380761884@example.com",
+      "phoneNumber": "+15559635832",
+      "passwordHash": "$2b$10$W6FNXkT2IjrZHHzCsidu3u0GB0xidliSrEBhiCjbiaIPd2kxiqA/a",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:26:02.046Z",
+      "updatedAt": "2026-09-02T20:26:03.258Z",
+      "lastLogin": "2026-09-02T20:26:03.258Z"
+    },
+    {
+      "id": "2b7c5e87-e4e7-4f0a-bf86-29da285bf74f",
+      "fullName": "Bob Applicant",
+      "email": "applicant_b_1788380763297@example.com",
+      "phoneNumber": "+15554692713",
+      "passwordHash": "$2b$10$n250RpiZtfof4A6jFk.H3OvPXcAuyjQ8Z93mCwDxmLDAXbtfgFLfW",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:26:03.421Z",
+      "updatedAt": "2026-09-02T20:26:03.640Z",
+      "lastLogin": "2026-09-02T20:26:03.640Z"
+    },
+    {
+      "id": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "fullName": "Alice Applicant",
+      "email": "applicant_a_1788380873700@example.com",
+      "phoneNumber": "+15556217484",
+      "passwordHash": "$2b$10$DWbY6ccZaSfJTQ10ui32QexyxPBgQdWalYsYKrvIFxUChhFT1a.LO",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:27:53.840Z",
+      "updatedAt": "2026-09-02T20:27:54.041Z",
+      "lastLogin": "2026-09-02T20:27:54.041Z"
+    },
+    {
+      "id": "e97c899a-d3fd-4cba-80fc-e8ba8c4b7f0e",
+      "fullName": "Bob Applicant",
+      "email": "applicant_b_1788380874072@example.com",
+      "phoneNumber": "+15557292948",
+      "passwordHash": "$2b$10$3OI06V0aDTZXXstTf53i/.qftzxuyz525bueDWo96wuMZ3falvHOO",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T20:27:54.181Z",
+      "updatedAt": "2026-09-02T20:27:54.391Z",
+      "lastLogin": "2026-09-02T20:27:54.391Z"
     }
   ],
-  "sessions": [],
-  "activities": [],
+  "sessions": [
+    {
+      "id": "678d4f4f-96ec-4d20-b054-723c50076d1b",
+      "userId": "45599e0e-7cba-4bec-8d9b-d9a8d72b7345",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:25:16.457Z",
+      "refreshTokenHash": "c57a71ec4f732b68351c96d0b163a393db076bf17c6a5d035d31624354040c18",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:25:16.457Z"
+    },
+    {
+      "id": "d817600a-ffb2-4bfb-af72-00f428c3af27",
+      "userId": "96f8808f-659c-43b1-a1a3-8ea446cd76ab",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:25:16.810Z",
+      "refreshTokenHash": "818c83430c413e5c1b4bd9ecc4f95b6c2efae38a80ab2d3a5fd2f11322ef588d",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:25:16.810Z"
+    },
+    {
+      "id": "38b933fc-386a-46fe-984b-ae8a607f6710",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:26:03.246Z",
+      "refreshTokenHash": "9b1749cfb2a86cbbb9b861109bfeb4eb62e71e4c870c819da770f78d55fce98c",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:26:03.246Z"
+    },
+    {
+      "id": "be5b672d-6b70-4cad-93bc-3bf19e8eb66e",
+      "userId": "2b7c5e87-e4e7-4f0a-bf86-29da285bf74f",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:26:03.608Z",
+      "refreshTokenHash": "f8e33b5fd82c056bbcd392bf42940c5cd74a5da164ea213b2c08f3fd468c9a36",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:26:03.608Z"
+    },
+    {
+      "id": "a9595297-eb51-4b2a-b124-fced024512ba",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:27:54.023Z",
+      "refreshTokenHash": "ff25ce2b31e086d8d2a0311a51600687ebb0f5b450dd23b1c25286a9817763c6",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:27:54.023Z"
+    },
+    {
+      "id": "3b9b6541-1870-4572-b80a-63fde553b7a0",
+      "userId": "e97c899a-d3fd-4cba-80fc-e8ba8c4b7f0e",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T20:27:54.374Z",
+      "refreshTokenHash": "c211e3bd1cd42ad295929e87db9cafd36880084c2b5aa0bf086125823244630b",
+      "isActive": true,
+      "expiresAt": "2026-09-09T20:27:54.374Z"
+    }
+  ],
+  "activities": [
+    {
+      "id": "40422d13-5237-4190-8dd9-9c5793caff4f",
+      "userId": "35cda1d5-f2d9-4990-add2-d70e8cbb6493",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_a_1788380657403@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:24:17.570Z"
+    },
+    {
+      "id": "747a9b32-eb82-4e0f-b859-6a1f78ce77b8",
+      "userId": "febaf611-17a7-4b5b-8bdc-86c4b251427f",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_b_1788380657587@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:24:17.749Z"
+    },
+    {
+      "id": "d0862317-e5b1-4b99-a048-0a9e21bd6820",
+      "userId": "45599e0e-7cba-4bec-8d9b-d9a8d72b7345",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_a_1788380715233@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:25:15.528Z"
+    },
+    {
+      "id": "658d38fe-3099-4ac7-b718-5d1520cf6c1e",
+      "userId": "45599e0e-7cba-4bec-8d9b-d9a8d72b7345",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_a_1788380715233@example.com.",
+      "timestamp": "2026-09-02T20:25:16.300Z"
+    },
+    {
+      "id": "a89ec212-ec74-412f-9e35-ae2f6fbb0de5",
+      "userId": "45599e0e-7cba-4bec-8d9b-d9a8d72b7345",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:25:16.495Z"
+    },
+    {
+      "id": "e44ac011-addb-4b45-a23b-19fcee2f4e54",
+      "userId": "96f8808f-659c-43b1-a1a3-8ea446cd76ab",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_b_1788380716509@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:25:16.640Z"
+    },
+    {
+      "id": "bea8e918-e1fc-416c-ad9a-44654ec93cf3",
+      "userId": "96f8808f-659c-43b1-a1a3-8ea446cd76ab",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_b_1788380716509@example.com.",
+      "timestamp": "2026-09-02T20:25:16.677Z"
+    },
+    {
+      "id": "f301031e-20fe-4228-b1f3-52093a537732",
+      "userId": "96f8808f-659c-43b1-a1a3-8ea446cd76ab",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:25:16.835Z"
+    },
+    {
+      "id": "7c83466f-9b35-48e2-9d48-4ac976e77663",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_a_1788380761884@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:26:02.104Z"
+    },
+    {
+      "id": "6ed89768-f6d1-456d-97f4-1a83ede20f97",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_a_1788380761884@example.com.",
+      "timestamp": "2026-09-02T20:26:03.035Z"
+    },
+    {
+      "id": "b855f453-09d6-42d9-b19c-67ac4b301715",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:26:03.279Z"
+    },
+    {
+      "id": "07eab77f-c2f8-472a-9b7e-dacb8c5109d8",
+      "userId": "2b7c5e87-e4e7-4f0a-bf86-29da285bf74f",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_b_1788380763297@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:26:03.436Z"
+    },
+    {
+      "id": "12fceea4-00dc-448b-b1a4-6da5ecc3c151",
+      "userId": "2b7c5e87-e4e7-4f0a-bf86-29da285bf74f",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_b_1788380763297@example.com.",
+      "timestamp": "2026-09-02T20:26:03.479Z"
+    },
+    {
+      "id": "2b6e5a7b-8bbc-4c9a-959d-d8dcfbab99a6",
+      "userId": "2b7c5e87-e4e7-4f0a-bf86-29da285bf74f",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:26:03.662Z"
+    },
+    {
+      "id": "fbae10fd-b032-4856-9bdc-a1223f14f9c2",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "activityType": "JOB_APPLIED",
+      "activityName": "Application Recorded",
+      "description": "Recorded application for Staff Systems Engineer at Stripe.",
+      "metadata": {
+        "company": "Stripe",
+        "role": "Staff Systems Engineer"
+      },
+      "timestamp": "2026-09-02T20:26:03.698Z"
+    },
+    {
+      "id": "379911ef-b628-4e61-9632-54929b6b112d",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "activityType": "APPLICATION_STATUS_UPDATED",
+      "activityName": "Application Status Changed",
+      "description": "Application status updated to Interview Scheduled.",
+      "metadata": {
+        "applicationId": "9996c237-8120-4e19-8492-49b07e8c085d",
+        "newStatus": "Interview Scheduled"
+      },
+      "timestamp": "2026-09-02T20:26:03.763Z"
+    },
+    {
+      "id": "c926f359-13da-4600-bd74-c56c70d69602",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_a_1788380873700@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:27:53.856Z"
+    },
+    {
+      "id": "94c68b9f-7a64-48a1-8ba1-c021ff60396e",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_a_1788380873700@example.com.",
+      "timestamp": "2026-09-02T20:27:53.899Z"
+    },
+    {
+      "id": "02bec553-1fa7-483b-aaf0-6daee1bb1067",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:27:54.052Z"
+    },
+    {
+      "id": "91918d6e-481d-44c2-9654-7cf5282bb9db",
+      "userId": "e97c899a-d3fd-4cba-80fc-e8ba8c4b7f0e",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_b_1788380874072@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T20:27:54.192Z"
+    },
+    {
+      "id": "e18a98d7-a8c6-4c54-aefc-c689ea849c73",
+      "userId": "e97c899a-d3fd-4cba-80fc-e8ba8c4b7f0e",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_b_1788380874072@example.com.",
+      "timestamp": "2026-09-02T20:27:54.230Z"
+    },
+    {
+      "id": "3154897d-9603-4a92-8429-3b74daf6d6ac",
+      "userId": "e97c899a-d3fd-4cba-80fc-e8ba8c4b7f0e",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T20:27:54.403Z"
+    },
+    {
+      "id": "ed239f93-bb6a-4d8e-9021-ebc75bb6df52",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "activityType": "JOB_APPLIED",
+      "activityName": "Application Recorded",
+      "description": "Recorded application for Staff Systems Engineer at Stripe.",
+      "metadata": {
+        "company": "Stripe",
+        "role": "Staff Systems Engineer"
+      },
+      "timestamp": "2026-09-02T20:27:54.436Z"
+    },
+    {
+      "id": "bfc7cb4e-3608-40c8-8038-53ef08eff465",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "activityType": "APPLICATION_STATUS_UPDATED",
+      "activityName": "Application Status Changed",
+      "description": "Application status updated to Interview Scheduled.",
+      "metadata": {
+        "applicationId": "a14ff391-66b5-4a78-b7e6-7723eed0b563",
+        "newStatus": "Interview Scheduled"
+      },
+      "timestamp": "2026-09-02T20:27:54.476Z"
+    }
+  ],
   "interviews": [
     {
       "id": "session_1788370461217",
@@ -1104,7 +1560,38 @@
     }
   ],
   "resumes": [],
-  "applications": [],
+  "applications": [
+    {
+      "id": "9996c237-8120-4e19-8492-49b07e8c085d",
+      "userId": "9f7bc1b3-12a4-4b03-9e3b-830fc1c76d18",
+      "company": "Stripe",
+      "role": "Staff Systems Engineer",
+      "roleCategory": "Engineering",
+      "applicantName": "Alice Applicant",
+      "applicantEmail": "applicant_a_1788380761884@example.com",
+      "status": "Interview Scheduled",
+      "coverLetter": "Excited to contribute to payment rails.",
+      "matchScore": 88,
+      "notes": "Applied via Recruiter AI Pro workspace.",
+      "appliedAt": "2026-09-02T20:26:03.686Z",
+      "updatedAt": "2026-09-02T20:26:03.726Z"
+    },
+    {
+      "id": "a14ff391-66b5-4a78-b7e6-7723eed0b563",
+      "userId": "6656207b-0ff5-4ead-a8fc-d7180c95afae",
+      "company": "Stripe",
+      "role": "Staff Systems Engineer",
+      "roleCategory": "Engineering",
+      "applicantName": "Alice Applicant",
+      "applicantEmail": "applicant_a_1788380873700@example.com",
+      "status": "Interview Scheduled",
+      "coverLetter": "Excited to contribute to payment rails.",
+      "matchScore": 88,
+      "notes": "Applied via Recruiter AI Pro workspace.",
+      "appliedAt": "2026-09-02T20:27:54.426Z",
+      "updatedAt": "2026-09-02T20:27:54.467Z"
+    }
+  ],
   "starStories": [],
   "auditLogs": [],
   "candidateMemories": [

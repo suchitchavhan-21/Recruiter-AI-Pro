@@ -128,6 +128,7 @@ export interface JobApplication {
 export interface UserProfile {
   id: string;
   name: string;
+  fullName?: string;
   email: string;
   roleTitle: string;
   joinedAt: string;
