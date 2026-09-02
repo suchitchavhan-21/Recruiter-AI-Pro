@@ -1,8 +1,8 @@
 {
   "enabled": true,
-  "baselineCommit": "abdae893df1915830693866c528bc36b5168cf1a",
+  "baselineCommit": "583f486510bfb00daac409c499394995d010ae03",
   "frozenAt": "2026-09-03T01:00:00Z",
-  "version": 1,
+  "version": 2,
   "schemaVersion": "1.0.0",
   "repository": "suchitchavhan-21/Recruiter-AI-Pro",
   "strategy": {
@@ -63,7 +63,8 @@
       "name": "rag",
       "paths": [
         "src/server/ai/rag",
-        "src/server/ai/vectorStore"
+        "src/server/ai/vectorStore",
+        "src/server/ai/ats"
       ],
       "description": "Candidate-private RAG pipeline, section-aware chunking, tenant isolation, and pgvector storage."
     },
@@ -80,7 +81,8 @@
         "src/server/controllers/resume.controller.ts",
         "src/server/routes/resume.routes.ts",
         "src/server/services/fileParser.service.ts",
-        "src/components/EnterpriseResumeScanner.tsx"
+        "src/components/EnterpriseResumeScanner.tsx",
+        "src/server/ai/ats"
       ],
       "description": "Resume parsing, ATS scoring, section extraction, and evidence-grounded matching."
     },

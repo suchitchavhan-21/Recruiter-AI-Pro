@@ -4,7 +4,7 @@
 
 ## 1. Frozen Product Strategy Overview
 
-The core architecture, tech stack, and product scope for **Recruiter AI Pro** are permanently frozen as of baseline commit `abdae893df1915830693866c528bc36b5168cf1a`.
+The core architecture, tech stack, and product scope for **Recruiter AI Pro** are permanently frozen as of baseline commit `583f486510bfb00daac409c499394995d010ae03`.
 
 ### A. Certified Core Architecture:
 * **Frontend**: React 19 + TypeScript + Vite with responsive glassmorphism UI.
@@ -13,6 +13,8 @@ The core architecture, tech stack, and product scope for **Recruiter AI Pro** ar
 * **Embeddings**: `gemini-embedding-2` configured to exact 768-dimensional output vectors (`outputDimensionality: 768`).
 * **Production Database**: PostgreSQL 16 with `pgvector` extension for 8 relational tables and `vector(768)` chunk storage with HNSW cosine distance indexing (`<=>`).
 * **Persistence Authority**: Authoritative backend PostgreSQL storage with zero in-memory/file fallback in production mode (`NODE_ENV=production`).
+* **Jobs & Application Persistence**: Real application tracking backed directly by PostgreSQL `/api/jobs` endpoints with strict user isolation, complete removal of simulated delays, and zero `localStorage` authority.
+* **Evidence-Based ATS Scoring**: Deterministic, explainable weighted scoring model (`must_have` = 2, `preferred` = 1, `responsibility` = 1) grounded in candidate private RAG vector similarity with snippet provenance and honesty disclaimers.
 * **Candidate Memory**: Durable user-scoped fact storage (`candidate_memories` table) for skills, experience, target roles, past interview outcomes, strengths, weaknesses, and readiness signals.
 * **Mock Interview Engine**: Bounded stateful orchestrator featuring 3 role-specialized agents:
   * **HR / Behavioral Agent** (`Sarah Jenkins`): Communication, teamwork, STAR structure, cultural fit.
