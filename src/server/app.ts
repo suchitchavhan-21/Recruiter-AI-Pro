@@ -102,8 +102,7 @@ export function createExpressApp(): express.Application {
       status: "ok",
       timestamp: new Date().toISOString(),
       service: "Recruiter AI Pro Engine",
-      version: "2.0.0",
-      environment: ENV.NODE_ENV,
+      environment: process.env.NODE_ENV || ENV.NODE_ENV || "development",
       persistence: {
         database: dbHealth.ready ? "postgresql" : "file_json",
         pgvector: dbHealth.pgvector,
@@ -122,7 +121,9 @@ export function createExpressApp(): express.Application {
   app.use("/api/auth", authRouter);
   app.use("/api/profile", profileRouter);
   app.use("/api/interviews", interviewRouter);
+  app.use("/api/interview", interviewRouter);
   app.use("/api/resumes", resumeRouter);
+  app.use("/api/resume", resumeRouter);
   app.use("/api/applications", jobsRouter);
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/admin", adminRouter);

@@ -36,7 +36,7 @@ export interface VectorSearchResult {
 }
 
 export interface IVectorStore {
-  readonly mode: "pgvector_postgresql" | "dev_vector_memory";
+  readonly mode: "pgvector" | "pgvector_postgresql" | "dev_vector_memory";
   
   insertChunks(chunks: VectorChunk[]): Promise<number>;
   search(query: VectorSearchQuery): Promise<VectorSearchResult[]>;

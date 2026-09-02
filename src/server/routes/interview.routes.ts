@@ -36,14 +36,15 @@ interviewRouter.use(requireAuth);
 
 interviewRouter.post("/analyze-jd", aiLimiter, validateBody(analyzeJdSchema), analyzeJdHandler);
 interviewRouter.post("/evaluate", aiLimiter, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
-interviewRouter.post("/evaluate-interview", aiLimiter, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
 interviewRouter.post("/generate-draft-answer", aiLimiter, generateDraftAnswerHandler);
+interviewRouter.post("/draft-answer", aiLimiter, generateDraftAnswerHandler);
 interviewRouter.post("/evaluate-star", aiLimiter, validateBody(evaluateStarSchema), evaluateStarHandler);
 
 // Adaptive Interview Orchestrator Endpoints
 interviewRouter.post("/adaptive/start", aiLimiter, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
 interviewRouter.post("/adaptive/turn", aiLimiter, validateBody(processTurnSchema), processAdaptiveTurnHandler);
 interviewRouter.get("/adaptive/state/:sessionId", getAdaptiveInterviewStateHandler);
+interviewRouter.get("/adaptive/session/:sessionId", getAdaptiveInterviewStateHandler);
 
 interviewRouter.get("/", listInterviewsHandler);
 interviewRouter.get("/history", listInterviewsHandler);

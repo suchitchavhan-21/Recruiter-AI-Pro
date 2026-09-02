@@ -11,3 +11,5 @@ coverage/
 *.pbtxt
 .vscode/
 .idea/
+data/postgres_data/
+data/pgdata_*/
