@@ -838,10 +838,395 @@
           }
         }
       }
+    },
+    {
+      "id": "7dabd582-d4b1-4824-80f7-b29a13d7b050",
+      "userId": "user-candidate-memory-test-1788377148890",
+      "company": "Stripe",
+      "role": "Staff Distributed Systems Engineer",
+      "difficulty": "Senior",
+      "interviewerCount": 3,
+      "persona": "mentor",
+      "state": "COMPLETED",
+      "score": 46,
+      "timeTaken": "15m",
+      "questions": [
+        {
+          "id": 1,
+          "text": "Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?",
+          "type": "technical"
+        }
+      ],
+      "answers": [
+        {
+          "questionId": 1,
+          "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?",
+          "type": "technical",
+          "answerText": "I built an event-driven payment processing pipeline using Kafka and PostgreSQL with idempotent consumers and distributed locks."
+        },
+        {
+          "questionId": 2,
+          "questionText": "Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?",
+          "type": "technical",
+          "answerText": "We implemented partitioned Raft consensus with read-replicas and active-active multi-region failover."
+        },
+        {
+          "questionId": 3,
+          "questionText": "Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?",
+          "type": "behavioral",
+          "answerText": "I prioritized shipping the core payment idempotency engine first to unblock Q3 revenue, while scheduling technical debt refactoring for Q4 sprint."
+        }
+      ],
+      "sessionState": {
+        "sessionId": "7dabd582-d4b1-4824-80f7-b29a13d7b050",
+        "userId": "user-candidate-memory-test-1788377148890",
+        "targetRole": "Staff Distributed Systems Engineer",
+        "company": "Stripe",
+        "difficulty": "Senior",
+        "interviewerCount": 3,
+        "currentTurn": 3,
+        "minTurns": 3,
+        "maxTurns": 3,
+        "hardTurnLimit": 8,
+        "status": "COMPLETED",
+        "history": [
+          {
+            "turnIndex": 1,
+            "questionId": 1,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins",
+            "interviewerTitle": "Senior People Partner & Behavioral Assessor",
+            "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?",
+            "questionType": "technical",
+            "expectedCompetency": "System architecture, trade-offs, ownership",
+            "evaluationRubric": "Evaluate candidate behavioral evidence using STAR (Situation, Task, Action, Result), cross-functional empathy, and ownership.",
+            "timestamp": "2026-09-02T19:25:48.905Z",
+            "candidateAnswer": "I built an event-driven payment processing pipeline using Kafka and PostgreSQL with idempotent consumers and distributed locks."
+          },
+          {
+            "turnIndex": 2,
+            "questionId": 2,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen",
+            "interviewerTitle": "Principal Software Architect",
+            "questionText": "Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?",
+            "questionType": "technical",
+            "expectedCompetency": "Data Consistency & Microservices Communication",
+            "evaluationRubric": "Evaluate architectural soundness, failure domain isolation, concurrency trade-offs, and concrete technology choices.",
+            "timestamp": "2026-09-02T19:25:49.872Z",
+            "candidateAnswer": "We implemented partitioned Raft consensus with read-replicas and active-active multi-region failover."
+          },
+          {
+            "turnIndex": 3,
+            "questionId": 3,
+            "interviewerRole": "HiringManager",
+            "interviewerName": "Marcus Brody",
+            "interviewerTitle": "VP of Engineering",
+            "questionText": "Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?",
+            "questionType": "behavioral",
+            "expectedCompetency": "Pragmatic Prioritization & Technical Debt vs Delivery",
+            "evaluationRubric": "Evaluate business impact, pragmatic trade-offs between speed and perfection, and delivery ownership.",
+            "timestamp": "2026-09-02T19:25:50.461Z",
+            "candidateAnswer": "I prioritized shipping the core payment idempotency engine first to unblock Q3 revenue, while scheduling technical debt refactoring for Q4 sprint."
+          }
+        ],
+        "competenciesCovered": [
+          "System Architecture",
+          "Data Consistency & Microservices Communication",
+          "Pragmatic Prioritization & Technical Debt vs Delivery"
+        ],
+        "candidateMemorySnapshot": "- Core Skills: React, TypeScript, Node.js, PostgreSQL, Distributed Systems\n- Known Strengths: Strong architectural depth; Clear communication\n- Improvement Focus Areas: Add more quantifiable business impact metrics",
+        "createdAt": "2026-09-02T19:25:48.905Z",
+        "updatedAt": "2026-09-02T19:25:50.472Z",
+        "evaluation": {
+          "overallRating": "No Hire",
+          "score": 46,
+          "overallFeedback": "The candidate completed 3 of 3 questions with a calibrated score of 46%.",
+          "strengths": [
+            "Structured response approach",
+            "Good architecture concepts cited",
+            "Logical trade-off reasoning"
+          ],
+          "improvements": [
+            "Elaborate further on concrete edge case scenarios",
+            "Provide more depth on distributed resilience patterns and metrics"
+          ],
+          "mistakesMade": [
+            "Could quantify throughput metrics earlier in the transcript."
+          ],
+          "idealAnswers": [
+            "Highlight multi-region active-active replication with distributed caching and p99 metrics."
+          ],
+          "hiringRecommendation": "Recommend further practice before candidate interview.",
+          "practicePlan": [
+            "Practice whiteboarding high-concurrency systems",
+            "Refine STAR behavioral elevator pitch"
+          ],
+          "questionBreakdown": [
+            {
+              "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?",
+              "critique": "Response was brief and lacked necessary architectural depth.",
+              "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?.",
+              "score": 47,
+              "feedback": "Solid foundation and clear communication."
+            },
+            {
+              "questionText": "Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?",
+              "critique": "Response was brief and lacked necessary architectural depth.",
+              "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?.",
+              "score": 35,
+              "feedback": "Solid foundation and clear communication."
+            },
+            {
+              "questionText": "Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?",
+              "critique": "Good baseline answer. Recommend adding concrete metrics and trade-offs.",
+              "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?.",
+              "score": 56,
+              "feedback": "Solid foundation and clear communication."
+            }
+          ],
+          "panelFeedback": {
+            "hr": {
+              "score": 56,
+              "feedback": "Strong culture fit and clear articulation.",
+              "strengths": [
+                "Clear communication"
+              ],
+              "weaknesses": [
+                "Could cite deeper teamwork examples"
+              ]
+            },
+            "technical": {
+              "score": 41,
+              "feedback": "Demonstrated solid engineering depth.",
+              "strengths": [
+                "Technical terminology"
+              ],
+              "weaknesses": [
+                "Could cite deeper failure modes"
+              ]
+            },
+            "hiringManager": {
+              "score": 46,
+              "feedback": "Good ownership and delivery impact.",
+              "strengths": [
+                "Problem solving"
+              ],
+              "weaknesses": [
+                "Expand on team mentoring"
+              ]
+            }
+          }
+        }
+      },
+      "createdAt": "2026-09-02T19:25:48.905Z",
+      "updatedAt": "2026-09-02T19:26:07.675Z",
+      "evaluation": {
+        "overallRating": "No Hire",
+        "score": 46,
+        "overallFeedback": "The candidate completed 3 of 3 questions with a calibrated score of 46%.",
+        "strengths": [
+          "Structured response approach",
+          "Good architecture concepts cited",
+          "Logical trade-off reasoning"
+        ],
+        "improvements": [
+          "Elaborate further on concrete edge case scenarios",
+          "Provide more depth on distributed resilience patterns and metrics"
+        ],
+        "mistakesMade": [
+          "Could quantify throughput metrics earlier in the transcript."
+        ],
+        "idealAnswers": [
+          "Highlight multi-region active-active replication with distributed caching and p99 metrics."
+        ],
+        "hiringRecommendation": "Recommend further practice before candidate interview.",
+        "practicePlan": [
+          "Practice whiteboarding high-concurrency systems",
+          "Refine STAR behavioral elevator pitch"
+        ],
+        "questionBreakdown": [
+          {
+            "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?",
+            "critique": "Response was brief and lacked necessary architectural depth.",
+            "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Can you walk me through your background and the most complex architecture you designed for Staff Distributed Systems Engineer?.",
+            "score": 47,
+            "feedback": "Solid foundation and clear communication."
+          },
+          {
+            "questionText": "Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?",
+            "critique": "Response was brief and lacked necessary architectural depth.",
+            "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?.",
+            "score": 35,
+            "feedback": "Solid foundation and clear communication."
+          },
+          {
+            "questionText": "Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?",
+            "critique": "Good baseline answer. Recommend adding concrete metrics and trade-offs.",
+            "modelAnswer": "A comprehensive answer detailing architecture trade-offs, scalability bottlenecks, and business outcomes for Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?.",
+            "score": 56,
+            "feedback": "Solid foundation and clear communication."
+          }
+        ],
+        "panelFeedback": {
+          "hr": {
+            "score": 56,
+            "feedback": "Strong culture fit and clear articulation.",
+            "strengths": [
+              "Clear communication"
+            ],
+            "weaknesses": [
+              "Could cite deeper teamwork examples"
+            ]
+          },
+          "technical": {
+            "score": 41,
+            "feedback": "Demonstrated solid engineering depth.",
+            "strengths": [
+              "Technical terminology"
+            ],
+            "weaknesses": [
+              "Could cite deeper failure modes"
+            ]
+          },
+          "hiringManager": {
+            "score": 46,
+            "feedback": "Good ownership and delivery impact.",
+            "strengths": [
+              "Problem solving"
+            ],
+            "weaknesses": [
+              "Expand on team mentoring"
+            ]
+          }
+        }
+      }
     }
   ],
   "resumes": [],
   "applications": [],
   "starStories": [],
-  "auditLogs": []
+  "auditLogs": [],
+  "candidateMemories": [
+    {
+      "userId": "user-candidate-memory-test-1788377148890",
+      "profile": {
+        "userId": "user-candidate-memory-test-1788377148890",
+        "skills": [
+          {
+            "name": "React",
+            "level": "intermediate",
+            "evidence": "Extracted from resume (resume-123)"
+          },
+          {
+            "name": "TypeScript",
+            "level": "intermediate",
+            "evidence": "Extracted from resume (resume-123)"
+          },
+          {
+            "name": "Node.js",
+            "level": "intermediate",
+            "evidence": "Extracted from resume (resume-123)"
+          },
+          {
+            "name": "PostgreSQL",
+            "level": "intermediate",
+            "evidence": "Extracted from resume (resume-123)"
+          },
+          {
+            "name": "Distributed Systems",
+            "level": "intermediate",
+            "evidence": "Extracted from resume (resume-123)"
+          }
+        ],
+        "experienceYears": 0,
+        "targetRoles": [],
+        "targetCompanies": [],
+        "strengths": [
+          "Strong architectural depth",
+          "Clear communication",
+          "Structured response approach",
+          "Good architecture concepts cited",
+          "Logical trade-off reasoning"
+        ],
+        "weaknesses": [],
+        "recurringImprovements": [
+          "Add more quantifiable business impact metrics",
+          "Elaborate further on concrete edge case scenarios",
+          "Provide more depth on distributed resilience patterns and metrics"
+        ],
+        "readinessSignals": {
+          "Staff Distributed Systems Engineer": 46
+        },
+        "interviewOutcomes": [
+          {
+            "sessionId": "7dabd582-d4b1-4824-80f7-b29a13d7b050",
+            "role": "Staff Distributed Systems Engineer",
+            "company": "Stripe",
+            "score": 46,
+            "date": "2026-09-02T19:26:07.604Z"
+          }
+        ],
+        "facts": [
+          {
+            "id": "3e49e862-19f8-4f66-8b37-adb2567d4e56",
+            "category": "skill",
+            "topic": "React",
+            "detail": "Proficient in React",
+            "confidenceScore": 0.9,
+            "source": "resume_scan",
+            "sourceId": "resume-123",
+            "createdAt": "2026-09-02T19:25:48.900Z",
+            "updatedAt": "2026-09-02T19:25:48.900Z"
+          },
+          {
+            "id": "48810689-c6a6-4df9-9cbb-1e7d21814373",
+            "category": "skill",
+            "topic": "TypeScript",
+            "detail": "Proficient in TypeScript",
+            "confidenceScore": 0.9,
+            "source": "resume_scan",
+            "sourceId": "resume-123",
+            "createdAt": "2026-09-02T19:25:48.900Z",
+            "updatedAt": "2026-09-02T19:25:48.900Z"
+          },
+          {
+            "id": "9b45525b-034d-41d9-80db-9412d026bb66",
+            "category": "skill",
+            "topic": "Node.js",
+            "detail": "Proficient in Node.js",
+            "confidenceScore": 0.9,
+            "source": "resume_scan",
+            "sourceId": "resume-123",
+            "createdAt": "2026-09-02T19:25:48.900Z",
+            "updatedAt": "2026-09-02T19:25:48.900Z"
+          },
+          {
+            "id": "23d0d090-c3e6-4ec6-97ba-ef44d6924bbb",
+            "category": "skill",
+            "topic": "PostgreSQL",
+            "detail": "Proficient in PostgreSQL",
+            "confidenceScore": 0.9,
+            "source": "resume_scan",
+            "sourceId": "resume-123",
+            "createdAt": "2026-09-02T19:25:48.900Z",
+            "updatedAt": "2026-09-02T19:25:48.900Z"
+          },
+          {
+            "id": "acb6b27c-f00a-4b37-9d8e-d4b6034c916e",
+            "category": "skill",
+            "topic": "Distributed Systems",
+            "detail": "Proficient in Distributed Systems",
+            "confidenceScore": 0.9,
+            "source": "resume_scan",
+            "sourceId": "resume-123",
+            "createdAt": "2026-09-02T19:25:48.900Z",
+            "updatedAt": "2026-09-02T19:25:48.900Z"
+          }
+        ],
+        "updatedAt": "2026-09-02T19:26:07.604Z"
+      },
+      "updatedAt": "2026-09-02T19:26:07.604Z"
+    }
+  ]
 }

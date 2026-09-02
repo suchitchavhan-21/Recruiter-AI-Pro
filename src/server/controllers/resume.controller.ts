@@ -17,6 +17,7 @@ import {
   deleteResumeVectors, 
   matchJDWithCandidateEvidence 
 } from "../ai/rag/pipeline";
+import { updateCandidateMemoryFromResume } from "../ai/memory/candidateMemory";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -120,6 +121,13 @@ export async function uploadAndScanResumeHandler(req: AuthenticatedRequest, res:
       console.warn("[RAG INGESTION WARNING] Failed to index resume into vector store:", ragErr.message || ragErr);
     }
 
+    // Ingest skills and improvements into Candidate Memory
+    try {
+      await updateCandidateMemoryFromResume(req.user.userId, resumeRecord.id, resumeText, analysis);
+    } catch (memErr: any) {
+      console.warn("[CANDIDATE MEMORY WARNING] Failed to update memory from resume:", memErr.message || memErr);
+    }
+
     await insertActivity({
       userId: req.user.userId,
       activityType: "RESUME_SCANNED",
@@ -142,7 +150,30 @@ export async function uploadAndScanResumeHandler(req: AuthenticatedRequest, res:
   }
 }
 
-// 2. LIST USER RESUMES
+// 2. PARSE JD DOCUMENT (PDF, DOCX, TXT)
+export async function parseJDDocumentHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: { code: "NO_FILE", message: "No job description document provided." } });
+  }
+
+  try {
+    const extracted = await extractDocumentText(req.file.buffer, req.file.mimetype, req.file.originalname);
+    return res.status(200).json({
+      success: true,
+      text: extracted.text,
+      fileName: req.file.originalname,
+      wordCount: extracted.wordCount,
+      pageCount: Math.ceil(extracted.charCount / 3000) || 1
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "PARSING_FAILED", message: err.message || "Failed to parse job description file." }
+    });
+  }
+}
+
+// 3. LIST USER RESUMES
 export async function listResumesHandler(req: AuthenticatedRequest, res: Response) {
   if (!req.user?.userId) {
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
@@ -155,7 +186,7 @@ export async function listResumesHandler(req: AuthenticatedRequest, res: Respons
   });
 }
 
-// 3. DELETE RESUME
+// 4. DELETE RESUME
 export async function deleteResumeHandler(req: AuthenticatedRequest, res: Response) {
   if (!req.user?.userId) {
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
@@ -177,7 +208,7 @@ export async function deleteResumeHandler(req: AuthenticatedRequest, res: Respon
   });
 }
 
-// 4. MATCH RESUME EVIDENCE WITH JOB DESCRIPTION
+// 5. MATCH RESUME EVIDENCE WITH JOB DESCRIPTION
 export async function matchJDEvidenceHandler(req: AuthenticatedRequest, res: Response) {
   if (!req.user?.userId) {
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });

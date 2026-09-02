@@ -9,6 +9,8 @@ import {
   ResumeRecord, 
   JobApplicationRecord, 
   SavedSTARStoryRecord, 
+  CandidateMemoryRecord,
+  CandidateMemoryProfile,
   AdminAuditLog, 
   DatabaseState 
 } from "./schema";
@@ -49,6 +51,7 @@ function initDefaultState(): DatabaseState {
     resumes: [],
     applications: [],
     starStories: [],
+    candidateMemories: [],
     auditLogs: []
   };
 }
@@ -1037,4 +1040,50 @@ export async function listAuditLogs(limit: number = 100): Promise<AdminAuditLog[
   return [...db.auditLogs]
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, limit);
+}
+
+// ==========================================
+// CANDIDATE MEMORY REPOSITORY
+// ==========================================
+
+export async function getCandidateMemoryByUserId(userId: string): Promise<CandidateMemoryProfile | null> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres("SELECT profile FROM candidate_memories WHERE user_id = $1;", [userId]);
+    if (res.rows.length === 0) return null;
+    return res.rows[0].profile as CandidateMemoryProfile;
+  }
+
+  const db = loadDatabase();
+  const entry = (db.candidateMemories || []).find(m => m.userId === userId);
+  return entry ? entry.profile : null;
+}
+
+export async function saveCandidateMemory(userId: string, profile: CandidateMemoryProfile): Promise<void> {
+  const updatedAt = new Date().toISOString();
+  profile.updatedAt = updatedAt;
+
+  if (isPostgresActive()) {
+    await queryPostgres(`
+      INSERT INTO candidate_memories (user_id, profile, updated_at)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id) DO UPDATE
+      SET profile = EXCLUDED.profile, updated_at = EXCLUDED.updated_at;
+    `, [userId, JSON.stringify(profile), updatedAt]);
+    return;
+  }
+
+  const db = loadDatabase();
+  if (!db.candidateMemories) db.candidateMemories = [];
+  const idx = db.candidateMemories.findIndex(m => m.userId === userId);
+  if (idx >= 0) {
+    db.candidateMemories[idx].profile = profile;
+    db.candidateMemories[idx].updatedAt = updatedAt;
+  } else {
+    db.candidateMemories.push({
+      userId,
+      profile,
+      updatedAt
+    });
+  }
+  await persistDatabaseAsync();
 }

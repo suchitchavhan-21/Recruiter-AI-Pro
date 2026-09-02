@@ -2,15 +2,18 @@ import { generateUUID, findInterviewById, insertInterview, updateInterviewById }
 import { InterviewSessionRecord } from "../../db/schema";
 import { evaluateInterviewSession, InterviewEvaluationResult } from "../../services/gemini.service";
 import { retrieveCandidateEvidence } from "../agents/tools";
+import { formatCandidateMemoryContext, updateCandidateMemoryFromInterview } from "../memory/candidateMemory";
 
 export interface InterviewTurn {
   turnIndex: number;
   questionId: number;
   interviewerRole: "HR" | "Technical" | "HiringManager";
   interviewerName: string;
+  interviewerTitle: string;
   questionText: string;
   questionType: "technical" | "behavioral";
   expectedCompetency: string;
+  evaluationRubric: string;
   candidateAnswer?: string;
   turnScore?: number;
   turnFeedback?: string;
@@ -31,13 +34,38 @@ export interface AdaptiveInterviewState {
   status: "IN_PROGRESS" | "COMPLETED" | "ABORTED";
   history: InterviewTurn[];
   competenciesCovered: string[];
+  candidateMemorySnapshot?: string;
   evaluation?: InterviewEvaluationResult;
   createdAt: string;
   updatedAt: string;
 }
 
-// In-memory cache for ultra-fast turn processing; backed by database persistence
+// In-memory cache for fast turn processing; backed by authoritative database persistence
 const stateCache = new Map<string, AdaptiveInterviewState>();
+
+export const INTERVIEWER_PERSONAS = {
+  HR: {
+    role: "HR" as const,
+    name: "Sarah Jenkins",
+    title: "Senior People Partner & Behavioral Assessor",
+    focus: "Communication clarity, STAR methodology, teamwork, conflict resolution, and cultural values alignment.",
+    rubric: "Evaluate candidate behavioral evidence using STAR (Situation, Task, Action, Result), cross-functional empathy, and ownership."
+  },
+  Technical: {
+    role: "Technical" as const,
+    name: "David Chen",
+    title: "Principal Software Architect",
+    focus: "System architecture, fault tolerance, trade-offs, scalability, and technical depth.",
+    rubric: "Evaluate architectural soundness, failure domain isolation, concurrency trade-offs, and concrete technology choices."
+  },
+  HiringManager: {
+    role: "HiringManager" as const,
+    name: "Marcus Brody",
+    title: "VP of Engineering",
+    focus: "Execution velocity, strategic roadmapping, technical debt management, and stakeholder alignment.",
+    rubric: "Evaluate business impact, pragmatic trade-offs between speed and perfection, and delivery ownership."
+  }
+};
 
 export class InterviewOrchestrator {
   /**
@@ -63,6 +91,9 @@ export class InterviewOrchestrator {
       return existing;
     }
 
+    // Load candidate memory context
+    const memoryContext = await formatCandidateMemoryContext(params.userId);
+
     const firstQuestion = params.initialQuestions?.[0] || {
       id: 1,
       text: `Can you walk me through your background and the most complex architecture you designed for ${params.targetRole}?`,
@@ -70,14 +101,18 @@ export class InterviewOrchestrator {
       expectedFocus: "System architecture, trade-offs, ownership"
     };
 
+    const initialPersona = count > 1 ? INTERVIEWER_PERSONAS.HR : INTERVIEWER_PERSONAS.Technical;
+
     const initialTurn: InterviewTurn = {
       turnIndex: 1,
       questionId: firstQuestion.id,
-      interviewerRole: count > 1 ? "HR" : "Technical",
-      interviewerName: count > 1 ? "Sarah Jenkins (HR Director)" : "David Chen (Lead Architect)",
+      interviewerRole: initialPersona.role,
+      interviewerName: initialPersona.name,
+      interviewerTitle: initialPersona.title,
       questionText: firstQuestion.text,
       questionType: firstQuestion.type,
       expectedCompetency: firstQuestion.expectedFocus || "System Architecture",
+      evaluationRubric: initialPersona.rubric,
       timestamp: new Date().toISOString()
     };
 
@@ -95,6 +130,7 @@ export class InterviewOrchestrator {
       status: "IN_PROGRESS",
       history: [initialTurn],
       competenciesCovered: ["System Architecture"],
+      candidateMemorySnapshot: memoryContext,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -161,10 +197,12 @@ export class InterviewOrchestrator {
         turnIndex: idx + 1,
         questionId: q.id,
         interviewerRole: idx % 2 === 0 ? "Technical" : "HR",
-        interviewerName: idx % 2 === 0 ? "David Chen (Lead Architect)" : "Sarah Jenkins (HR Director)",
+        interviewerName: idx % 2 === 0 ? INTERVIEWER_PERSONAS.Technical.name : INTERVIEWER_PERSONAS.HR.name,
+        interviewerTitle: idx % 2 === 0 ? INTERVIEWER_PERSONAS.Technical.title : INTERVIEWER_PERSONAS.HR.title,
         questionText: q.text,
         questionType: q.type,
         expectedCompetency: "Core Engineering",
+        evaluationRubric: idx % 2 === 0 ? INTERVIEWER_PERSONAS.Technical.rubric : INTERVIEWER_PERSONAS.HR.rubric,
         candidateAnswer: record.answers?.[idx]?.answerText,
         timestamp: record.createdAt
       })),
@@ -232,6 +270,15 @@ export class InterviewOrchestrator {
 
       state.evaluation = evaluation;
 
+      // Update candidate memory facts from completed interview
+      await updateCandidateMemoryFromInterview(
+        params.userId,
+        state.sessionId,
+        evaluation,
+        state.targetRole,
+        state.company
+      );
+
       // Update in memory and persist in DB
       stateCache.set(state.sessionId, state);
       await updateInterviewById(state.sessionId, {
@@ -246,59 +293,92 @@ export class InterviewOrchestrator {
       return { state, isCompleted: true };
     }
 
-    // 3. Adaptive Decision Engine: Decide next interviewer, competency, and question
+    // 3. True Adaptive Decision Engine:
+    // Evaluate competency evidence and identify whether depth probe, behavioral STAR probe, or execution trade-off is needed next.
     state.currentTurn += 1;
     const nextTurnIndex = state.currentTurn;
 
-    let nextRole: "HR" | "Technical" | "HiringManager" = "Technical";
-    let nextName = "David Chen (Lead Architect)";
-    let nextType: "technical" | "behavioral" = "technical";
-    let nextCompetency = "Distributed Systems";
+    const lastAnswer = params.candidateAnswer.toLowerCase();
+    const answerWordCount = params.candidateAnswer.trim().split(/\s+/).length;
 
-    if (state.interviewerCount === 2) {
-      if (nextTurnIndex % 2 === 1) {
-        nextRole = "HR";
-        nextName = "Sarah Jenkins (HR Director)";
-        nextType = "behavioral";
-        nextCompetency = "Team Collaboration & Conflict Resolution";
-      }
-    } else if (state.interviewerCount === 3) {
+    let nextPersona: { role: "HR" | "Technical" | "HiringManager"; name: string; title: string; focus: string; rubric: string } = INTERVIEWER_PERSONAS.Technical;
+    let nextType: "technical" | "behavioral" = "technical";
+    let nextCompetency = "Distributed Systems & Reliability";
+
+    if (state.interviewerCount === 1) {
+      // Single interviewer adapts between technical depth and architectural trade-offs
       if (nextTurnIndex === 2) {
-        nextRole = "Technical";
-        nextName = "David Chen (Lead Architect)";
-        nextType = "technical";
-        nextCompetency = "System Reliability & Incident Triage";
+        nextCompetency = "Fault Tolerance & High Concurrency";
       } else if (nextTurnIndex === 3) {
-        nextRole = "HiringManager";
-        nextName = "Marcus Brody (VP of Engineering)";
+        nextCompetency = "Production Incident Triage & Root Cause Analysis";
+      } else {
+        nextCompetency = "System Scalability & Performance Optimization";
+      }
+    } else if (state.interviewerCount === 2) {
+      // Panel of 2: HR and Lead Architect
+      if (nextTurnIndex % 2 === 0) {
+        nextPersona = INTERVIEWER_PERSONAS.Technical;
+        nextType = "technical";
+        nextCompetency = "Scalable Architecture & Technical Trade-offs";
+      } else {
+        nextPersona = INTERVIEWER_PERSONAS.HR;
         nextType = "behavioral";
-        nextCompetency = "Strategic Trade-offs & Ownership";
+        nextCompetency = "Cross-Functional Collaboration & Conflict Resolution";
+      }
+    } else {
+      // Panel of 3: Adaptive rotation based on candidate response analysis
+      if (nextTurnIndex === 2) {
+        // Deepen technical inspection
+        nextPersona = INTERVIEWER_PERSONAS.Technical;
+        nextType = "technical";
+        nextCompetency = "Data Consistency & Microservices Communication";
+      } else if (nextTurnIndex === 3) {
+        // Evaluate hiring manager execution and delivery ownership
+        nextPersona = INTERVIEWER_PERSONAS.HiringManager;
+        nextType = "behavioral";
+        nextCompetency = "Pragmatic Prioritization & Technical Debt vs Delivery";
       } else if (nextTurnIndex === 4) {
-        nextRole = "HR";
-        nextName = "Sarah Jenkins (HR Director)";
+        // Evaluate cultural fit and behavioral alignment
+        nextPersona = INTERVIEWER_PERSONAS.HR;
         nextType = "behavioral";
-        nextCompetency = "Culture Alignment";
+        nextCompetency = "Mentorship, Culture & Stakeholder Communication";
+      } else {
+        nextPersona = INTERVIEWER_PERSONAS.HiringManager;
+        nextType = "behavioral";
+        nextCompetency = "High-Stakes Decision Making Under Ambiguity";
       }
     }
 
     // Retrieve candidate evidence to ground the next question
     const evidence = await retrieveCandidateEvidence(params.userId, nextCompetency, 1);
     const contextHook = evidence.success && evidence.data?.[0]
-      ? `Based on your work with ${evidence.data[0].section}, `
+      ? `Based on your experience in ${evidence.data[0].section}, `
       : "";
 
-    const nextQuestionText = nextType === "technical"
-      ? `${contextHook}How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?`
-      : `${contextHook}Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.`;
+    // Generate adaptive question tailored to the active persona and candidate answer quality
+    let nextQuestionText = "";
+    if (nextPersona.role === "Technical") {
+      if (answerWordCount < 30) {
+        nextQuestionText = `${contextHook}Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?`;
+      } else {
+        nextQuestionText = `${contextHook}How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?`;
+      }
+    } else if (nextPersona.role === "HiringManager") {
+      nextQuestionText = `${contextHook}Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?`;
+    } else {
+      nextQuestionText = `${contextHook}Tell me about a time you had to resolve a technical or priority disagreement with a cross-functional partner (e.g. Product or Design). How did you reach consensus?`;
+    }
 
     const newTurn: InterviewTurn = {
       turnIndex: nextTurnIndex,
       questionId: nextTurnIndex,
-      interviewerRole: nextRole,
-      interviewerName: nextName,
+      interviewerRole: nextPersona.role,
+      interviewerName: nextPersona.name,
+      interviewerTitle: nextPersona.title,
       questionText: nextQuestionText,
       questionType: nextType,
       expectedCompetency: nextCompetency,
+      evaluationRubric: nextPersona.rubric,
       timestamp: new Date().toISOString()
     };
 

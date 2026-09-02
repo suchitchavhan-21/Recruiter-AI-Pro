@@ -155,6 +155,39 @@ export interface AdminAuditLog {
   timestamp: string;
 }
 
+export interface CandidateFact {
+  id: string;
+  category: "skill" | "experience" | "target_role" | "target_company" | "strength" | "weakness" | "improvement_area" | "readiness_signal" | "resume_evidence";
+  topic: string;
+  detail: string;
+  confidenceScore: number;
+  source: "resume_scan" | "interview_turn" | "interview_evaluation" | "user_profile" | "star_story";
+  sourceId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CandidateMemoryProfile {
+  userId: string;
+  skills: Array<{ name: string; level: "beginner" | "intermediate" | "advanced" | "expert"; evidence?: string }>;
+  experienceYears?: number;
+  targetRoles: string[];
+  targetCompanies: string[];
+  strengths: string[];
+  weaknesses: string[];
+  recurringImprovements: string[];
+  readinessSignals: Record<string, number>;
+  interviewOutcomes: Array<{ sessionId: string; role: string; company: string; score: number; date: string }>;
+  facts: CandidateFact[];
+  updatedAt: string;
+}
+
+export interface CandidateMemoryRecord {
+  userId: string;
+  profile: CandidateMemoryProfile;
+  updatedAt: string;
+}
+
 export interface DatabaseState {
   users: User[];
   sessions: UserSession[];
@@ -163,5 +196,6 @@ export interface DatabaseState {
   resumes: ResumeRecord[];
   applications: JobApplicationRecord[];
   starStories: SavedSTARStoryRecord[];
+  candidateMemories: CandidateMemoryRecord[];
   auditLogs: AdminAuditLog[];
 }

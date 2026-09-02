@@ -4,6 +4,7 @@ import {
   listResumesHandler, 
   deleteResumeHandler,
   matchJDEvidenceHandler,
+  parseJDDocumentHandler,
   resumeUploadMiddleware 
 } from "../controllers/resume.controller";
 import { requireAuth } from "../middleware/auth";
@@ -22,6 +23,7 @@ resumeRouter.use(requireAuth);
 
 resumeRouter.post("/scan", aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
 resumeRouter.post("/upload", aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
+resumeRouter.post("/parse-jd", aiLimiter, resumeUploadMiddleware, parseJDDocumentHandler);
 resumeRouter.post("/match-jd", aiLimiter, matchJDEvidenceHandler);
 resumeRouter.get("/", listResumesHandler);
 resumeRouter.delete("/:id", deleteResumeHandler);

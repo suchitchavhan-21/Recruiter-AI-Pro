@@ -441,3 +441,18 @@ export async function getAdaptiveInterviewStateHandler(req: AuthenticatedRequest
   });
 }
 
+// 11. GET CANDIDATE MEMORY
+export async function getCandidateMemoryHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const { getCandidateMemory } = await import("../ai/memory/candidateMemory");
+  const profile = await getCandidateMemory(req.user.userId);
+
+  return res.status(200).json({
+    success: true,
+    memory: profile
+  });
+}
+

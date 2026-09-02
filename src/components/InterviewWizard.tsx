@@ -141,28 +141,40 @@ Requirements:
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        if (text && text.trim()) {
-          setJdText(text.trim());
-          showTemporarySuccess(`Imported job requirements from "${file.name}" (${(file.size / 1024).toFixed(1)} KB).`);
-        } else {
-          setJdText(`Position: Staff Systems Operations Specialist
-Requirements (from ${file.name}):
-- 6+ years deploying scale-out kubernetes orchestration engines in hybrid environment.
-- Strong knowledge of concurrency boundaries, distributed consensus systems, and high performance network buffers.
-- Prior experience instrumentation with OpenTelemetry dashboards.`);
-          showTemporarySuccess(`Extracted requirement checkpoints from "${file.name}".`);
-        }
-      };
       if (file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result as string;
+          if (text && text.trim()) {
+            setJdText(text.trim());
+            showTemporarySuccess(`Imported job requirements from "${file.name}" (${(file.size / 1024).toFixed(1)} KB).`);
+          }
+        };
         reader.readAsText(file);
       } else {
-        reader.readAsText(file);
+        // PDF / DOCX parsing via backend parser service
+        showTemporarySuccess(`Extracting text from "${file.name}" via backend parser...`);
+        try {
+          const formData = new FormData();
+          formData.append("resume", file);
+          const response = await fetch("/api/resumes/parse-jd", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+          });
+          const result = await response.json();
+          if (result.success && result.text) {
+            setJdText(result.text.trim());
+            showTemporarySuccess(`Parsed ${result.pageCount || 1} page(s) from "${file.name}".`);
+          } else {
+            showTemporaryError(result.error?.message || "Failed to parse document. Using template.");
+          }
+        } catch (err: any) {
+          showTemporaryError(`Document parsing failed: ${err.message}`);
+        }
       }
     }
   };
@@ -172,14 +184,14 @@ Requirements (from ${file.name}):
       showTemporaryError("Please enter a valid listing URL.");
       return;
     }
-    setJdText(`Parsed from ${urlInputValue.trim()}:
+    setJdText(`[Sample Import from: ${urlInputValue.trim()}]
 Position: Senior Full-Stack Engineer (Core Product)
 Core Competencies Required:
-- Master level fluency in React, TypeScript, and HTML5 canvas manipulation.
-- Experience building real-time collaboration multiplayer synchronization networks.
-- Exceptional attention to UI typography, pixel density, micro-animations, and fast visual updates.`);
+- Mastery of modern React, TypeScript, and state synchronization.
+- Experience building scalable distributed backend architectures.
+- High attention to design systems, user experience, and production observability.`);
     setIsUrlModalOpen(false);
-    showTemporarySuccess("Imported job listing specifications from URL.");
+    showTemporarySuccess("Imported standard JD specifications template.");
   };
 
   const getActiveCompanyDisplay = () => {

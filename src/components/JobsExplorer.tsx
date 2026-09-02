@@ -828,14 +828,14 @@ export default function JobsExplorer({
                   <span className="w-8 h-8 rounded-lg bg-[#0A66C2] text-white flex items-center justify-center font-bold text-lg select-none">in</span>
                   <div>
                     <h3 className="text-xs font-extrabold text-white uppercase font-mono tracking-wider flex items-center gap-1.5">
-                      <span>LinkedIn Easy Apply</span>
+                      <span>LinkedIn Profile Template (Practice Simulation)</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     </h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Instant Professional profile application</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Simulate application dispatch & record tracker</p>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono font-bold text-slate-500 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
-                  Premium Loop
+                <span className="text-[9px] font-mono font-bold text-slate-400 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
+                  Practice Tracker
                 </span>
               </div>
             ) : (
@@ -846,14 +846,14 @@ export default function JobsExplorer({
                   </span>
                   <div>
                     <h3 className="text-xs font-extrabold text-white uppercase font-mono tracking-wider flex items-center gap-1.5">
-                      <span>Naukri Fast-Track Apply</span>
+                      <span>Naukri Format (Practice Simulation)</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                     </h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Priority corporate referral matchmaker</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Simulate referral matchmaker & save to tracker</p>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono font-bold text-slate-500 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
-                  Featured Candidate
+                <span className="text-[9px] font-mono font-bold text-slate-400 bg-[#09090B] px-2 py-0.5 border border-[#27272A] rounded-lg">
+                  Practice Tracker
                 </span>
               </div>
             )}

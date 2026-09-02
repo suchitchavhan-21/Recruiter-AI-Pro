@@ -1,0 +1,137 @@
+{
+  "enabled": true,
+  "baselineCommit": "54d6facc4ab4aeb37ee935c73c28978c25720942",
+  "frozenAt": "2026-09-03T00:50:00Z",
+  "version": 1,
+  "schemaVersion": "1.0.0",
+  "repository": "suchitchavhan-21/Recruiter-AI-Pro",
+  "strategy": {
+    "coreStack": [
+      "React + TypeScript frontend",
+      "Node.js + Express + TypeScript backend",
+      "Gemini as primary LLM",
+      "Gemini gemini-embedding-2 (768 dimensions)",
+      "PostgreSQL + pgvector for production persistence",
+      "Bounded stateful adaptive interview orchestrator",
+      "Candidate-private RAG with section chunking",
+      "Durable user-scoped candidate memory",
+      "Evidence-grounded matching",
+      "Google Cloud Run deployment with external managed PostgreSQL"
+    ],
+    "explicitlyExcluded": [
+      "MCP (Model Context Protocol)",
+      "Public Python AI microservices",
+      "Unnecessary independent AI-agent deployments",
+      "Replacing React/Node/Gemini without explicit authorization",
+      "Replacing PostgreSQL + pgvector with other production databases",
+      "Arbitrary framework migrations"
+    ]
+  },
+  "protectedAreas": [
+    {
+      "name": "authentication",
+      "paths": [
+        "src/server/controllers/auth.controller.ts",
+        "src/server/routes/auth.routes.ts",
+        "src/server/middleware/auth.ts",
+        "src/features/auth",
+        "src/components/auth"
+      ],
+      "description": "User authentication, JWT token issuance, session management, and password reset flows."
+    },
+    {
+      "name": "candidate-memory",
+      "paths": [
+        "src/server/ai/memory",
+        "src/server/db/schema.ts"
+      ],
+      "description": "User-scoped durable candidate memory abstraction and fact persistence."
+    },
+    {
+      "name": "interview-orchestrator",
+      "paths": [
+        "src/server/ai/orchestrator",
+        "src/server/controllers/interview.controller.ts",
+        "src/server/routes/interview.routes.ts",
+        "src/components/ActiveInterview.tsx",
+        "src/components/InterviewWizard.tsx",
+        "src/components/FeedbackReport.tsx"
+      ],
+      "description": "Bounded adaptive mock interview orchestrator, role-specialized agents (HR, Technical, Hiring Manager), and turn progression."
+    },
+    {
+      "name": "rag",
+      "paths": [
+        "src/server/ai/rag",
+        "src/server/ai/vectorStore"
+      ],
+      "description": "Candidate-private RAG pipeline, section-aware chunking, tenant isolation, and pgvector storage."
+    },
+    {
+      "name": "embeddings",
+      "paths": [
+        "src/server/ai/embeddings"
+      ],
+      "description": "Gemini gemini-embedding-2 provider, 768-dimension vector generation, and normalization."
+    },
+    {
+      "name": "resume-scanner",
+      "paths": [
+        "src/server/controllers/resume.controller.ts",
+        "src/server/routes/resume.routes.ts",
+        "src/server/services/fileParser.service.ts",
+        "src/components/EnterpriseResumeScanner.tsx"
+      ],
+      "description": "Resume parsing, ATS scoring, section extraction, and evidence-grounded matching."
+    },
+    {
+      "name": "database",
+      "paths": [
+        "src/server/db"
+      ],
+      "description": "PostgreSQL database client, relational tables, vector_chunks, pgvector extension, and repository layer."
+    },
+    {
+      "name": "jobs-applications",
+      "paths": [
+        "src/server/controllers/jobs.controller.ts",
+        "src/server/routes/jobs.routes.ts",
+        "src/components/JobsExplorer.tsx"
+      ],
+      "description": "Job search explorer, application tracking, and match analysis."
+    },
+    {
+      "name": "analytics",
+      "paths": [
+        "src/server/controllers/analytics.controller.ts",
+        "src/server/routes/analytics.routes.ts",
+        "src/components/AnalyticsView.tsx"
+      ],
+      "description": "Interview performance metrics, readiness trajectory, and activity tracking."
+    },
+    {
+      "name": "ui-shell",
+      "paths": [
+        "src/App.tsx",
+        "src/components/Header.tsx",
+        "src/components/Sidebar.tsx",
+        "src/components/BottomNav.tsx"
+      ],
+      "description": "Top-level layout, authenticated navigation, routing, and header controls."
+    }
+  ],
+  "allowedChangeTypes": [
+    "security",
+    "bugfix",
+    "performance",
+    "deployment",
+    "observability",
+    "test",
+    "documentation"
+  ],
+  "overrideMechanism": {
+    "environmentVariable": "FEATURE_FREEZE_OVERRIDE",
+    "requiredValue": "true",
+    "description": "Set FEATURE_FREEZE_OVERRIDE=true to authorize explicit feature modifications during deliberate engineering iterations."
+  }
+}

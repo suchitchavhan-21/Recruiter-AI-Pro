@@ -1,0 +1,39 @@
+name: Recruiter AI Pro CI & Feature Lock Enforcement
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Lint, Build & Feature Freeze Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Typecheck & Lint
+        run: npm run lint
+
+      - name: Build Application & Server
+        run: npm run build
+
+      - name: Verify Feature Update Lock
+        run: npm run verify:feature-freeze
+
+      - name: Run Feature Freeze Regression Tests
+        run: npm run test:feature-freeze

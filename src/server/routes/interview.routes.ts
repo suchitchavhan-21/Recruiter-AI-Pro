@@ -12,6 +12,7 @@ import {
   startAdaptiveInterviewHandler,
   processAdaptiveTurnHandler,
   getAdaptiveInterviewStateHandler,
+  getCandidateMemoryHandler,
   analyzeJdSchema,
   evaluateInterviewSchema,
   evaluateStarSchema,
@@ -51,6 +52,7 @@ interviewRouter.get("/history", listInterviewsHandler);
 interviewRouter.get("/history/:id", getInterviewByIdHandler);
 interviewRouter.get("/:id", getInterviewByIdHandler);
 
+interviewRouter.get("/candidate-memory", getCandidateMemoryHandler);
 interviewRouter.get("/star-stories", listStarStoriesHandler);
 interviewRouter.post("/star-stories", validateBody(saveStarSchema), saveStarStoryHandler);
 interviewRouter.delete("/star-stories/:id", deleteStarStoryHandler);

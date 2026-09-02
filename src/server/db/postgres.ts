@@ -289,7 +289,16 @@ export async function initPostgresSchema(): Promise<boolean> {
       );
     `);
 
-    // 9. Admin Audit Logs Table
+    // 9. Candidate Memories Table
+    await queryPostgres(`
+      CREATE TABLE IF NOT EXISTS candidate_memories (
+        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        profile JSONB NOT NULL DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 10. Admin Audit Logs Table
     await queryPostgres(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
@@ -303,7 +312,7 @@ export async function initPostgresSchema(): Promise<boolean> {
       );
     `);
 
-    // 10. Vector Chunks Table with vector(768)
+    // 11. Vector Chunks Table with vector(768)
     const embeddingType = pgVectorAvailable ? "vector(768)" : "FLOAT8[]";
     await queryPostgres(`
       CREATE TABLE IF NOT EXISTS vector_chunks (
