@@ -309,6 +309,17 @@ export async function initPostgresSchema(): Promise<boolean> {
       );
     `);
 
+    // 11. Migration: Purge any legacy vectors created with deprecated embedding models (e.g. text-embedding-004)
+    try {
+      await queryPostgres(`
+        DELETE FROM vector_chunks 
+        WHERE metadata->>'embeddingModel' = 'text-embedding-004' 
+           OR metadata->>'embeddingModel' LIKE '%004%';
+      `);
+    } catch {
+      // Ignored if vector_chunks was just created
+    }
+
     isInitialized = true;
     console.log("✅ [POSTGRES] All 8 relational tables and vector_chunks initialized successfully.");
     return true;

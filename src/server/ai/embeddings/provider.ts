@@ -7,9 +7,13 @@ export interface EmbeddingResult {
   model: string;
 }
 
-const PRIMARY_EMBEDDING_MODEL = ENV.EMBEDDING_MODEL || "gemini-embedding-2";
-const FALLBACK_EMBEDDING_MODELS = ["text-embedding-004"];
-const EXPECTED_DIMENSION = ENV.EMBEDDING_DIMENSION || 768;
+export const PRIMARY_EMBEDDING_MODEL = ENV.EMBEDDING_MODEL || "gemini-embedding-2";
+export const FALLBACK_EMBEDDING_MODELS = ["gemini-embedding-001"];
+export const EXPECTED_DIMENSION = ENV.EMBEDDING_DIMENSION || 768;
+
+export function getActiveEmbeddingModel(): string {
+  return PRIMARY_EMBEDDING_MODEL;
+}
 
 /**
  * Generates an embedding vector for a single text chunk with strict dimension validation.
@@ -33,7 +37,10 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
     try {
       const response = await client.models.embedContent({
         model,
-        contents: clean
+        contents: clean,
+        config: {
+          outputDimensionality: EXPECTED_DIMENSION
+        }
       });
 
       const respAny = response as any;

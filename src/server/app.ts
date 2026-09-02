@@ -66,6 +66,7 @@ import { requireAuth } from "./middleware/auth";
 import { validateBody } from "./middleware/validate";
 import { checkPostgresHealth } from "./db/postgres";
 import { getVectorStore } from "./ai/vectorStore";
+import { getActiveEmbeddingModel } from "./ai/embeddings/provider";
 import { ENV } from "./config/env";
 import { 
   startAdaptiveInterviewHandler, 
@@ -110,7 +111,7 @@ export function createExpressApp(): express.Application {
       },
       ai: {
         geminiConfigured: !!ENV.GEMINI_API_KEY,
-        embeddingModel: ENV.EMBEDDING_MODEL
+        embeddingModel: getActiveEmbeddingModel()
       }
     });
   });

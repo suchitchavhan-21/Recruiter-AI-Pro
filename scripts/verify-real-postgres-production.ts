@@ -2,6 +2,7 @@ import http from "http";
 import path from "path";
 import fs from "fs";
 import { spawn, ChildProcess } from "child_process";
+import { generateEmbedding } from "../src/server/ai/embeddings/provider";
 
 // Configure production environment strictly through environment variables
 const PROD_PORT = 3008;
@@ -12,7 +13,7 @@ const PROD_ENV = {
   DATABASE_URL: "postgresql://embedded/recruiter_ai_pro",
   JWT_SECRET: "prod_secure_static_jwt_secret_token_key_2026_v2_recruiter",
   JWT_REFRESH_SECRET: "prod_secure_static_refresh_secret_token_key_2026_v2_recruiter",
-  EMBEDDING_MODEL: "text-embedding-004"
+  EMBEDDING_MODEL: "gemini-embedding-2"
 };
 
 function fetchJson(url: string, options: http.RequestOptions = {}, postData?: string): Promise<{ status: number; data: any; raw: string }> {
@@ -156,6 +157,7 @@ async function runProductionVerification() {
     assert(health.data?.persistence?.database === "postgresql", "database is reported as 'postgresql'");
     assert(health.data?.persistence?.pgvector === true, "pgvector is reported as true");
     assert(health.data?.persistence?.vectorStore === "pgvector", "vectorStore is reported as 'pgvector'");
+    assert(health.data?.ai?.embeddingModel === "gemini-embedding-2", "embeddingModel is actively reported as 'gemini-embedding-2'");
 
     // ----------------------------------------------------
     // PHASE 3: REAL USER AUTH & SESSION LIFECYCLE
@@ -214,6 +216,12 @@ async function runProductionVerification() {
     // PHASE 4: REAL RAG INDEXING, PGVECTOR COSINE SEARCH & DELETION
     // ----------------------------------------------------
     console.log("\n🧠 --- PHASE 4: REAL PGVECTOR (768-DIM) RAG INDEXING & RETRIEVAL ---");
+    
+    // Direct embedding model verification
+    const directEmbed = await generateEmbedding("Staff Software Engineer with PostgreSQL and vector search experience");
+    assert(directEmbed.dimension === 768, `Embedding vector verified at exact 768 dimensions (got ${directEmbed.dimension})`);
+    assert(directEmbed.model === "gemini-embedding-2", `Direct embedding generator confirmed using model '${directEmbed.model}'`);
+
     const resumeText = "Alex Rivera. Senior Distributed Systems Engineer with 8 years of production experience building high-throughput Kafka streaming pipelines and microservices in Go and Kubernetes. Designed multi-region PostgreSQL cluster with sub-50ms query latency.";
     const resumeRes = await fetchJson(`http://127.0.0.1:${PROD_PORT}/api/resumes/scan`, {
       method: "POST",
