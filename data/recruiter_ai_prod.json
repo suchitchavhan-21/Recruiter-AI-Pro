@@ -291,6 +291,66 @@
       "createdAt": "2026-09-02T21:32:24.899Z",
       "updatedAt": "2026-09-02T21:32:25.062Z",
       "lastLogin": "2026-09-02T21:32:25.062Z"
+    },
+    {
+      "id": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "fullName": "Senior Lead Architect",
+      "email": "e2e_user_1788385015454@example.com",
+      "phoneNumber": "+1 555-0199",
+      "passwordHash": "$2b$10$KoseNZMLVVuUBX68g/2Lo.WZypXpM4ADEqREdABDKBdwH.o6MW.Uy",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T21:36:55.597Z",
+      "updatedAt": "2026-09-02T21:36:56.143Z",
+      "lastLogin": "2026-09-02T21:36:55.766Z"
+    },
+    {
+      "id": "8d888c6f-cd72-48b4-8557-51ebe9f29d4b",
+      "fullName": "E2E Test Candidate B",
+      "email": "e2e_user_b_1788385015792@example.com",
+      "phoneNumber": "+15559745973",
+      "passwordHash": "$2b$10$wGMA7TJMxXeRQ4sjGsaAVe4zgWqYmGYgdT8cQZzaLhwC69Ffvx6VS",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T21:36:55.903Z",
+      "updatedAt": "2026-09-02T21:36:56.115Z",
+      "lastLogin": "2026-09-02T21:36:56.115Z"
+    },
+    {
+      "id": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "fullName": "Alice Applicant",
+      "email": "applicant_a_1788385115189@example.com",
+      "phoneNumber": "+15555200344",
+      "passwordHash": "$2b$10$Y2Ace.OTdgnr6BOCN/n8cOTQ/K3.1wmQhnVd0wnkuSFQNplQnVO4q",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T21:38:35.346Z",
+      "updatedAt": "2026-09-02T21:38:36.449Z",
+      "lastLogin": "2026-09-02T21:38:36.449Z"
+    },
+    {
+      "id": "71e9e017-dcfb-43f3-a22c-252ed6865ff5",
+      "fullName": "Bob Applicant",
+      "email": "applicant_b_1788385116475@example.com",
+      "phoneNumber": "+15559341596",
+      "passwordHash": "$2b$10$c1cJn3uR1ZYVfI/l/9xMfeWzYLiqNNp1uKo7VuS68JBOTrzGCi4u2",
+      "profilePhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T21:38:36.615Z",
+      "updatedAt": "2026-09-02T21:38:36.888Z",
+      "lastLogin": "2026-09-02T21:38:36.888Z"
     }
   ],
   "sessions": [
@@ -462,6 +522,58 @@
       "refreshTokenHash": "ac86faccfb8fb4696ccebea1336d1697c370979176660285084f37ec6fee9342",
       "isActive": true,
       "expiresAt": "2026-09-09T21:32:25.053Z"
+    },
+    {
+      "id": "3dd47b71-2aa4-45b6-ae75-055b8af09a8c",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T21:36:55.759Z",
+      "refreshTokenHash": "56003c8a831fe934bd10262ee1436661b4df1ddd7cddfe4eaf7c9a8732a649d0",
+      "isActive": true,
+      "expiresAt": "2026-09-09T21:36:55.759Z"
+    },
+    {
+      "id": "178305c3-92da-40ee-9881-b96c0863a580",
+      "userId": "8d888c6f-cd72-48b4-8557-51ebe9f29d4b",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T21:36:56.107Z",
+      "refreshTokenHash": "5fa6bb5b8dc31cad21b99de186ae306c41ffd9f0d88cd39fcd22a858ef4e6795",
+      "isActive": true,
+      "expiresAt": "2026-09-09T21:36:56.107Z"
+    },
+    {
+      "id": "b7d30109-3dc0-454b-9b39-584e9d8e8226",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T21:38:36.443Z",
+      "refreshTokenHash": "e96388a1d40673e312cb589bfe7014d8a6f949323dc44db2277ce507b5fab725",
+      "isActive": true,
+      "expiresAt": "2026-09-09T21:38:36.443Z"
+    },
+    {
+      "id": "fbd731fd-d86c-4567-aeee-102ea5ee663d",
+      "userId": "71e9e017-dcfb-43f3-a22c-252ed6865ff5",
+      "device": "Desktop",
+      "browser": "Chrome",
+      "operatingSystem": "macOS",
+      "ipAddress": "127.0.0.1",
+      "country": "US",
+      "loginTime": "2026-09-02T21:38:36.876Z",
+      "refreshTokenHash": "5a5c659f891504cecc55a471bc73eabf2b9e28f936b2323d8aeec1760472f08d",
+      "isActive": true,
+      "expiresAt": "2026-09-09T21:38:36.876Z"
     }
   ],
   "activities": [
@@ -1141,6 +1253,230 @@
         "newStatus": "Interview Scheduled"
       },
       "timestamp": "2026-09-02T21:32:25.142Z"
+    },
+    {
+      "id": "be6685b1-f6cf-4639-807d-6a4e73f8b6b7",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for e2e_user_1788385015454@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T21:36:55.608Z"
+    },
+    {
+      "id": "f5e3f3b2-1180-4a0c-8d47-62b45b308ed7",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for e2e_user_1788385015454@example.com.",
+      "timestamp": "2026-09-02T21:36:55.637Z"
+    },
+    {
+      "id": "ad63db7a-2eed-4915-9dd3-e64197b4f750",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T21:36:55.779Z"
+    },
+    {
+      "id": "01421f9e-4955-4b17-8454-3058816bf25a",
+      "userId": "8d888c6f-cd72-48b4-8557-51ebe9f29d4b",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for e2e_user_b_1788385015792@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T21:36:55.926Z"
+    },
+    {
+      "id": "ffa5b2f5-af6e-425f-824c-0fefd458c99f",
+      "userId": "8d888c6f-cd72-48b4-8557-51ebe9f29d4b",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for e2e_user_b_1788385015792@example.com.",
+      "timestamp": "2026-09-02T21:36:55.965Z"
+    },
+    {
+      "id": "cd8b074a-c2c4-4816-8bcc-3afbec6454f6",
+      "userId": "8d888c6f-cd72-48b4-8557-51ebe9f29d4b",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T21:36:56.124Z"
+    },
+    {
+      "id": "51a28330-5663-419b-b177-521270b5443b",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "PROFILE_UPDATED",
+      "activityName": "Profile Update",
+      "description": "User profile settings updated.",
+      "timestamp": "2026-09-02T21:36:56.150Z"
+    },
+    {
+      "id": "dced6c87-f4d8-4f34-8479-72e11dbb2656",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "RESUME_SCANNED",
+      "activityName": "ATS Resume Scan",
+      "description": "Scanned John_Doe_Resume.txt against Backend Engineer. ATS Score: 32%.",
+      "metadata": {
+        "atsScore": 32,
+        "fileName": "John_Doe_Resume.txt"
+      },
+      "timestamp": "2026-09-02T21:37:03.272Z"
+    },
+    {
+      "id": "9acebbfc-e4fc-4f62-b3ac-1732c2d8fd05",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "JOB_APPLIED",
+      "activityName": "Application Recorded",
+      "description": "Recorded application for Staff Infrastructure Engineer at Google.",
+      "metadata": {
+        "company": "Google",
+        "role": "Staff Infrastructure Engineer"
+      },
+      "timestamp": "2026-09-02T21:37:03.882Z"
+    },
+    {
+      "id": "c1723be9-80e2-4cca-abf7-742978b7bc03",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "APPLICATION_STATUS_UPDATED",
+      "activityName": "Application Status Changed",
+      "description": "Application status updated to Interview Scheduled.",
+      "metadata": {
+        "applicationId": "1c46bcd4-ea33-4410-903b-ca18e13f5279",
+        "newStatus": "Interview Scheduled"
+      },
+      "timestamp": "2026-09-02T21:37:03.921Z"
+    },
+    {
+      "id": "8c7bc802-5574-453e-b30b-018e131fe86b",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "STAR_STORY_SAVED",
+      "activityName": "STAR Narrative Saved",
+      "description": "Saved STAR behavioral narrative for Distributed Lock Manager.",
+      "timestamp": "2026-09-02T21:37:09.229Z"
+    },
+    {
+      "id": "3a5eea6d-9a04-4396-acad-25370717cc09",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "INTERVIEW_STARTED",
+      "activityName": "Adaptive Interview Started",
+      "description": "Started adaptive mock interview for Staff Infrastructure Engineer at Google.",
+      "metadata": {
+        "sessionId": "73c3784b-4041-468f-b2b6-d5fa2ec3b44f",
+        "difficulty": "Expert"
+      },
+      "timestamp": "2026-09-02T21:37:09.846Z"
+    },
+    {
+      "id": "a8bf37e4-4ebf-4ed8-992d-642674b9d562",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "activityType": "INTERVIEW_COMPLETED",
+      "activityName": "Mock Interview Completed",
+      "description": "Completed Staff Infrastructure Engineer mock interview for Google. Score: 45%.",
+      "metadata": {
+        "score": 45,
+        "rating": "No Hire"
+      },
+      "timestamp": "2026-09-02T21:37:18.818Z"
+    },
+    {
+      "id": "8ec5be9a-0630-444d-911a-ea5d474f212b",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_a_1788385115189@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T21:38:36.257Z"
+    },
+    {
+      "id": "868eef7d-89ea-4f29-af75-4cd18c984049",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_a_1788385115189@example.com.",
+      "timestamp": "2026-09-02T21:38:36.298Z"
+    },
+    {
+      "id": "483aa563-fe58-49d9-9eb8-d534f5efc937",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T21:38:36.463Z"
+    },
+    {
+      "id": "16120f14-8339-4a6c-a911-000169ac150f",
+      "userId": "71e9e017-dcfb-43f3-a22c-252ed6865ff5",
+      "activityType": "ACCOUNT_REGISTERED",
+      "activityName": "User Registration",
+      "description": "New candidate account registered for applicant_b_1788385116475@example.com.",
+      "metadata": {
+        "role": "candidate"
+      },
+      "timestamp": "2026-09-02T21:38:36.625Z"
+    },
+    {
+      "id": "c903bb6f-11a1-4730-9180-952b23a8f27c",
+      "userId": "71e9e017-dcfb-43f3-a22c-252ed6865ff5",
+      "activityType": "EMAIL_VERIFIED",
+      "activityName": "Email Verified",
+      "description": "Email address verified for applicant_b_1788385116475@example.com.",
+      "timestamp": "2026-09-02T21:38:36.649Z"
+    },
+    {
+      "id": "f965c577-c652-4e34-a0e5-049fdf73d0b7",
+      "userId": "71e9e017-dcfb-43f3-a22c-252ed6865ff5",
+      "activityType": "USER_LOGIN",
+      "activityName": "Account Login",
+      "description": "User logged in from Chrome on macOS.",
+      "metadata": {
+        "ip": "127.0.0.1",
+        "device": "Desktop"
+      },
+      "timestamp": "2026-09-02T21:38:36.897Z"
+    },
+    {
+      "id": "901d6b29-5e69-41f3-a10c-4147bb1af8da",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "activityType": "JOB_APPLIED",
+      "activityName": "Application Recorded",
+      "description": "Recorded application for Staff Systems Engineer at Stripe.",
+      "metadata": {
+        "company": "Stripe",
+        "role": "Staff Systems Engineer"
+      },
+      "timestamp": "2026-09-02T21:38:36.941Z"
+    },
+    {
+      "id": "07c260cf-7974-474c-bc38-b2ce865b27e4",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "activityType": "APPLICATION_STATUS_UPDATED",
+      "activityName": "Application Status Changed",
+      "description": "Application status updated to Interview Scheduled.",
+      "metadata": {
+        "applicationId": "b15bab12-4131-442c-a0eb-f3fd0510f600",
+        "newStatus": "Interview Scheduled"
+      },
+      "timestamp": "2026-09-02T21:38:36.979Z"
     }
   ],
   "interviews": [
@@ -2684,6 +3020,175 @@
       },
       "createdAt": "2026-09-02T21:29:54.543Z",
       "updatedAt": "2026-09-02T21:29:54.543Z"
+    },
+    {
+      "id": "73c3784b-4041-468f-b2b6-d5fa2ec3b44f",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "company": "Google",
+      "role": "Staff Infrastructure Engineer",
+      "difficulty": "Expert",
+      "interviewerCount": 2,
+      "persona": "mentor",
+      "state": "IN_PROGRESS",
+      "score": 0,
+      "timeTaken": "0m",
+      "questions": [
+        {
+          "id": 1,
+          "text": "Describe how you ensure consensus in a partitioned distributed key-value store.",
+          "type": "technical"
+        }
+      ],
+      "answers": [],
+      "sessionState": {
+        "sessionId": "73c3784b-4041-468f-b2b6-d5fa2ec3b44f",
+        "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+        "targetRole": "Staff Infrastructure Engineer",
+        "company": "Google",
+        "difficulty": "Expert",
+        "interviewerCount": 2,
+        "currentTurn": 2,
+        "minTurns": 3,
+        "maxTurns": 5,
+        "hardTurnLimit": 8,
+        "status": "IN_PROGRESS",
+        "history": [
+          {
+            "turnIndex": 1,
+            "questionId": 1,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins",
+            "interviewerTitle": "Senior People Partner & Behavioral Assessor",
+            "questionText": "Describe how you ensure consensus in a partitioned distributed key-value store.",
+            "questionType": "technical",
+            "expectedCompetency": "Raft/Paxos and partition tolerance",
+            "evaluationRubric": "Evaluate candidate behavioral evidence using STAR (Situation, Task, Action, Result), cross-functional empathy, and ownership.",
+            "timestamp": "2026-09-02T21:37:09.413Z",
+            "candidateAnswer": "We implemented Raft consensus with leader election timeouts, logarithmic heartbeats, and quorum-based writes to guarantee linearizability during network partitions."
+          },
+          {
+            "turnIndex": 2,
+            "questionId": 2,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen",
+            "interviewerTitle": "Principal Software Architect",
+            "questionText": "Based on your experience in General, Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?",
+            "questionType": "technical",
+            "expectedCompetency": "Scalable Architecture & Technical Trade-offs",
+            "evaluationRubric": "Evaluate architectural soundness, failure domain isolation, concurrency trade-offs, and concrete technology choices.",
+            "timestamp": "2026-09-02T21:37:10.479Z"
+          }
+        ],
+        "competenciesCovered": [
+          "System Architecture",
+          "Scalable Architecture & Technical Trade-offs"
+        ],
+        "candidateMemorySnapshot": "No prior interview memory on record.",
+        "createdAt": "2026-09-02T21:37:09.413Z",
+        "updatedAt": "2026-09-02T21:37:10.479Z"
+      },
+      "createdAt": "2026-09-02T21:37:09.413Z",
+      "updatedAt": "2026-09-02T21:37:10.479Z"
+    },
+    {
+      "id": "157b9102-327f-4904-a9b2-2e391c97ffe3",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "company": "Google",
+      "role": "Staff Infrastructure Engineer",
+      "difficulty": "Senior",
+      "interviewerCount": 2,
+      "persona": "mentor",
+      "state": "COMPLETED",
+      "score": 45,
+      "timeTaken": "15m",
+      "questions": [
+        {
+          "id": 1,
+          "text": "Describe how you ensure consensus in a partitioned distributed key-value store.",
+          "type": "technical"
+        }
+      ],
+      "answers": [
+        {
+          "questionId": 1,
+          "questionText": "Describe how you ensure consensus in a partitioned distributed key-value store.",
+          "type": "technical",
+          "answerText": "We implemented Raft consensus with leader election timeouts, logarithmic heartbeats, and quorum-based writes."
+        }
+      ],
+      "evaluation": {
+        "overallRating": "No Hire",
+        "score": 45,
+        "overallFeedback": "The candidate provided a technically accurate but extremely superficial response. For a Staff Infrastructure Engineer role, the expectation is to discuss trade-offs, edge cases, performance implications, and real-world operational challenges, which were entirely absent.",
+        "strengths": [
+          "Correct identification of the Raft consensus algorithm",
+          "Familiarity with core distributed systems terminology"
+        ],
+        "improvements": [
+          "Adopt the STAR method (Situation, Task, Action, Result) to provide depth",
+          "Discuss trade-offs (e.g., latency vs. consistency, availability during partitions)",
+          "Include operational considerations like log compaction, snapshotting, and membership changes"
+        ],
+        "mistakesMade": [
+          "Failed to provide any concrete metrics or specific architectural context",
+          "Did not address how the system handles network partitions or split-brain scenarios beyond mentioning timeouts",
+          "Lacked depth required for a Staff-level role"
+        ],
+        "idealAnswers": [
+          "A Staff-level answer should describe the specific implementation of Raft, how log replication is handled, how the system manages membership changes, the impact of leader election latency on p99 tail latency, and how the system handles state machine snapshots to prevent unbounded log growth."
+        ],
+        "hiringRecommendation": "No Hire",
+        "practicePlan": [
+          "Review 'Designing Data-Intensive Applications' by Martin Kleppmann, specifically chapters on consensus and replication",
+          "Practice articulating complex system design decisions using the STAR method",
+          "Study Google's internal papers on Spanner or Chubby to understand how consensus is applied at scale"
+        ],
+        "questionBreakdown": [
+          {
+            "questionText": "Describe how you ensure consensus in a partitioned distributed key-value store.",
+            "critique": "The answer was technically correct but lacked the depth, nuance, and architectural reasoning expected of a Staff Infrastructure Engineer.",
+            "modelAnswer": "In a partitioned key-value store, I would implement Raft for consistency. I would focus on log replication, ensuring that the state machine is deterministic. I would address the 'split-brain' scenario by enforcing strict quorum writes (N/2 + 1) and discuss how we handle membership changes dynamically. I would also detail how we optimize for performance using batching and pipelining, and how we manage log compaction via snapshots to ensure fast recovery times.",
+            "score": 45,
+            "feedback": "The candidate identified the correct algorithm but failed to elaborate on the 'how' and 'why' regarding the challenges of partitioning and distributed state."
+          }
+        ],
+        "panelFeedback": {
+          "hr": {
+            "score": 48,
+            "feedback": "Candidate communicates clearly but lacks the depth of experience required for a senior-level role.",
+            "strengths": [
+              "Professional demeanor"
+            ],
+            "weaknesses": [
+              "Lack of detailed project examples"
+            ]
+          },
+          "technical": {
+            "score": 43,
+            "feedback": "The candidate knows the buzzwords but did not demonstrate the ability to design or troubleshoot complex distributed systems at scale.",
+            "strengths": [
+              "Understands basic Raft concepts"
+            ],
+            "weaknesses": [
+              "Superficial technical knowledge",
+              "No mention of performance trade-offs"
+            ]
+          },
+          "hiringManager": {
+            "score": 45,
+            "feedback": "The candidate does not meet the bar for Staff Infrastructure Engineer. The response was too brief and lacked the strategic thinking required for this level.",
+            "strengths": [
+              "Concise"
+            ],
+            "weaknesses": [
+              "Insufficient technical depth",
+              "Failed to demonstrate leadership or architectural maturity"
+            ]
+          }
+        }
+      },
+      "createdAt": "2026-09-02T21:37:18.810Z",
+      "updatedAt": "2026-09-02T21:37:18.810Z"
     }
   ],
   "resumes": [],
@@ -2789,6 +3294,35 @@
       "notes": "Applied via Recruiter AI Pro workspace.",
       "appliedAt": "2026-09-02T21:32:25.094Z",
       "updatedAt": "2026-09-02T21:32:25.131Z"
+    },
+    {
+      "id": "1c46bcd4-ea33-4410-903b-ca18e13f5279",
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "company": "Google",
+      "role": "Staff Infrastructure Engineer",
+      "roleCategory": "Distributed Systems",
+      "applicantName": "Senior Lead Architect",
+      "applicantEmail": "e2e_user_1788385015454@example.com",
+      "status": "Interview Scheduled",
+      "coverLetter": "10+ years scaling low-latency services.",
+      "notes": "Distributed cache consistency and raft consensus.",
+      "appliedAt": "2026-09-02T21:37:03.864Z",
+      "updatedAt": "2026-09-02T21:37:03.910Z"
+    },
+    {
+      "id": "b15bab12-4131-442c-a0eb-f3fd0510f600",
+      "userId": "8a7f6d91-a602-430b-9fcc-808c4609cc52",
+      "company": "Stripe",
+      "role": "Staff Systems Engineer",
+      "roleCategory": "Engineering",
+      "applicantName": "Alice Applicant",
+      "applicantEmail": "applicant_a_1788385115189@example.com",
+      "status": "Interview Scheduled",
+      "coverLetter": "Excited to contribute to payment rails.",
+      "matchScore": 88,
+      "notes": "Applied via Recruiter AI Pro workspace.",
+      "appliedAt": "2026-09-02T21:38:36.930Z",
+      "updatedAt": "2026-09-02T21:38:36.965Z"
     }
   ],
   "starStories": [],
@@ -2967,6 +3501,24 @@
         "updatedAt": "2026-09-02T21:29:46.561Z"
       },
       "updatedAt": "2026-09-02T21:29:46.561Z"
+    },
+    {
+      "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+      "profile": {
+        "userId": "6677e776-1ba4-4879-b316-2f3b5d9077a7",
+        "skills": [],
+        "experienceYears": 0,
+        "targetRoles": [],
+        "targetCompanies": [],
+        "strengths": [],
+        "weaknesses": [],
+        "recurringImprovements": [],
+        "readinessSignals": {},
+        "interviewOutcomes": [],
+        "facts": [],
+        "updatedAt": "2026-09-02T21:37:03.260Z"
+      },
+      "updatedAt": "2026-09-02T21:37:03.260Z"
     }
   ]
 }

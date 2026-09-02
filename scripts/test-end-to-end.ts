@@ -118,60 +118,89 @@ async function runEndToEndTests() {
     const health = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/health`);
     assert(health.status === 200 && health.data?.status === "ok", "Server Health Check is OK");
 
-    // 2. Register & Auth
-    const email = `e2e_user_${Date.now()}@example.com`;
-    const password = "Password123!";
-    const phone = "+1555" + Math.floor(1000000 + Math.random() * 9000000);
-    const regRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/register`, { method: "POST" }, JSON.stringify({
-      fullName: "E2E Test Engineer",
-      email,
-      phoneNumber: phone,
-      password,
-      confirmPassword: password,
+    // 2. Journey A: Register & Auth
+    const emailA = `e2e_user_${Date.now()}@example.com`;
+    const passwordA = "Password123!";
+    const phoneA = "+1555" + Math.floor(1000000 + Math.random() * 9000000);
+    const regResA = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/register`, { method: "POST" }, JSON.stringify({
+      fullName: "E2E Test Candidate A",
+      email: emailA,
+      phoneNumber: phoneA,
+      password: passwordA,
+      confirmPassword: passwordA,
       agreeTerms: true
     }));
-    assert(regRes.status === 201 && regRes.data?.success === true, "Candidate User Registration (HTTP 201)");
+    assert(regResA.status === 201 && regResA.data?.success === true, "Journey A: Candidate Registration (HTTP 201)");
 
-    if (regRes.data?.verificationLink) {
-      await fetchJson(regRes.data.verificationLink);
+    // Duplicate email handling
+    const dupRegRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/register`, { method: "POST" }, JSON.stringify({
+      fullName: "Duplicate User",
+      email: emailA,
+      phoneNumber: "+15559999999",
+      password: passwordA,
+      confirmPassword: passwordA,
+      agreeTerms: true
+    }));
+    assert(dupRegRes.status === 400 || dupRegRes.status === 409, "Failure Case: Duplicate email registration rejected");
+
+    if (regResA.data?.verificationLink) {
+      await fetchJson(regResA.data.verificationLink);
     }
 
-    const loginRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, { method: "POST" }, JSON.stringify({
-      email,
-      password
+    const loginResA = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, { method: "POST" }, JSON.stringify({
+      email: emailA,
+      password: passwordA
     }));
-    const authToken = loginRes.data?.accessToken;
-    assert(Boolean(authToken), "Candidate User Login returns valid JWT access token");
-    const authHeaders = { Authorization: `Bearer ${authToken}` };
+    const authTokenA = loginResA.data?.accessToken;
+    assert(Boolean(authTokenA), "Journey A: Candidate Login returns valid JWT access token");
+    const authHeadersA = { Authorization: `Bearer ${authTokenA}` };
 
-    // 3. Authenticated Profile
-    const profileRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/profile`, { headers: authHeaders });
-    assert(profileRes.status === 200 && profileRes.data?.user?.email === email, "GET /api/profile returns authenticated user");
+    // Register User B for Tenant Isolation
+    const emailB = `e2e_user_b_${Date.now()}@example.com`;
+    const passwordB = "Password123!";
+    const regResB = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/register`, { method: "POST" }, JSON.stringify({
+      fullName: "E2E Test Candidate B",
+      email: emailB,
+      phoneNumber: "+1555" + Math.floor(1000000 + Math.random() * 9000000),
+      password: passwordB,
+      confirmPassword: passwordB,
+      agreeTerms: true
+    }));
+    if (regResB.data?.verificationLink) {
+      await fetchJson(regResB.data.verificationLink);
+    }
+    const loginResB = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, { method: "POST" }, JSON.stringify({
+      email: emailB,
+      password: passwordB
+    }));
+    const authTokenB = loginResB.data?.accessToken;
+    const authHeadersB = { Authorization: `Bearer ${authTokenB}` };
 
-    // 4. Update Profile
-    const updateProfileRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/profile`, { method: "PUT", headers: authHeaders }, JSON.stringify({
+    // 3. Journey B: Authenticated Profile & Update
+    const profileRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/profile`, { headers: authHeadersA });
+    assert(profileRes.status === 200 && profileRes.data?.user?.email === emailA, "Journey B: GET /api/profile returns authenticated user");
+
+    const updateProfileRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/profile`, { method: "PUT", headers: authHeadersA }, JSON.stringify({
       fullName: "Senior Lead Architect",
       phoneNumber: "+1 555-0199"
     }));
-    assert(updateProfileRes.status === 200 && updateProfileRes.data?.user?.fullName === "Senior Lead Architect", "PUT /api/profile persists profile update");
+    assert(updateProfileRes.status === 200 && updateProfileRes.data?.user?.fullName === "Senior Lead Architect", "Journey B: PUT /api/profile persists profile update");
 
-    // 5. Job Application Recording & Retrieval
-    const postJobRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs`, { method: "POST", headers: authHeaders }, JSON.stringify({
-      company: "Google",
-      role: "Staff Infrastructure Engineer",
-      roleCategory: "Distributed Systems",
-      applicantName: "Senior Lead Architect",
-      applicantEmail: email,
-      coverLetter: "10+ years scaling low-latency services.",
-      notes: "Distributed cache consistency and raft consensus."
+    // 4. Journey C: Resume Scanning & Persistence
+    const sampleResumeText = "John Doe\nStaff Software Engineer with 8 years experience building high throughput APIs in Node.js, TypeScript, PostgreSQL, and Docker.";
+    const scanResumeRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/scan-resume`, { method: "POST", headers: authHeadersA }, JSON.stringify({
+      fileName: "John_Doe_Resume.txt",
+      resumeText: sampleResumeText,
+      targetRole: "Backend Engineer"
     }));
-    assert(postJobRes.status === 201 && postJobRes.data?.application?.company === "Google", "POST /api/jobs records application with PostgreSQL persistence");
+    assert(scanResumeRes.status === 200 && typeof scanResumeRes.data?.analysis?.atsScore === "number", "Journey C: POST /api/scan-resume performs genuine analysis & vectors");
+    const scannedResumeId = scanResumeRes.data?.resume?.id;
 
-    const getJobsRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs`, { headers: authHeaders });
-    assert(getJobsRes.status === 200 && Array.isArray(getJobsRes.data?.applications) && getJobsRes.data.applications.length > 0, "GET /api/jobs lists user applications");
+    const listResumesRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/resumes`, { headers: authHeadersA });
+    assert(listResumesRes.status === 200 && Array.isArray(listResumesRes.data?.resumes) && listResumesRes.data.resumes.length > 0, "Journey C: GET /api/resumes retrieves persisted resume scans");
 
-    // 6. Evidence-Based ATS Scoring
-    const atsScoreRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/resumes/ats-score`, { method: "POST", headers: authHeaders }, JSON.stringify({
+    // 5. Journey D: Evidence-Based ATS Scoring
+    const atsScoreRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/resumes/ats-score`, { method: "POST", headers: authHeadersA }, JSON.stringify({
       role: "Staff Infrastructure Engineer",
       company: "Google",
       jdText: "Requirements: 8+ years experience in distributed systems, Raft consensus, Go, Rust, and Kubernetes.",
@@ -193,11 +222,42 @@ async function runEndToEndTests() {
         }
       ]
     }));
-    assert(atsScoreRes.status === 200 && typeof atsScoreRes.data?.score === "number", "POST /api/resumes/ats-score computes deterministic score");
-    assert(Array.isArray(atsScoreRes.data?.matchedRequirements) || Array.isArray(atsScoreRes.data?.missingRequirements), "ATS Score returns structured requirement matches/breakdown");
+    assert(atsScoreRes.status === 200 && typeof atsScoreRes.data?.score === "number", "Journey D: POST /api/resumes/ats-score computes deterministic score");
+    assert(Array.isArray(atsScoreRes.data?.matchedRequirements) || Array.isArray(atsScoreRes.data?.missingRequirements), "Journey D: ATS Score returns structured requirement matches/breakdown");
 
-    // 7. STAR Stories CRUD
-    const postStoryRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories`, { method: "POST", headers: authHeaders }, JSON.stringify({
+    // 6. Journey E & F: Jobs Explorer, Application Persistence & Status Update
+    const postJobRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs`, { method: "POST", headers: authHeadersA }, JSON.stringify({
+      company: "Google",
+      role: "Staff Infrastructure Engineer",
+      roleCategory: "Distributed Systems",
+      applicantName: "Senior Lead Architect",
+      applicantEmail: emailA,
+      coverLetter: "10+ years scaling low-latency services.",
+      notes: "Distributed cache consistency and raft consensus."
+    }));
+    assert(postJobRes.status === 201 && postJobRes.data?.application?.company === "Google", "Journey F: POST /api/jobs records application in PostgreSQL");
+    const createdAppId = postJobRes.data?.application?.id;
+
+    const getJobsRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs`, { headers: authHeadersA });
+    assert(getJobsRes.status === 200 && Array.isArray(getJobsRes.data?.applications) && getJobsRes.data.applications.length > 0, "Journey F: GET /api/jobs lists user applications");
+
+    const patchJobRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs/${createdAppId}/status`, { method: "PATCH", headers: authHeadersA }, JSON.stringify({
+      status: "Interview Scheduled"
+    }));
+    assert(patchJobRes.status === 200 && patchJobRes.data?.application?.status === "Interview Scheduled", "Journey F: PATCH /api/jobs/:id/status updates status in database");
+
+    // 7. Journey I: STAR Story Evaluation & Answer Bank CRUD
+    const starEvalRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/evaluate-star`, { method: "POST", headers: authHeadersA }, JSON.stringify({
+      situation: "During peak traffic our database experienced connection saturation.",
+      task: "I had to design an automatic connection pool router.",
+      action: "Built an intelligent lease balancer using advisory locks in PostgreSQL.",
+      result: "Reduced connection timeouts by 98% under 20k RPS load.",
+      company: "Stripe",
+      role: "Backend Engineer"
+    }));
+    assert(starEvalRes.status === 200 && Boolean(starEvalRes.data?.overallRating), "Journey I: POST /api/evaluate-star evaluates STAR coordinates");
+
+    const postStoryRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories`, { method: "POST", headers: authHeadersA }, JSON.stringify({
       title: "Distributed Lock Manager",
       role: "Principal Systems Engineer",
       company: "CloudScale",
@@ -207,14 +267,14 @@ async function runEndToEndTests() {
       result: "Eliminated deadlock events across 200 microservices.",
       expertStory: "Engineered distributed locking framework."
     }));
-    assert(postStoryRes.status === 201 && postStoryRes.data?.story?.id, "POST /api/star-stories saves STAR narrative in PostgreSQL");
+    assert(postStoryRes.status === 201 && postStoryRes.data?.story?.id, "Journey I: POST /api/star-stories saves STAR narrative in PostgreSQL");
     const createdStoryId = postStoryRes.data.story.id;
 
-    const getStoriesRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories`, { headers: authHeaders });
-    assert(getStoriesRes.status === 200 && Array.isArray(getStoriesRes.data?.stories) && getStoriesRes.data.stories.some((s: any) => s.id === createdStoryId), "GET /api/star-stories lists saved narratives");
+    const getStoriesRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories`, { headers: authHeadersA });
+    assert(getStoriesRes.status === 200 && Array.isArray(getStoriesRes.data?.stories) && getStoriesRes.data.stories.some((s: any) => s.id === createdStoryId), "Journey I: GET /api/star-stories lists saved narratives");
 
-    // 8. Adaptive Interview Orchestrator Flow
-    const startAdaptiveRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/start`, { method: "POST", headers: authHeaders }, JSON.stringify({
+    // 8. Journey G & H: Adaptive Interview Orchestration & Evaluation History
+    const startAdaptiveRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/start`, { method: "POST", headers: authHeadersA }, JSON.stringify({
       role: "Staff Infrastructure Engineer",
       company: "Google",
       difficulty: "Expert",
@@ -224,25 +284,22 @@ async function runEndToEndTests() {
         { id: 2, text: "Tell me about a time you resolved an architectural conflict between two senior teams.", expectedFocus: "Leadership and stakeholder trade-offs", type: "behavioral" }
       ]
     }));
-    assert((startAdaptiveRes.status === 200 || startAdaptiveRes.status === 201) && startAdaptiveRes.data?.state?.sessionId, "POST /api/interview/adaptive/start initializes adaptive session in PostgreSQL");
+    assert((startAdaptiveRes.status === 200 || startAdaptiveRes.status === 201) && startAdaptiveRes.data?.state?.sessionId, "Journey G: POST /api/interview/adaptive/start initializes adaptive session in PostgreSQL");
     const sessionId = startAdaptiveRes.data?.state?.sessionId;
 
-    // Adaptive turn 1
     if (sessionId) {
-      const turn1Res = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/turn`, { method: "POST", headers: authHeaders }, JSON.stringify({
+      const turn1Res = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/turn`, { method: "POST", headers: authHeadersA }, JSON.stringify({
         sessionId,
         answer: "We implemented Raft consensus with leader election timeouts, logarithmic heartbeats, and quorum-based writes to guarantee linearizability during network partitions.",
         timeTaken: "2m"
       }));
-      assert(turn1Res.status === 200 && (turn1Res.data?.state?.turnNumber === 2 || turn1Res.data?.state?.currentTurn === 2), "POST /api/interview/adaptive/turn advances session turn");
+      assert(turn1Res.status === 200 && (turn1Res.data?.state?.turnNumber === 2 || turn1Res.data?.state?.currentTurn === 2), "Journey G: POST /api/interview/adaptive/turn advances session turn");
 
-      // Adaptive state recovery
-      const stateRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/state/${sessionId}`, { headers: authHeaders });
-      assert(stateRes.status === 200 && stateRes.data?.state?.sessionId === sessionId, "GET /api/interview/adaptive/state restores state from PostgreSQL");
+      const stateRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interview/adaptive/state/${sessionId}`, { headers: authHeadersA });
+      assert(stateRes.status === 200 && stateRes.data?.state?.sessionId === sessionId, "Journey G: GET /api/interview/adaptive/state restores state from PostgreSQL");
     }
 
-    // 9. Interview Evaluation & History Persistence
-    const evalRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/evaluate-interview`, { method: "POST", headers: authHeaders }, JSON.stringify({
+    const evalRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/evaluate-interview`, { method: "POST", headers: authHeadersA }, JSON.stringify({
       role: "Staff Infrastructure Engineer",
       company: "Google",
       jd: "Distributed systems, Raft consensus, Go, Rust, Kubernetes",
@@ -258,18 +315,35 @@ async function runEndToEndTests() {
       persona: "architect",
       interviewerCount: 2
     }));
-    assert(evalRes.status === 200 && evalRes.data?.score !== undefined, "POST /api/evaluate-interview evaluates and persists session in PostgreSQL");
+    assert(evalRes.status === 200 && evalRes.data?.score !== undefined, "Journey H: POST /api/evaluate-interview evaluates and persists session in PostgreSQL");
 
-    const historyRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interviews`, { headers: authHeaders });
-    assert(historyRes.status === 200 && Array.isArray(historyRes.data?.interviews) && historyRes.data.interviews.length > 0, "GET /api/interviews retrieves persisted session history");
+    const historyRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interviews`, { headers: authHeadersA });
+    assert(historyRes.status === 200 && Array.isArray(historyRes.data?.interviews) && historyRes.data.interviews.length > 0, "Journey H: GET /api/interviews retrieves persisted session history");
 
-    // 10. Dashboard Analytics
-    const dashRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/dashboard`, { headers: authHeaders });
-    assert(dashRes.status === 200 && dashRes.data?.stats?.totalInterviews >= 1, "GET /api/dashboard returns authoritative aggregated metrics");
+    // 9. Journey J: Analytics Dashboard
+    const dashRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/dashboard`, { headers: authHeadersA });
+    assert(dashRes.status === 200 && dashRes.data?.stats?.totalInterviews >= 1, "Journey J: GET /api/dashboard returns authoritative aggregated metrics");
 
-    // 11. Delete STAR Story
-    const deleteStoryRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories/${createdStoryId}`, { method: "DELETE", headers: authHeaders });
-    assert(deleteStoryRes.status === 200 && deleteStoryRes.data?.success === true, "DELETE /api/star-stories/:id deletes story from PostgreSQL");
+    // 10. Journey K: Tenant Isolation & Unauthorized Access Verification
+    const userBJobsRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs`, { headers: authHeadersB });
+    assert(userBJobsRes.status === 200 && (!userBJobsRes.data?.applications || userBJobsRes.data.applications.length === 0), "Journey K: User B is isolated from User A's jobs");
+
+    const userBPatchAJob = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/jobs/${createdAppId}/status`, { method: "PATCH", headers: authHeadersB }, JSON.stringify({
+      status: "Rejected"
+    }));
+    assert(userBPatchAJob.status === 404 || userBPatchAJob.status === 403, "Journey K: User B cannot modify User A's application");
+
+    const userBStories = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories`, { headers: authHeadersB });
+    assert(userBStories.status === 200 && (!userBStories.data?.stories || userBStories.data.stories.length === 0), "Journey K: User B is isolated from User A's STAR stories");
+
+    // Clean up
+    if (scannedResumeId) {
+      const deleteResumeRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/resumes/${scannedResumeId}`, { method: "DELETE", headers: authHeadersA });
+      assert(deleteResumeRes.status === 200, "Clean Up: DELETE /api/resumes/:id removes resume from PostgreSQL");
+    }
+
+    const deleteStoryRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/star-stories/${createdStoryId}`, { method: "DELETE", headers: authHeadersA });
+    assert(deleteStoryRes.status === 200 && deleteStoryRes.data?.success === true, "Clean Up: DELETE /api/star-stories/:id deletes story from PostgreSQL");
 
     // Summary
     console.log("\n================================================================================");

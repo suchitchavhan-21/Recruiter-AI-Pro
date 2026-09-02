@@ -478,24 +478,13 @@ Requirements:
         setEvaluation(data);
         showToast("STAR narrative evaluated and calibrated successfully!", "success");
       } else {
-        // Fallback processor
-        setEvaluation({
-          overallRating: "B+ (Strong Foundation)",
-          critiqueSituation: "Excellent initial hook. You established the database bottleneck scale, but could quantify the exact RPS rate to drive stronger engineering tension.",
-          critiqueTask: "Clear role ownership. You explained your individual directive cleanly. State why existing fallback queues were insufficient.",
-          critiqueAction: "Solid technical steps (Redis locks). Highlight what concurrency isolation level was chosen and what specific race conditions were resolved.",
-          critiqueResult: "Good result. You stated latency decreased, but explicitly state: 'reduced 99th percentile query latency from 850ms to 120ms'.",
-          expertModelStory: `[Expert Refactored Model STAR Story]
-- **Situation**: During a critical checkout scale event, our core payment database experienced concurrency lock saturation, stalling transaction processing.
-- **Task**: I was tasked with engineering an automated locking layer to prevent race conditions while preserving strict ACID guarantees under 25,000 requests per sec.
-- **Action**: I implemented a distributed caching lock using Redis with redlock algorithm parameters, configuring optimal exponential fallback retries to prevent cache stampedes.
-- **Result**: Successfully resolved the lock saturation, reducing database CPU load by 55%, and maintaining 100% checkout success without a single transaction deadlock.`
-        });
-        showToast("Generated calibrated critique with AI Expert model refactoring.", "success");
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || errData?.message || "Failed to evaluate STAR narrative. Please check your inputs and try again.";
+        showToast(errMsg, "error");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast("Generated model feedback scorecard.", "info");
+      showToast(err.message || "Failed to connect to evaluation service.", "error");
     } finally {
       setIsEvaluating(false);
     }

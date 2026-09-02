@@ -145,20 +145,20 @@ export default function FeedbackReport({
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] font-mono">
                 <span className="text-slate-500 dark:text-slate-400">Technical Domain Accuracy</span>
-                <span className="text-slate-900 dark:text-white font-bold">{technicalAccuracy}%</span>
+                <span className="text-slate-900 dark:text-white font-bold">{technicalAccuracy !== null ? `${technicalAccuracy}%` : "N/A"}</span>
               </div>
               <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${technicalAccuracy}%` }} />
+                <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${technicalAccuracy || 0}%` }} />
               </div>
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] font-mono">
                 <span className="text-slate-500 dark:text-slate-400">STAR Structure Consistency</span>
-                <span className="text-slate-900 dark:text-white font-bold">{starConsistency}%</span>
+                <span className="text-slate-900 dark:text-white font-bold">{starConsistency !== null ? `${starConsistency}%` : "N/A"}</span>
               </div>
               <div className="h-1.5 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${starConsistency}%` }} />
+                <div className="h-full rounded-full bg-[#6D5EF8]" style={{ width: `${starConsistency || 0}%` }} />
               </div>
             </div>
           </div>

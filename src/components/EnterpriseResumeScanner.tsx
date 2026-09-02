@@ -53,38 +53,13 @@ interface EnterpriseResumeScannerProps {
   onActivityLog?: (desc: string) => void;
 }
 
-// 17 Stages in the AI Processing Pipeline
+// 4 Genuine Lifecycle Stages in the Real Resume Processing Pipeline
 const PIPELINE_STAGES = [
-  { key: "upload", label: "Uploading resume..." },
-  { key: "extract", label: "Reading text..." },
-  { key: "parse", label: "Analyzing resume sections..." },
-  { key: "ats", label: "Checking resume compatibility..." },
-  { key: "grammar", label: "Checking spelling and grammar..." },
-  { key: "keyword", label: "Finding key skills..." },
-  { key: "formatting", label: "Checking layout formatting..." },
-  { key: "experience", label: "Analyzing work history..." },
-  { key: "project", label: "Evaluating key projects..." },
-  { key: "skills", label: "Grouping technical skills..." },
-  { key: "education", label: "Verifying education details..." },
-  { key: "recruiter", label: "Getting recruiter feedback..." },
-  { key: "suggestions", label: "Creating customized suggestions..." },
-  { key: "optimization", label: "Calculating match score..." },
-  { key: "comparison", label: "Comparing layout versions..." },
-  { key: "reports", label: "Preparing report..." },
-  { key: "downloadable", label: "Finishing up your review..." }
+  { key: "upload", label: "Uploading resume document..." },
+  { key: "extract", label: "Extracting sections & text structure..." },
+  { key: "ats", label: "Performing AI ATS evaluation & feedback..." },
+  { key: "persist", label: "Indexing in RAG vector store & PostgreSQL..." }
 ];
-
-interface SavedScanSession {
-  id: string;
-  timestamp: string;
-  fileName: string;
-  fileSize: number;
-  targetRole: string;
-  atsScore: number;
-  grammarAccepted: string[];
-  roadmapApplied: string[];
-  optimized: boolean;
-}
 
 export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: EnterpriseResumeScannerProps) {
   // Navigation & Role Configuration
@@ -99,16 +74,13 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("swe-standard");
   const [copiedTemplateId, setCopiedTemplateId] = useState<string | null>(null);
 
-  // Real scan state & refs for stale closure synchronization
+  // Real scan state
   const [realScanData, setRealScanData] = useState<any>(null);
   const [isApiLoading, setIsApiLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const realScanDataRef = useRef<any>(null);
-  const isApiLoadingRef = useRef<boolean>(false);
-  const apiErrorRef = useRef<string | null>(null);
 
   // File Upload State
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: number; id?: string } | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [originalText, setOriginalText] = useState<string>("");
 
@@ -139,6 +111,33 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
     x: number;
     y: number;
   } | null>(null);
+
+  // Load existing user resume on mount
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch("/api/resumes")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!isMounted) return;
+        if (data && Array.isArray(data.resumes) && data.resumes.length > 0) {
+          const latest = data.resumes[0];
+          setUploadedFile({
+            id: latest.id,
+            name: latest.resumeName || "Uploaded_Resume.pdf",
+            size: latest.fileSize || 102400
+          });
+          if (latest.parsedContent) {
+            setOriginalText(latest.parsedContent);
+          }
+          if (latest.analysis) {
+            setRealScanData(latest.analysis);
+            setHasScanned(true);
+          }
+        }
+      })
+      .catch(err => console.warn("Failed to load existing resume scan:", err));
+    return () => { isMounted = false; };
+  }, []);
 
   // Show Toast feedback helper
   const triggerToast = (text: string, type: "success" | "info" | "error" = "success") => {
@@ -174,154 +173,110 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
     }
   };
 
-  const handleFileSelected = (file: File) => {
+  const handleFileSelected = async (file: File) => {
     setUploadedFile({ name: file.name, size: file.size });
-    
-    // Concurrently read the file as base64 and call our real Express endpoint!
-    setIsApiLoading(true);
-    isApiLoadingRef.current = true;
-    setApiError(null);
-    apiErrorRef.current = null;
-    setRealScanData(null);
-    realScanDataRef.current = null;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const result = reader.result as string;
-        const base64Data = result.split(",")[1];
-
-        const res = await apiFetch("/api/scan-resume", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileType: file.type,
-            base64Data,
-            targetRole
-          })
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          const errMsg = errData?.error?.message || errData?.error || errData?.message || "Failed to scan resume.";
-          throw new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
-        }
-
-        const data = await res.json();
-        setRealScanData(data);
-        realScanDataRef.current = data;
-        setIsApiLoading(false);
-        isApiLoadingRef.current = false;
-      } catch (err: any) {
-        console.error("API resume scan failed:", err);
-        const errMsg = err.message || "Failed to parse file.";
-        setApiError(errMsg);
-        apiErrorRef.current = errMsg;
-        setIsApiLoading(false);
-        isApiLoadingRef.current = false;
-      }
-    };
-    reader.onerror = () => {
-      const errMsg = "Failed to read file.";
-      setApiError(errMsg);
-      apiErrorRef.current = errMsg;
-      setIsApiLoading(false);
-      isApiLoadingRef.current = false;
-    };
-    reader.readAsDataURL(file);
-
-    // Run Processing with pipeline coordination
-    startPipelineSimulation(file.name, file.size);
-  };
-
-  // Pipeline execution simulation
-  const startPipelineSimulation = (name: string, size: number) => {
     setIsScanning(true);
+    setIsApiLoading(true);
+    setApiError(null);
     setCurrentStageIndex(0);
     setAppliedGrammar([]);
     setAppliedRoadmap([]);
     setIsOptimized(false);
-    
-    let currentIdx = 0;
-    const interval = setInterval(() => {
-      if (currentIdx < PIPELINE_STAGES.length - 2) {
-        currentIdx++;
-        setCurrentStageIndex(currentIdx);
-      } else {
-        clearInterval(interval);
-        
-        // Wait on the final preparation step until the backend API completes!
-        setCurrentStageIndex(PIPELINE_STAGES.length - 1);
-        
-        const checkCompletion = setInterval(() => {
-          if (!isApiLoadingRef.current) {
-            clearInterval(checkCompletion);
-            
-            if (apiErrorRef.current) {
-              setIsScanning(false);
-              triggerToast(`API resume scan failed: ${apiErrorRef.current}`, "error");
-              return;
-            }
-            
-            const finalData = realScanDataRef.current;
-            const finalScore = finalData ? finalData.atsScore : 74;
-            
-            setIsScanning(false);
-            setHasScanned(true);
-            triggerToast(`AI Scan Completed! Measured ATS Score: ${finalScore}%`, "success");
-            
-            // Synchronize with persistent backend storage
-            saveScanSessionToDB({
-              id: finalData?.resume?.id || "scan-" + Date.now(),
-              timestamp: new Date().toISOString(),
-              fileName: name,
-              fileSize: size,
-              targetRole,
-              atsScore: finalScore,
-              grammarAccepted: [],
-              roadmapApplied: [],
-              optimized: false
-            });
-          }
-        }, 100);
-      }
-    }, 180); // Quick smooth animation cadence
-  };
 
-  // Persist session metadata
-  const saveScanSessionToDB = async (session: SavedScanSession) => {
     try {
-      // Backend automatically persists scans on /api/scan-resume.
-      // Refresh scan list from authoritative database.
-      const res = await apiFetch("/api/resumes");
-      if (res.ok) {
-        const data = await res.json();
-        console.log("Synchronized resume scans with cloud database:", data?.resumes?.length || 0);
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]);
+        };
+        reader.onerror = () => reject(new Error("Failed to read file from disk."));
+        reader.readAsDataURL(file);
+      });
+
+      setCurrentStageIndex(1); // Extracting text & structure
+
+      const res = await apiFetch("/api/scan-resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          base64Data,
+          targetRole
+        })
+      });
+
+      setCurrentStageIndex(2); // Performing AI ATS evaluation
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || errData?.error || errData?.message || "Failed to scan resume.";
+        throw new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
       }
-    } catch (e) {
-      console.warn("Cloud synchronization error:", e);
+
+      const data = await res.json();
+      setCurrentStageIndex(3); // Persisting in PostgreSQL & RAG store
+
+      const scanResult = data.analysis || data;
+      setRealScanData(scanResult);
+      if (data.resume?.id) {
+        setUploadedFile(prev => prev ? { ...prev, id: data.resume.id } : prev);
+      }
+      if (data.resume?.parsedContent) {
+        setOriginalText(data.resume.parsedContent);
+      }
+
+      setHasScanned(true);
+      setIsScanning(false);
+      setIsApiLoading(false);
+      setCurrentStageIndex(-1);
+
+      const finalScore = typeof scanResult.atsScore === "number" ? Math.round(scanResult.atsScore) : 0;
+      triggerToast(`AI Scan Completed! Measured ATS Score: ${finalScore}%`, "success");
+
+      if (onActivityLog) {
+        onActivityLog(`Scanned resume ${file.name} for ${targetRole}. ATS Score: ${finalScore}%.`);
+      }
+    } catch (err: any) {
+      console.error("Resume scan failed:", err);
+      const errMsg = err.message || "Failed to parse and scan resume.";
+      setApiError(errMsg);
+      setIsScanning(false);
+      setIsApiLoading(false);
+      setCurrentStageIndex(-1);
+      triggerToast(errMsg, "error");
     }
   };
 
-  // Circular score and matching variables
-  // Starts at 74 (or realScanData.atsScore). If suggestions or grammar are applied, score increments up to 99.
-  const baseScore = realScanData ? realScanData.atsScore : 74;
-  const totalGrammarCount = realScanData?.grammarIssues?.length || 5;
-  const totalRoadmapCount = realScanData?.roadmapRecommendations?.length || 4;
+  // Delete resume scan from database
+  const handleDeleteScan = async () => {
+    if (uploadedFile?.id || realScanData?.resume?.id) {
+      const id = uploadedFile?.id || realScanData?.resume?.id;
+      try {
+        await apiFetch(`/api/resumes/${id}`, { method: "DELETE" });
+      } catch (e) {
+        console.warn("Delete resume error:", e);
+      }
+    }
+    setUploadedFile(null);
+    setRealScanData(null);
+    setHasScanned(false);
+    setOriginalText("");
+    setAppliedGrammar([]);
+    setAppliedRoadmap([]);
+    setIsOptimized(false);
+    triggerToast("Resume scan and vector embeddings cleared.", "info");
+  };
 
-  const pointsPerGrammar = totalGrammarCount > 0 ? Math.max(1, Math.round((98 - baseScore) * 0.3 / totalGrammarCount)) : 3;
-  const pointsPerRoadmap = totalRoadmapCount > 0 ? Math.max(1, Math.round((98 - baseScore) * 0.6 / totalRoadmapCount)) : 5;
-
-  const calculatedScore = Math.min(
-    99,
-    baseScore + (appliedGrammar.length * pointsPerGrammar) + (appliedRoadmap.length * pointsPerRoadmap) + (isOptimized ? 4 : 0)
-  );
-
-  const calculatedAtsMatch = Math.min(
-    99,
-    (realScanData ? realScanData.atsScore : 70) + (appliedRoadmap.length * 6) + (isOptimized ? 5 : 0)
-  );
+  // Genuine ATS Score from backend AI analysis
+  const baseScore = typeof realScanData?.atsScore === "number" 
+    ? Math.max(0, Math.min(100, Math.round(realScanData.atsScore))) 
+    : (hasScanned ? 0 : null);
+  const calculatedScore = baseScore;
+  const calculatedAtsMatch = typeof realScanData?.atsMatch === "number"
+    ? Math.max(0, Math.min(100, Math.round(realScanData.atsMatch)))
+    : calculatedScore;
 
   // Synchronize viewers scrolls
   const handleScrollSync = (source: "original" | "optimized") => {
@@ -733,7 +688,7 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
               <h3 className="text-white text-sm font-bold tracking-tight">Recruiter AI Pro Processing Pipeline</h3>
             </div>
             <div className="text-[10px] font-mono text-indigo-300 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30 animate-pulse">
-              Running Stage {currentStageIndex + 1} of 17: {PIPELINE_STAGES[currentStageIndex]?.key.toUpperCase()}
+              Running Stage {currentStageIndex + 1} of {PIPELINE_STAGES.length}: {PIPELINE_STAGES[currentStageIndex]?.key.toUpperCase()}
             </div>
           </div>
 
