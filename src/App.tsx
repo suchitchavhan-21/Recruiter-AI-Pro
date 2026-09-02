@@ -94,20 +94,11 @@ export default function App() {
   const [activeCompany, setActiveCompany] = useState("");
   const [activeRole, setActiveRole] = useState("");
   const [activeInterviewerCount, setActiveInterviewerCount] = useState<number>(1);
+  const [activeAdaptiveSessionId, setActiveAdaptiveSessionId] = useState<string | null>(null);
 
   // Post-Interview Evaluation states
   const [isEvaluationLoading, setIsEvaluationLoading] = useState(false);
   const [latestFeedbackReport, setLatestFeedbackReport] = useState<FeedbackType | null>(null);
-
-  // Priority Referral Slot modal
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [selectedJobForApply, setSelectedJobForApply] = useState<JobApplication | null>(null);
-  const [applyCandidateName, setApplyCandidateName] = useState("Candidate Engineer");
-  const [applyCandidateEmail, setApplyCandidateEmail] = useState("candidate@example.com");
-  const [applySelectedSlot, setApplySelectedSlot] = useState("Fast-Track Referral Slot (Priority A)");
-  const [applySelectedStoryId, setApplySelectedStoryId] = useState("custom");
-  const [applyCoverLetter, setApplyCoverLetter] = useState("");
-  const [isSubmittingReferral, setIsSubmittingReferral] = useState(false);
 
   // Toast notifications
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
@@ -167,6 +158,55 @@ export default function App() {
     }
   };
 
+  const fetchUserHistory = async () => {
+    try {
+      const res = await apiFetch("/api/interviews");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.interviews)) {
+          setSessionsHistory(data.interviews.map((i: any) => ({
+            id: i.id,
+            timestamp: new Date(i.createdAt).toLocaleString(),
+            company: i.company,
+            role: i.role,
+            persona: i.persona || "mentor",
+            analysis: { difficulty: i.difficulty || "Senior", skills: [], companyTrends: "", questions: i.questions || [] },
+            answers: i.answers || [],
+            evaluation: i.evaluation,
+            score: typeof i.score === "number" ? i.score : 0,
+            interviewerCount: i.interviewerCount || 1
+          })));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch interview history from server:", err);
+    }
+  };
+
+  const fetchStarStories = async () => {
+    try {
+      const res = await apiFetch("/api/star-stories");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.stories)) {
+          setSavedStarStories(data.stories.map((s: any) => ({
+            id: s.id,
+            timestamp: new Date(s.createdAt).toLocaleDateString(),
+            role: s.role,
+            company: s.company,
+            situation: s.situation,
+            task: s.task,
+            action: s.action,
+            result: s.result,
+            expertStory: s.expertStory || ""
+          })));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch STAR stories from server:", err);
+    }
+  };
+
   // Fetch workspace data locally on mount
   const checkActiveAuthSession = async () => {
     try {
@@ -187,19 +227,29 @@ export default function App() {
             profilePhoto: userObj.profilePhoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
             phoneNumber: userObj.phoneNumber || ""
           });
-          await fetchUserApplications();
+          await Promise.all([
+            fetchUserApplications(),
+            fetchUserHistory(),
+            fetchStarStories()
+          ]);
         } else {
           setCurrentUser(null);
           setApplications([]);
+          setSessionsHistory([]);
+          setSavedStarStories([]);
         }
       } else {
         setCurrentUser(null);
         setApplications([]);
+        setSessionsHistory([]);
+        setSavedStarStories([]);
       }
     } catch (err) {
       console.error("Auth session check failed:", err);
       setCurrentUser(null);
       setApplications([]);
+      setSessionsHistory([]);
+      setSavedStarStories([]);
     }
   };
 
@@ -220,57 +270,88 @@ export default function App() {
       await apiFetch("/api/logout", { method: "POST" });
       setCurrentUser(null);
       setApplications([]);
+      setSessionsHistory([]);
+      setSavedStarStories([]);
       setActiveTab("home");
       showNotification("Session logged out successfully.", "success");
     } catch (err) {
       console.error("Logout failed:", err);
       setCurrentUser(null);
       setApplications([]);
+      setSessionsHistory([]);
+      setSavedStarStories([]);
     }
   };
 
   // Mount logic
   useEffect(() => {
     checkActiveAuthSession();
-
-    // Recover history from local store
-    try {
-      const storedHistory = localStorage.getItem("recruiter_ai_sessions");
-      if (storedHistory) setSessionsHistory(JSON.parse(storedHistory));
-
-      const storedStories = localStorage.getItem("recruiter_ai_saved_stories");
-      if (storedStories) setSavedStarStories(JSON.parse(storedStories));
-    } catch (err) {
-      console.warn("Recovering storage drills failed:", err);
-    }
   }, []);
 
-  const saveSessionsHistory = (newHistory: InterviewSession[]) => {
-    setSessionsHistory(newHistory);
-    localStorage.setItem("recruiter_ai_sessions", JSON.stringify(newHistory));
-  };
-
   const handleDeleteSession = (id: string) => {
-    const updated = sessionsHistory.filter(s => s.id !== id);
-    saveSessionsHistory(updated);
-    showNotification("Previous mock session deleted.", "success");
+    setSessionsHistory(prev => prev.filter(s => s.id !== id));
+    showNotification("Previous mock session removed from view.", "success");
   };
 
   const handleClearAllSessions = () => {
-    saveSessionsHistory([]);
-    showNotification("All previous mock sessions cleared.", "success");
+    setSessionsHistory([]);
+    showNotification("Mock session history cleared from view.", "success");
   };
 
-  const saveStarStories = (newStories: SavedSTARStory[]) => {
-    setSavedStarStories(newStories);
-    localStorage.setItem("recruiter_ai_saved_stories", JSON.stringify(newStories));
+  const handleSaveStarStory = async (story: SavedSTARStory) => {
+    try {
+      const res = await apiFetch("/api/star-stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: story.role,
+          company: story.company,
+          situation: story.situation,
+          task: story.task,
+          action: story.action,
+          result: story.result,
+          expertStory: story.expertStory || story.result,
+          title: story.role
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const saved = data.story ? {
+          id: data.story.id,
+          timestamp: new Date(data.story.createdAt).toLocaleDateString(),
+          role: data.story.role,
+          company: data.story.company,
+          situation: data.story.situation,
+          task: data.story.task,
+          action: data.story.action,
+          result: data.story.result,
+          expertStory: data.story.expertStory
+        } : story;
+        setSavedStarStories(prev => [saved, ...prev.filter(s => s.id !== saved.id)]);
+        showNotification("STAR narrative saved to your Answer Bank.", "success");
+      }
+    } catch (err) {
+      showNotification("Failed to save STAR narrative.", "error");
+    }
+  };
+
+  const handleDeleteStarStory = async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/star-stories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setSavedStarStories(prev => prev.filter(s => s.id !== id));
+        showNotification("STAR narrative deleted.", "success");
+      }
+    } catch (err) {
+      showNotification("Failed to delete STAR narrative.", "error");
+    }
   };
 
   const saveApplications = (newApps: JobApplication[]) => {
     setApplications(newApps);
   };
 
-  // Trigger JD analysis & formulate questions
+  // Trigger JD analysis & formulate questions with Bounded Adaptive Orchestrator
   const handleStartSimulation = async (config: {
     company: string;
     role: string;
@@ -307,11 +388,36 @@ export default function App() {
 
       const data: JDAnalysis = await res.json();
       setActiveAnalysis(data);
+
+      // Start Bounded Adaptive Session in PostgreSQL
+      try {
+        const adaptiveRes = await apiFetch("/api/interview/adaptive/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            role: config.role,
+            company: config.company,
+            difficulty: config.difficulty || "Senior",
+            interviewerCount: count,
+            questions: data.questions
+          })
+        });
+
+        if (adaptiveRes.ok) {
+          const adaptiveData = await adaptiveRes.json();
+          if (adaptiveData?.state?.sessionId) {
+            setActiveAdaptiveSessionId(adaptiveData.state.sessionId);
+          }
+        }
+      } catch (adaptErr) {
+        console.warn("Adaptive orchestrator session start warning:", adaptErr);
+      }
+
       setActiveSessionQuestions(data.questions);
       setCurrentQuestionIndex(0);
       setActiveAnswers([]);
 
-      showNotification("SaaS dynamic simulation compiled. Let's begin!", "success");
+      showNotification("Adaptive interview session initialized. Let's begin!", "success");
 
     } catch (err: any) {
       showNotification(err.message || "Failed to start simulation. Check connectivity.", "error");
@@ -335,9 +441,22 @@ export default function App() {
     const updatedAnswers = [...activeAnswers, newAnswer];
     setActiveAnswers(updatedAnswers);
     setCurrentQuestionIndex(prev => prev + 1);
+
+    // Process adaptive turn in backend orchestrator if session is active
+    if (activeAdaptiveSessionId) {
+      apiFetch("/api/interview/adaptive/turn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: activeAdaptiveSessionId,
+          answer: answerText,
+          timeTaken: "2m"
+        })
+      }).catch(err => console.warn("Adaptive turn progression:", err));
+    }
   };
 
-  // Submit all answers for grade compilation
+  // Submit all answers for real evaluation compilation
   const handleFinishInterview = async (answerText: string) => {
     if (!activeSessionQuestions) return;
 
@@ -349,8 +468,7 @@ export default function App() {
       answerText: answerText
     }];
 
-    // If we finished early (i.e. currentQuestionIndex is not the last index),
-    // append all remaining questions as "[Skipped/Ended interview early]" so they appear in the final report
+    // If finished early, append remaining questions
     if (currentQuestionIndex < activeSessionQuestions.length - 1) {
       for (let i = currentQuestionIndex + 1; i < activeSessionQuestions.length; i++) {
         finalAnswers.push({
@@ -363,7 +481,7 @@ export default function App() {
     }
 
     setActiveAnswers(finalAnswers);
-    setActiveSessionQuestions(null); // Exit active simulator
+    setActiveSessionQuestions(null);
     setIsEvaluationLoading(true);
 
     try {
@@ -391,144 +509,12 @@ export default function App() {
       const report: FeedbackType = await res.json();
       setLatestFeedbackReport(report);
 
-      let computedScore = Number(report.score);
-      if (isNaN(computedScore)) {
-        if (report.questionBreakdown && report.questionBreakdown.length > 0) {
-          const valid = report.questionBreakdown.map(q => Number(q.score)).filter(s => !isNaN(s));
-          if (valid.length > 0) {
-            computedScore = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
-          }
-        }
-      }
-      if (isNaN(computedScore)) {
-        const isStrong = report.overallRating?.toLowerCase().includes("strong");
-        const isLean = report.overallRating?.toLowerCase().includes("lean");
-        computedScore = isStrong ? 88 : isLean ? 74 : 45;
-      }
-      computedScore = Math.max(0, Math.min(100, Math.round(computedScore)));
-
-      // Persist as a historical drill
-      const newSession: InterviewSession = {
-        id: "session-" + Date.now(),
-        timestamp: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        company: activeCompany,
-        role: activeRole,
-        persona: activeInterviewerPersona,
-        analysis: activeAnalysis || { difficulty: "Senior", skills: [], companyTrends: "", questions: [] },
-        answers: finalAnswers,
-        evaluation: report,
-        score: computedScore,
-        interviewerCount: activeInterviewerCount
-      };
-      
-      saveSessionsHistory([newSession, ...sessionsHistory]);
-      showNotification("Interview evaluation fully calibrated!", "success");
+      // Refresh authoritative database history
+      await fetchUserHistory();
+      showNotification("Interview evaluation fully completed and saved.", "success");
 
     } catch (err: any) {
-      showNotification("Server evaluation timed out. Generating dynamic assessment report.", "error");
-      
-      const isAnswerEmptyHeuristic = (textStr?: string): boolean => {
-        if (!textStr) return true;
-        const trimmed = textStr.trim().toLowerCase();
-        return (
-          trimmed === "" ||
-          trimmed === "skip" ||
-          trimmed === "skipped" ||
-          trimmed === "no answer" ||
-          trimmed === "n/a" ||
-          trimmed.startsWith("[skipped") ||
-          trimmed.includes("[skipped/ended interview early]") ||
-          trimmed.length < 5
-        );
-      };
-
-      let nonSkipped = 0;
-      let totalWords = 0;
-      finalAnswers.forEach(qa => {
-        const txt = (qa.answerText || "").trim();
-        if (!isAnswerEmptyHeuristic(txt)) {
-          nonSkipped++;
-          totalWords += txt.split(/\s+/).filter(w => w.length > 0).length;
-        }
-      });
-
-      const avgWords = nonSkipped > 0 ? totalWords / nonSkipped : 0;
-      let computedScore = 82;
-      let rating = "Strong Hire";
-      let feedbackText = "Solid structural responses provided across the interview questions.";
-
-      if (nonSkipped === 0) {
-        computedScore = 0;
-        rating = "No Hire";
-        feedbackText = "No responses were provided during this interview simulation. All questions were skipped or left blank.";
-      } else if (avgWords < 10) {
-        computedScore = 20;
-        rating = "No Hire";
-        feedbackText = "Responses provided were extremely short or fragmented, lacking necessary depth and architectural context.";
-      } else if (avgWords < 25) {
-        computedScore = 55;
-        rating = "Lean Hire";
-        feedbackText = "Answers were brief but identified core concepts. Further elaboration on trade-offs and metrics is recommended.";
-      }
-
-      const questionBreakdown = finalAnswers.map((qa, idx) => {
-        const txt = (qa.answerText || "").trim();
-        const empty = isAnswerEmptyHeuristic(txt);
-        const words = txt.split(/\s+/).filter(w => w.length > 0).length;
-        let qScore = empty ? 0 : words < 10 ? 25 : words < 25 ? 60 : 85;
-        const critiqueText = empty ? "Skipped question." : words < 10 ? "Response was very brief." : "Good response covering key points.";
-        const modelText = `A principal engineer would outline a clear situation, technical trade-offs, and metrics for "${qa.questionText}".`;
-        return {
-          questionId: idx + 1,
-          questionText: qa.questionText || `Question ${idx + 1}`,
-          critique: critiqueText,
-          feedback: critiqueText,
-          score: qScore,
-          modelAnswer: modelText,
-          modelAnswerSuggestion: modelText
-        };
-      });
-
-      const fallbackReport: FeedbackType = {
-        overallRating: rating,
-        overallFeedback: feedbackText,
-        score: computedScore,
-        strengths: nonSkipped > 0 ? ["Attempted questions with relevant concepts.", "Good communication style."] : [],
-        improvements: ["Elaborate with specific metrics and STAR formatting.", "Detail architectural trade-offs."],
-        questionBreakdown,
-        mistakesMade: nonSkipped === 0 ? ["No responses provided."] : ["Could expand on operational metrics."],
-        practicePlan: ["Practice speaking and writing structured STAR responses."],
-        panelFeedback: {
-          hr: {
-            score: computedScore,
-            feedback: nonSkipped === 0 ? "No behavioral responses provided." : "Demonstrated baseline communication.",
-            strengths: nonSkipped > 0 ? ["Clear phrasing"] : [],
-            weaknesses: nonSkipped === 0 ? ["No response"] : ["Lacks STAR metrics"]
-          },
-          technical: {
-            score: computedScore,
-            feedback: nonSkipped === 0 ? "No technical answers provided." : "Showed domain familiarity.",
-            strengths: nonSkipped > 0 ? ["Tech awareness"] : [],
-            weaknesses: nonSkipped === 0 ? ["No response"] : ["Needs deeper system trade-offs"]
-          }
-        }
-      };
-
-      setLatestFeedbackReport(fallbackReport);
-
-      const newSession: InterviewSession = {
-        id: "session-" + Date.now(),
-        timestamp: new Date().toLocaleDateString(),
-        company: activeCompany,
-        role: activeRole,
-        persona: activeInterviewerPersona,
-        analysis: activeAnalysis || { difficulty: "Senior", skills: [], companyTrends: "", questions: [] },
-        answers: finalAnswers,
-        evaluation: fallbackReport,
-        score: computedScore,
-        interviewerCount: activeInterviewerCount
-      };
-      saveSessionsHistory([newSession, ...sessionsHistory]);
+      showNotification("Interview evaluation failed: " + (err.message || "Please check connectivity."), "error");
     } finally {
       setIsEvaluationLoading(false);
     }
@@ -548,59 +534,6 @@ export default function App() {
       difficulty: "Senior",
       persona: "mentor"
     });
-  };
-
-  // Handle priority referral submit
-  const handleReferralSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedJobForApply) return;
-
-    setIsSubmittingReferral(true);
-
-    try {
-      const isAttached = applySelectedStoryId !== "custom";
-      const attachedStory = savedStarStories.find(s => s.id === applySelectedStoryId);
-      
-      const score = isAttached ? Math.floor(Math.random() * 8) + 90 : Math.floor(Math.random() * 12) + 74;
-      const feedbackText = isAttached 
-        ? `Fast-Track Approved: Attached STAR Story ('${attachedStory?.title}') quantified measurable high-scale outcome.` 
-        : `Profile screened. Match rate is ${score}%.`;
-
-      const res = await apiFetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          company: selectedJobForApply.companyName,
-          role: selectedJobForApply.roleTitle,
-          status: isAttached ? "Interview Scheduled" : "Screening",
-          notes: applyCoverLetter || feedbackText,
-          interviewDate: ""
-        })
-      });
-
-      if (res.ok) {
-        showNotification(`Priority application processed for ${selectedJobForApply.roleTitle}!`, "success");
-        // Reload list
-        const resApps = await apiFetch("/api/applications");
-        if (resApps.ok) {
-          const apps = await resApps.json();
-          setApplications(apps);
-        }
-      }
-
-    } catch (err) {
-      console.error("Referral submit error:", err);
-    } finally {
-      setIsSubmittingReferral(false);
-      setIsApplyModalOpen(false);
-    }
-  };
-
-  const handleOpenReferralModal = (job: JobApplication) => {
-    setSelectedJobForApply(job);
-    setApplySelectedSlot("Fast-Track Referral Slot (Priority A)");
-    setApplyCoverLetter("");
-    setIsApplyModalOpen(true);
   };
 
   const handleSetTab = (tab: string) => {
@@ -789,7 +722,7 @@ export default function App() {
             <JobsExplorer 
               applications={applications} 
               onPracticeJob={handlePracticeJobDirect} 
-              onOpenApplyModal={handleOpenReferralModal} 
+              onOpenApplyModal={() => {}} 
               onSaveApplications={saveApplications}
               savedStarStories={savedStarStories}
               currentUser={currentUser}
@@ -816,8 +749,8 @@ export default function App() {
             <StudyHub 
               currentUser={currentUser} 
               savedStarStories={savedStarStories} 
-              onSaveStarStory={(story) => saveStarStories([story, ...savedStarStories])} 
-              onDeleteStarStory={(id) => saveStarStories(savedStarStories.filter(s => s.id !== id))} 
+              onSaveStarStory={handleSaveStarStory} 
+              onDeleteStarStory={handleDeleteStarStory} 
               onUseTemplate={handlePracticeJobDirect}
             />
           )}
@@ -865,102 +798,6 @@ export default function App() {
         setActiveTab={handleSetTab} 
         currentUser={currentUser}
       />
-
-      {/* MODAL 2: PRIORITY REFERRAL APPLICATION FORM */}
-      {isApplyModalOpen && selectedJobForApply && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-[#27272A] max-w-lg w-full rounded-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div>
-              <span className="text-[9px] font-bold text-[#6D5EF8] uppercase font-mono tracking-wider">Direct Recruiting Loop</span>
-              <h3 className="text-sm font-bold text-white font-sans mt-0.5">Priority Referral Submission</h3>
-              <p className="text-[10px] text-slate-500 mt-1">Applying for: <strong>{selectedJobForApply.roleTitle}</strong> at <strong>{selectedJobForApply.companyName}</strong></p>
-            </div>
-
-            <form onSubmit={handleReferralSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Candidate Name</label>
-                  <input
-                    type="text"
-                    className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none"
-                    value={applyCandidateName}
-                    onChange={(e) => setApplyCandidateName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Email Address</label>
-                  <input
-                    type="email"
-                    className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none"
-                    value={applyCandidateEmail}
-                    onChange={(e) => setApplyCandidateEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Attach Practiced Behavioral Story (Boosts ATS Score to 90%+)</label>
-                <select
-                  value={applySelectedStoryId}
-                  onChange={(e) => setApplySelectedStoryId(e.target.value)}
-                  className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#6D5EF8]"
-                >
-                  <option value="custom">No attached story (Apply with resume only)</option>
-                  {savedStarStories.map(story => (
-                    <option key={story.id} value={story.id}>
-                      {story.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Selected Referral Priority Channel</label>
-                <select
-                  value={applySelectedSlot}
-                  onChange={(e) => setApplySelectedSlot(e.target.value)}
-                  className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#6D5EF8]"
-                >
-                  <option value="Fast-Track Referral Slot (Priority A)">Fast-Track Referral Slot (Priority A) - Instant partner screening</option>
-                  <option value="Standard Direct Application Slot">Standard Direct Application Slot - Standard queue review</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider font-mono mb-1.5">Brief Cover Commentary / Career Objective</label>
-                <textarea
-                  rows={3}
-                  placeholder="Tell our recruiting coordinator why you're a standout systems engineer fit..."
-                  className="w-full bg-[#09090B] border border-[#27272A] text-slate-300 rounded-xl p-3 text-xs focus:outline-none focus:border-[#6D5EF8] leading-relaxed"
-                  value={applyCoverLetter}
-                  onChange={(e) => setApplyCoverLetter(e.target.value)}
-                />
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsApplyModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 border border-[#27272A] text-slate-400 hover:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingReferral}
-                  className="flex-1 py-2.5 bg-[#6D5EF8] hover:bg-[#6D5EF8]/90 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  {isSubmittingReferral ? "Submitting Referral..." : "Submit Priority Application"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

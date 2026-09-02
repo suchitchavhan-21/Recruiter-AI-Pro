@@ -75,7 +75,10 @@ import {
   startAdaptiveSchema,
   processTurnSchema
 } from "./controllers/interview.controller";
-import { matchJDEvidenceHandler } from "./controllers/resume.controller";
+import { 
+  matchJDEvidenceHandler, 
+  calculateATSScoreHandler 
+} from "./controllers/resume.controller";
 
 export function createExpressApp(): express.Application {
   const app = express();
@@ -155,6 +158,7 @@ export function createExpressApp(): express.Application {
   // Interview & AI Bridges
   app.get("/api/interviews", requireAuth, listInterviewsHandler);
   app.get("/api/interviews/history", requireAuth, listInterviewsHandler);
+  app.get("/api/interview/history", requireAuth, listInterviewsHandler);
   app.post("/api/analyze-jd", requireAuth, validateBody(analyzeJdSchema), analyzeJdHandler);
   app.post("/api/evaluate-interview", requireAuth, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
   app.post("/api/generate-draft-answer", requireAuth, generateDraftAnswerHandler);
@@ -162,6 +166,9 @@ export function createExpressApp(): express.Application {
   app.get("/api/star-stories", requireAuth, listStarStoriesHandler);
   app.post("/api/star-stories", requireAuth, validateBody(saveStarSchema), saveStarStoryHandler);
   app.delete("/api/star-stories/:id", requireAuth, deleteStarStoryHandler);
+  app.get("/api/interview/star-stories", requireAuth, listStarStoriesHandler);
+  app.post("/api/interview/star-stories", requireAuth, validateBody(saveStarSchema), saveStarStoryHandler);
+  app.delete("/api/interview/star-stories/:id", requireAuth, deleteStarStoryHandler);
 
   // Adaptive Interview Bridges
   app.post("/api/interview/adaptive/start", requireAuth, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
@@ -172,7 +179,7 @@ export function createExpressApp(): express.Application {
   app.post("/api/scan-resume", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
   app.post("/api/resumes", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
   app.post("/api/resumes/match-jd", requireAuth, matchJDEvidenceHandler);
-  app.get("/api/resumes", requireAuth, listResumesHandler);
+  app.post("/api/resumes/ats-score", requireAuth, calculateATSScoreHandler);
   app.get("/api/resumes", requireAuth, listResumesHandler);
   app.delete("/api/resumes/:id", requireAuth, deleteResumeHandler);
 
@@ -186,6 +193,7 @@ export function createExpressApp(): express.Application {
 
   // Analytics Bridges
   app.get("/api/dashboard", requireAuth, getDashboardAnalyticsHandler);
+  app.get("/api/analytics/dashboard", requireAuth, getDashboardAnalyticsHandler);
 
   // Centralized Error Handling Middleware
   app.use(centralErrorHandler);

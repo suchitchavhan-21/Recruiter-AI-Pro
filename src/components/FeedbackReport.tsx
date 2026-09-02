@@ -30,10 +30,10 @@ export default function FeedbackReport({
   onNavigateToStudy,
   questions
 }: FeedbackReportProps) {
-  // 1. Mathematically sound score derivation & calibration
-  let calculatedScore = Number(evaluation.score);
+  // 1. Mathematically sound score derivation from real evaluation output
+  let calculatedScore: number | null = typeof evaluation.score === "number" && !isNaN(evaluation.score) ? evaluation.score : null;
 
-  if (isNaN(calculatedScore) || evaluation.score === undefined || evaluation.score === null) {
+  if (calculatedScore === null) {
     if (evaluation.questionBreakdown && evaluation.questionBreakdown.length > 0) {
       const validScores = evaluation.questionBreakdown
         .map(q => Number(q.score))
@@ -53,24 +53,18 @@ export default function FeedbackReport({
     }
   }
 
-  if (isNaN(calculatedScore)) {
-    const isStrong = evaluation.overallRating?.toLowerCase().includes("strong");
-    const isLean = evaluation.overallRating?.toLowerCase().includes("lean");
-    calculatedScore = isStrong ? 88 : isLean ? 74 : 45;
-  }
-
-  const score = Math.max(0, Math.min(100, Math.round(calculatedScore)));
+  const score = calculatedScore !== null ? Math.max(0, Math.min(100, Math.round(calculatedScore))) : null;
 
   // 2. Synchronized rating badge
-  const ratingText = evaluation.overallRating || (score >= 85 ? "Strong Hire" : score >= 70 ? "Lean Hire" : "No Hire");
-  const ratingColor = score >= 85 
+  const ratingText = evaluation.overallRating || (score !== null ? (score >= 85 ? "Strong Hire" : score >= 70 ? "Lean Hire" : "Needs Practice") : "Evaluation Pending");
+  const ratingColor = score !== null && score >= 85 
     ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" 
-    : score >= 70 
+    : score !== null && score >= 70 
     ? "text-amber-400 border-amber-500/20 bg-amber-500/5" 
     : "text-rose-400 border-rose-500/20 bg-rose-500/5";
-  const scoreColorHex = score >= 85 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
+  const scoreColorHex = score !== null && score >= 85 ? "#10b981" : score !== null && score >= 70 ? "#f59e0b" : "#ef4444";
 
-  // 3. Technical & Behavioral Domain Breakdown
+  // 3. Technical & Behavioral Domain Breakdown from actual questions
   const techQuestions = evaluation.questionBreakdown?.filter((q, idx) => {
     const type = questions[idx]?.type || (q as any)?.type;
     return type === "technical" || type === "coding" || type === "system-design";
@@ -82,12 +76,12 @@ export default function FeedbackReport({
   }) || [];
 
   const technicalAccuracy = techQuestions.length > 0
-    ? Math.round(techQuestions.reduce((acc, q) => acc + (Number(q.score) || score), 0) / techQuestions.length)
-    : (score === 0 ? 0 : Math.max(0, Math.min(100, Math.round(score * 1.02))));
+    ? Math.round(techQuestions.reduce((acc, q) => acc + (Number(q.score) || (score || 0)), 0) / techQuestions.length)
+    : ((evaluation as any).technicalProficiency !== undefined ? Number((evaluation as any).technicalProficiency) : score);
 
   const starConsistency = behavQuestions.length > 0
-    ? Math.round(behavQuestions.reduce((acc, q) => acc + (Number(q.score) || score), 0) / behavQuestions.length)
-    : (score === 0 ? 0 : Math.max(0, Math.min(100, Math.round(score * 0.96))));
+    ? Math.round(behavQuestions.reduce((acc, q) => acc + (Number(q.score) || (score || 0)), 0) / behavQuestions.length)
+    : ((evaluation as any).behavioralScore !== undefined ? Number((evaluation as any).behavioralScore) : score);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
@@ -120,7 +114,7 @@ export default function FeedbackReport({
               <circle cx="56" cy="56" r="48" stroke={scoreColorHex} strokeWidth="8" fill="transparent" strokeDasharray="301" strokeDashoffset={301 - (301 * score) / 100} strokeLinecap="round" />
             </svg>
             <div className="absolute text-center">
-              <span className="text-2xl font-bold text-slate-900 dark:text-white">{score}%</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">{score !== null ? `${score}%` : "N/A"}</span>
               <span className="text-[8px] text-slate-500 font-mono block mt-0.5">PROFICIENCY</span>
             </div>
           </div>

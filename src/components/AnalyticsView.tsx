@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { UserProfile, InterviewSession } from "../types";
 import EnterpriseResumeScanner from "./EnterpriseResumeScanner";
+import { apiFetch } from "../lib/api";
 
 const suggestionsData = [
   {
@@ -89,6 +90,7 @@ export default function AnalyticsView({
   onViewFeedback
 }: AnalyticsViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"overview" | "performance" | "ats">("overview");
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showScanSuccess, setShowScanSuccess] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
@@ -100,6 +102,20 @@ export default function AnalyticsView({
   const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
   const [scanProgress, setScanProgress] = useState<number>(0);
   const [scanStage, setScanStage] = useState<string>("");
+
+  React.useEffect(() => {
+    apiFetch("/api/dashboard")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.stats) {
+          setDashboardData(data);
+          if (data.stats.atsScore > 0) {
+            setHasScanned(true);
+          }
+        }
+      })
+      .catch(err => console.warn("Analytics dashboard fetch warning:", err));
+  }, []);
 
   // Helper to calculate daily consecutive streaks dynamically from session histories
   const calculateStreak = (history: InterviewSession[]): number => {
@@ -135,44 +151,34 @@ export default function AnalyticsView({
     }
   };
 
-  const totalInterviews = sessionsHistory.length;
-  const averageScore = sessionsHistory.length > 0 
+  const totalInterviews = dashboardData?.stats?.totalInterviews ?? sessionsHistory.length;
+  const averageScore = dashboardData?.stats?.avgScore ?? (sessionsHistory.length > 0 
     ? Math.round(sessionsHistory.reduce((acc, s) => acc + (s.score || 0), 0) / sessionsHistory.length) 
-    : 0;
+    : 0);
 
   // Personalized greeting details
   const userFirstName = currentUser?.name?.split(" ")[0] || currentUser?.fullName?.split(" ")[0] || "Candidate";
   const currentStreak = calculateStreak(sessionsHistory);
   
-  // Dynamic ATS calculations from suggestions checked/applied
-  const resumeScore = hasScanned 
-    ? Math.min(98, 63 + suggestionsData.filter(s => appliedSuggestions.includes(s.id)).reduce((acc, s) => acc + s.points, 0))
-    : 0;
+  // Real ATS calculations from backend database
+  const resumeScore = dashboardData?.stats?.atsScore || 0;
+  const atsMatch = resumeScore;
 
-  const atsMatch = hasScanned 
-    ? Math.min(99, 70 + suggestionsData.filter(s => appliedSuggestions.includes(s.id)).reduce((acc, s) => acc + Math.round(s.points * 0.8), 0))
-    : 0;
-
-  // Dynamic weak area identifier based on the lowest scoring completed simulation
-  let weakArea = "None (No sessions)";
-  if (sessionsHistory.length > 0) {
+  // Real weak area identifier derived from actual interview improvements
+  let weakArea = "None (No sessions yet)";
+  if (dashboardData?.improvements && dashboardData.improvements.length > 0) {
+    weakArea = dashboardData.improvements[0];
+  } else if (sessionsHistory.length > 0) {
     const sortedByScore = [...sessionsHistory].sort((a, b) => (a.score || 0) - (b.score || 0));
     const lowestSession = sortedByScore[0];
-    if (lowestSession) {
-      const persona = lowestSession.persona;
-      if (persona === "architect") {
-        weakArea = "System Design";
-      } else if (persona === "mentor") {
-        weakArea = "Behavioral Pitch";
-      } else if (persona === "product_leader") {
-        weakArea = "Product Strategy";
-      } else {
-        weakArea = "Technical Depth";
-      }
+    if (lowestSession?.evaluation?.improvements && lowestSession.evaluation.improvements.length > 0) {
+      weakArea = lowestSession.evaluation.improvements[0];
+    } else if (lowestSession) {
+      weakArea = `${lowestSession.role} practice`;
     }
   }
 
-  // Dynamic competencies mapping (grows based on averageScore and session metrics)
+  // Real competencies mapping
   let behavioralVal = 0;
   let systemDesignVal = 0;
   let distributedVal = 0;
@@ -181,30 +187,11 @@ export default function AnalyticsView({
 
   if (sessionsHistory.length > 0) {
     const avg = averageScore;
-    
-    const behavioralSessions = sessionsHistory.filter(s => s.persona === "mentor");
-    const systemDesignSessions = sessionsHistory.filter(s => s.persona === "architect");
-    const productSessions = sessionsHistory.filter(s => s.persona === "product_leader");
-    
-    behavioralVal = behavioralSessions.length > 0
-      ? Math.round(behavioralSessions.reduce((acc, s) => acc + (s.score || 0), 0) / behavioralSessions.length)
-      : Math.max(0, Math.round(avg * 0.85));
-
-    systemDesignVal = systemDesignSessions.length > 0
-      ? Math.round(systemDesignSessions.reduce((acc, s) => acc + (s.score || 0), 0) / systemDesignSessions.length)
-      : Math.max(0, Math.round(avg * 0.70));
-
-    distributedVal = systemDesignSessions.length > 0
-      ? Math.round(systemDesignSessions.reduce((acc, s) => acc + (s.score || 0), 0) / systemDesignSessions.length)
-      : Math.max(0, Math.round(avg * 0.75));
-
-    codingVal = sessionsHistory.length > 0
-      ? Math.min(100, Math.max(0, Math.round(avg * 0.80 + Math.min(sessionsHistory.length * 2, 15))))
-      : 0;
-
-    productVal = productSessions.length > 0
-      ? Math.round(productSessions.reduce((acc, s) => acc + (s.score || 0), 0) / productSessions.length)
-      : Math.max(0, Math.round(avg * 0.74));
+    behavioralVal = avg;
+    systemDesignVal = avg;
+    distributedVal = avg;
+    codingVal = avg;
+    productVal = avg;
   }
 
   const competencies = [

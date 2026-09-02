@@ -62,6 +62,20 @@ export async function uploadAndScanResumeHandler(req: AuthenticatedRequest, res:
         error: { code: "PARSING_FAILED", message: parseErr.message || "Failed to extract text from document." }
       });
     }
+  } else if (req.body?.base64Data) {
+    fileName = req.body.fileName || "Uploaded_Resume.pdf";
+    mimeType = req.body.fileType || "application/pdf";
+    try {
+      const buffer = Buffer.from(req.body.base64Data, "base64");
+      fileSize = buffer.length;
+      const extracted = await extractDocumentText(buffer, mimeType, fileName);
+      resumeText = extracted.text;
+    } catch (parseErr: any) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "PARSING_FAILED", message: parseErr.message || "Failed to decode and parse document." }
+      });
+    }
   } else if (req.body?.resumeText) {
     resumeText = req.body.resumeText;
     fileName = req.body.fileName || "Pasted_Resume.txt";
@@ -247,8 +261,8 @@ export async function calculateATSScoreHandler(req: AuthenticatedRequest, res: R
     return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
   }
 
-  const { jobDescription, jd, jobId, role, targetRole } = req.body;
-  const rawJd = jobDescription || jd;
+  const { jobDescription, jd, jdText, jobId, role, targetRole } = req.body;
+  const rawJd = jobDescription || jd || jdText;
 
   if (!rawJd || typeof rawJd !== "string" || rawJd.trim().length < 10) {
     return res.status(400).json({

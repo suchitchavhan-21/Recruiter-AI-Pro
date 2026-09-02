@@ -74,9 +74,6 @@ const PIPELINE_STAGES = [
   { key: "downloadable", label: "Finishing up your review..." }
 ];
 
-// Mock database to simulate DB storage requirements
-const LOCAL_STORAGE_KEY = "recruiter_ai_resume_scan_db";
-
 interface SavedScanSession {
   id: string;
   timestamp: string;
@@ -274,13 +271,9 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
             setHasScanned(true);
             triggerToast(`AI Scan Completed! Measured ATS Score: ${finalScore}%`, "success");
             
-            if (onActivityLog) {
-              onActivityLog(`Scanned resume: ${name} targeting ${targetRole}. Detected Initial ATS score: ${finalScore}%.`);
-            }
-
-            // Save scan session meta in local storage DB
+            // Synchronize with persistent backend storage
             saveScanSessionToDB({
-              id: "scan-" + Date.now(),
+              id: finalData?.resume?.id || "scan-" + Date.now(),
               timestamp: new Date().toISOString(),
               fileName: name,
               fileSize: size,
@@ -297,30 +290,17 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
   };
 
   // Persist session metadata
-  const saveScanSessionToDB = (session: SavedScanSession) => {
+  const saveScanSessionToDB = async (session: SavedScanSession) => {
     try {
-      const existing = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const parsed = existing ? JSON.parse(existing) : [];
-      parsed.push(session);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
-
-      // Real integration: synchronize metadata with backend API db
-      apiFetch("/api/resumes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resumeName: session.fileName,
-          atsScore: session.atsScore,
-          fileUrl: "https://recruiter-ai-pro.local/resumes/" + session.fileName
-        })
-      }).then(res => res.json())
-        .then(data => {
-          console.log("Synchronized parsed resume metadata with enterprise DB:", data);
-        }).catch(err => {
-          console.warn("Cloud synchronization offline:", err);
-        });
+      // Backend automatically persists scans on /api/scan-resume.
+      // Refresh scan list from authoritative database.
+      const res = await apiFetch("/api/resumes");
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Synchronized resume scans with cloud database:", data?.resumes?.length || 0);
+      }
     } catch (e) {
-      console.warn("DB Storage unavailable", e);
+      console.warn("Cloud synchronization error:", e);
     }
   };
 
@@ -578,15 +558,30 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
     });
   };
 
-  // Download simulation
+  // Real File Download Execution
   const handleDownloadReport = (format: string) => {
-    triggerToast(`Compiling and cryptographically generating ${format}...`, "info");
-    setTimeout(() => {
-      triggerToast(`${format} successfully downloaded to local filesystem! Check your standard downloads directory.`, "success");
+    try {
+      const content = realScanData?.parsedContent || originalText || `[Optimized Resume Report]\nTarget Role: ${targetRole}\nStatus: ATS Evaluated\n\n${realScanData?.analysis?.summary || "Standard ATS resume evaluation and optimized structure."}`;
+      const ext = format.toLowerCase().includes("pdf") ? "pdf" : format.toLowerCase().includes("doc") ? "docx" : "txt";
+      const mime = format.toLowerCase().includes("pdf") ? "application/pdf" : format.toLowerCase().includes("doc") ? "application/msword" : "text/plain;charset=utf-8";
+      
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Optimized_Resume_${targetRole.replace(/[^a-z0-9]/gi, "_")}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      triggerToast(`Downloaded optimized ${format} report to your device.`, "success");
       if (onActivityLog) {
         onActivityLog(`Downloaded ${format} report.`);
       }
-    }, 1800);
+    } catch (err) {
+      triggerToast("Failed to generate download file.", "error");
+    }
   };
 
   // Real copy & download handlers for Resume Templates
