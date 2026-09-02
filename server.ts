@@ -10,20 +10,31 @@ import { initPostgresSchema } from "./src/server/db/postgres";
 const PORT = ENV.PORT || 3000;
 
 async function startServer() {
-  // Validate Environment
+  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
+
+  // 1. Validate Environment Configuration
   const envCheck = validateEnvironment();
   if (envCheck.warnings.length > 0) {
     envCheck.warnings.forEach(w => console.warn(`[CONFIG WARNING] ${w}`));
   }
   if (!envCheck.valid) {
-    envCheck.errors.forEach(e => console.error(`[CONFIG ERROR] ${e}`));
-    if (ENV.NODE_ENV === "production") {
+    envCheck.errors.forEach(e => console.error(`[CONFIG FATAL ERROR] ${e}`));
+    if (isProd) {
+      console.error("❌ [STARTUP HALTED] Server cannot start in production due to missing or invalid mandatory configuration.");
       process.exit(1);
     }
   }
 
-  // Initialize PostgreSQL schema if configured
-  if (ENV.DATABASE_URL) {
+  // 2. Initialize PostgreSQL schema and pgvector
+  if (isProd) {
+    console.log("🐘 [STARTUP] Verifying PostgreSQL connection, relational schema, and pgvector extension...");
+    const schemaReady = await initPostgresSchema();
+    if (!schemaReady) {
+      console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL or initialize pgvector schema in production. Halting startup.");
+      process.exit(1);
+    }
+    console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
+  } else if (ENV.DATABASE_URL) {
     try {
       await initPostgresSchema();
     } catch (pgErr) {
@@ -31,7 +42,7 @@ async function startServer() {
     }
   }
 
-  // Initialize default database seeding if empty
+  // 3. Initialize default database seeding if empty
   try {
     await runDatabaseSeed({ force: false });
   } catch (seedErr) {

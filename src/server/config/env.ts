@@ -11,13 +11,12 @@ function getOrGenerateSecret(envVarName: string): string {
     return value.trim();
   }
   
-  if (isProduction) {
-    // In production, ephemeral secrets cause token invalidation across instances.
-    // However, during container cold boot before user configures secrets, we warn and provide an instance key.
-    console.warn(`[SECURITY WARNING] Mandatory ${envVarName} is not configured in production environment! Using generated instance key.`);
+  if (process.env.NODE_ENV === "production") {
+    // In production, ephemeral random keys are strictly forbidden.
+    return "";
   }
 
-  // Generates 256-bit cryptographic random key for local development
+  // Generates 256-bit cryptographic random key for local development/test environments
   return crypto.randomBytes(32).toString("hex");
 }
 
@@ -64,20 +63,26 @@ export const ENV = {
 export function validateEnvironment(): { valid: boolean; warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
+  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
 
   if (!ENV.GEMINI_API_KEY) {
     warnings.push("GEMINI_API_KEY is not configured. Live Gemini generation will use structured fallback responses.");
   }
 
-  if (isProduction) {
-    if (!process.env.JWT_SECRET) {
-      warnings.push("JWT_SECRET is missing from production environment. User sessions may invalidate on container restart.");
+  if (isProd) {
+    const jwtSecret = process.env.JWT_SECRET?.trim() || "";
+    if (!jwtSecret || jwtSecret.length < 16) {
+      errors.push("Mandatory JWT_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
     }
-    if (!process.env.JWT_REFRESH_SECRET) {
-      warnings.push("JWT_REFRESH_SECRET is missing from production environment.");
+    
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET?.trim() || "";
+    if (!jwtRefreshSecret || jwtRefreshSecret.length < 16) {
+      errors.push("Mandatory JWT_REFRESH_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
     }
-    if (!ENV.DATABASE_URL) {
-      warnings.push("DATABASE_URL is not set in production. Operating in file-backed persistence mode.");
+
+    const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
+    if (!dbUrl) {
+      errors.push("Mandatory DATABASE_URL is missing in production. PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
     }
   }
 

@@ -19,17 +19,33 @@ export interface AccessTokenPayload {
   exp?: number;
 }
 
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET?.trim() || ENV.JWT_SECRET;
+  if (!secret) {
+    throw new Error("[AUTH FATAL] JWT_SECRET is not configured.");
+  }
+  return secret;
+}
+
+function getJwtRefreshSecret(): string {
+  const secret = process.env.JWT_REFRESH_SECRET?.trim() || ENV.JWT_REFRESH_SECRET;
+  if (!secret) {
+    throw new Error("[AUTH FATAL] JWT_REFRESH_SECRET is not configured.");
+  }
+  return secret;
+}
+
 export function signAccessToken(payload: { userId: string; email: string; role: "candidate" | "admin" }): string {
-  return jwt.sign(payload, ENV.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "15m" });
 }
 
 export function signRefreshToken(payload: { userId: string }): string {
-  return jwt.sign(payload, ENV.JWT_REFRESH_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getJwtRefreshSecret(), { expiresIn: "7d" });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload | null {
   try {
-    return jwt.verify(token, ENV.JWT_SECRET) as AccessTokenPayload;
+    return jwt.verify(token, getJwtSecret()) as AccessTokenPayload;
   } catch {
     return null;
   }
@@ -37,7 +53,7 @@ export function verifyAccessToken(token: string): AccessTokenPayload | null {
 
 export function verifyRefreshToken(token: string): { userId: string } | null {
   try {
-    return jwt.verify(token, ENV.JWT_REFRESH_SECRET) as { userId: string };
+    return jwt.verify(token, getJwtRefreshSecret()) as { userId: string };
   } catch {
     return null;
   }
