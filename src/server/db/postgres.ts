@@ -332,10 +332,10 @@ export async function initPostgresSchema(): Promise<boolean> {
 /**
  * Diagnostics and health check probe
  */
-export async function checkPostgresHealth(): Promise<{ ready: boolean; pgvector: boolean; database: string; error?: string }> {
+export async function checkPostgresHealth(): Promise<{ ready: boolean; pgvector: boolean; database: string; engine?: string; error?: string }> {
   const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
   if (!dbUrl) {
-    return { ready: false, pgvector: false, database: "file_json", error: "DATABASE_URL is not configured" };
+    return { ready: false, pgvector: false, database: "file_json", engine: "none", error: "DATABASE_URL is not configured" };
   }
 
   try {
@@ -343,7 +343,8 @@ export async function checkPostgresHealth(): Promise<{ ready: boolean; pgvector:
     return {
       ready: res.rows.length > 0,
       pgvector: pgVectorAvailable,
-      database: "postgresql"
+      database: "postgresql",
+      engine: pool ? "external_managed_postgres" : "embedded_postgres"
     };
   } catch (err: any) {
     return { ready: false, pgvector: false, database: "error", error: err.message };
