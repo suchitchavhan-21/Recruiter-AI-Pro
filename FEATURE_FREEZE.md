@@ -4,7 +4,7 @@
 
 ## 1. Frozen Product Strategy Overview
 
-The core architecture, tech stack, and product scope for **Recruiter AI Pro** are frozen as of baseline commit `54d6facc4ab4aeb37ee935c73c28978c25720942`.
+The core architecture, tech stack, and product scope for **Recruiter AI Pro** are frozen as of baseline commit `9ec99479ead2460cc45a74711719ac07953a0ba5`.
 
 ### Core Architectural Mandates:
 * **Frontend**: React + TypeScript + Vite with responsive glassmorphism UI.
