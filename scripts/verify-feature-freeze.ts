@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface ProtectedArea {
   name: string;
@@ -264,10 +265,23 @@ export function runVerification(): { passed: boolean; violations: Array<{ file: 
   return { passed: true, violations: [] };
 }
 
-// Standalone entrypoint
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+// Standalone entrypoint (ESM-compatible)
+async function main(): Promise<void> {
   const result = runVerification();
   if (!result.passed) {
     process.exit(1);
   }
+}
+
+const isDirectExecution = 
+  Boolean(process.argv[1]) && 
+  (path.resolve(process.argv[1]) === path.resolve(__filename) ||
+   process.argv[1].endsWith("verify-feature-freeze.ts") ||
+   process.argv[1].endsWith("verify-feature-freeze.js"));
+
+if (isDirectExecution) {
+  main().catch((err) => {
+    console.error("❌ [FATAL UNCAUGHT ERROR]:", err);
+    process.exit(1);
+  });
 }
