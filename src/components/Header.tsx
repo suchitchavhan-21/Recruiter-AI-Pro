@@ -37,7 +37,7 @@ export default function Header({ phase }: HeaderProps) {
               Recruiter AI Pro
             </h1>
             <p className="font-mono text-[9.5px] text-slate-400 uppercase tracking-widest">
-              Executive Interview Coach
+              AI Interview & Career Coach
             </p>
           </div>
         </div>

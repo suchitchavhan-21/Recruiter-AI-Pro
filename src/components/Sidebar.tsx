@@ -46,7 +46,7 @@ export default function Sidebar({
         </div>
         <div>
           <h2 className="text-sm font-bold text-white tracking-tight leading-none font-sans">Recruiter AI Pro</h2>
-          <span className="text-[10px] text-slate-400 font-medium font-mono">Executive Coach Suite</span>
+          <span className="text-[10px] text-slate-400 font-medium font-mono">Interview & Career Suite</span>
         </div>
       </div>
 

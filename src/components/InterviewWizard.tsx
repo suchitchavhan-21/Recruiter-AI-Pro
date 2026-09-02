@@ -179,19 +179,22 @@ Requirements:
     }
   };
 
-  const handleConfirmUrlImport = () => {
-    if (!urlInputValue.trim()) {
-      showTemporaryError("Please enter a valid listing URL.");
-      return;
+  const handleConfirmUrlImport = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const clipboardText = await navigator.clipboard.readText();
+        if (clipboardText && clipboardText.trim().length > 20) {
+          setJdText(clipboardText.trim());
+          setIsUrlModalOpen(false);
+          showTemporarySuccess("Pasted job description from clipboard into editor.");
+          return;
+        }
+      }
+    } catch {
+      // Clipboard access blocked by browser permissions
     }
-    setJdText(`[Sample Import from: ${urlInputValue.trim()}]
-Position: Senior Full-Stack Engineer (Core Product)
-Core Competencies Required:
-- Mastery of modern React, TypeScript, and state synchronization.
-- Experience building scalable distributed backend architectures.
-- High attention to design systems, user experience, and production observability.`);
     setIsUrlModalOpen(false);
-    showTemporarySuccess("Imported standard JD specifications template.");
+    showTemporaryError("Direct web scraping of external career URLs is restricted by browser security policies. Please paste the job description text directly into the editor.");
   };
 
   const getActiveCompanyDisplay = () => {
@@ -926,19 +929,19 @@ Core Competencies Required:
             </div>
 
             <p className="text-xs text-slate-300">
-              Paste the public job post link from Greenhouse, Lever, LinkedIn, or any career portal to extract core requirements.
+              Direct automated scraping of authenticated external job boards is restricted by browser security policies. Copy the job description text from your browser and paste it into the editor, or click below to paste directly from your clipboard.
             </p>
 
             <div className="space-y-1.5">
               <label htmlFor="url-import-input" className="text-[10px] font-mono uppercase text-slate-400 font-bold">
-                Job Posting URL
+                Job Posting Reference URL (Optional)
               </label>
               <input 
                 id="url-import-input"
                 type="url"
                 value={urlInputValue}
                 onChange={(e) => setUrlInputValue(e.target.value)}
-                placeholder="https://boards.greenhouse.io/company/jobs/12345"
+                placeholder="https://company.com/careers/job/12345"
                 className="w-full glass-input rounded-xl py-2.5 px-3 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
               />
             </div>
@@ -957,7 +960,7 @@ Core Competencies Required:
                 className="px-4 py-2 glass-btn-primary text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Import & Parse</span>
+                <span>Paste from Clipboard</span>
               </button>
             </div>
           </div>

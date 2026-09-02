@@ -101,7 +101,7 @@ export default function FeedbackReport({
           <span>Exit Feedback Workspace</span>
         </button>
 
-        <span className="text-[10px] text-slate-500 font-mono">Calibrated against Stripe/Apple Hiring rubrics</span>
+        <span className="text-[10px] text-slate-500 font-mono">AI-Generated Practice Evaluation</span>
       </div>
 
       {/* Main Score & Summary Hero */}
@@ -110,8 +110,8 @@ export default function FeedbackReport({
         {/* Gauge Card */}
         <div className="md:col-span-4 glass-panel p-6 rounded-2xl flex flex-col justify-between items-center text-center">
           <div className="w-full text-left">
-            <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider block">Calibrated Verdict</span>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white font-sans mt-0.5">Recruiter Assessment Score</h3>
+            <span className="text-[10px] text-slate-500 uppercase font-mono tracking-wider block">Practice Verdict</span>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white font-sans mt-0.5">Session Performance Score</h3>
           </div>
 
           <div className="relative w-28 h-28 my-6 flex items-center justify-center select-none">

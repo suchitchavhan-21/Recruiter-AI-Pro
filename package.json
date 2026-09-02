@@ -10,7 +10,9 @@
     "db:seed": "tsx src/server/db/seed.ts",
     "lint": "tsc --noEmit",
     "verify:feature-freeze": "tsx scripts/verify-feature-freeze.ts",
-    "test:feature-freeze": "tsx scripts/test-feature-freeze.ts"
+    "test:feature-freeze": "tsx scripts/test-feature-freeze.ts",
+    "test-jobs-and-ats": "tsx scripts/test-jobs-and-ats.ts",
+    "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

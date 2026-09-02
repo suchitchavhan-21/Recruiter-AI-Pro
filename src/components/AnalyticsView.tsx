@@ -141,7 +141,7 @@ export default function AnalyticsView({
     : 0;
 
   // Personalized greeting details
-  const userFirstName = currentUser?.name?.split(" ")[0] || "Suchit";
+  const userFirstName = currentUser?.name?.split(" ")[0] || currentUser?.fullName?.split(" ")[0] || "Candidate";
   const currentStreak = calculateStreak(sessionsHistory);
   
   // Dynamic ATS calculations from suggestions checked/applied

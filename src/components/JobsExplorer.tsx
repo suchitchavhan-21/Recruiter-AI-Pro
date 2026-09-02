@@ -82,7 +82,14 @@ export default function JobsExplorer({
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSector, setSelectedSector] = useState("all");
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("recruiter_ai_saved_job_bookmarks");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Evidence-based ATS Score state per job
@@ -223,9 +230,13 @@ export default function JobsExplorer({
 
   const handleToggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setBookmarkedIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    setBookmarkedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+      try {
+        localStorage.setItem("recruiter_ai_saved_job_bookmarks", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
   // Filtered job list
