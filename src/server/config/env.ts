@@ -83,6 +83,8 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
     const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
     if (!dbUrl) {
       errors.push("Mandatory DATABASE_URL is missing in production. PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
+    } else if (dbUrl.includes("embedded") || dbUrl.includes("postgres_data")) {
+      errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
     }
   }
 
