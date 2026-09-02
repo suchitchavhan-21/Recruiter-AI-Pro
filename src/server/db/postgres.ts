@@ -36,12 +36,11 @@ export async function isPgVectorAvailable(): Promise<boolean> {
  * Initializes PostgreSQL database connection (either via TCP Pool or embedded PGlite with pgvector).
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
-  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isProd ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     return null;
   }
-
-  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
 
   if (isProd && (dbUrl.includes("embedded") || dbUrl.includes("postgres_data"))) {
     throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL database (e.g. Google Cloud SQL) is required. Embedded container-local database storage is strictly prohibited.");
@@ -133,7 +132,8 @@ export async function queryPostgres(sql: string, params?: any[]): Promise<QueryR
  * Initializes relational schema and pgvector extension
  */
 export async function initPostgresSchema(): Promise<boolean> {
-  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isProd ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     return false;
   }

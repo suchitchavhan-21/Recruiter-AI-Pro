@@ -12,9 +12,14 @@
     "verify:feature-freeze": "tsx scripts/verify-feature-freeze.ts",
     "test:feature-freeze": "tsx scripts/test-feature-freeze.ts",
     "test-jobs-and-ats": "tsx scripts/test-jobs-and-ats.ts",
+    "test:e2e": "tsx scripts/test-end-to-end.ts",
+    "test:browser": "tsx scripts/test-browser-e2e.ts",
+    "test:db-persistence": "tsx scripts/verify-real-database-persistence.ts",
     "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/multer": "^2.2.0",
@@ -32,8 +37,6 @@
     "nodemailer": "^9.0.3",
     "pdf-parse": "^2.4.5",
     "pg": "^8.13.3",
-    "@electric-sql/pglite": "^0.5.8",
-    "@electric-sql/pglite-pgvector": "^0.0.9",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "tsx": "^4.21.0",
@@ -51,6 +54,7 @@
     "@types/pg": "^8.11.11",
     "autoprefixer": "^10.4.21",
     "pg-gateway": "^0.3.0-beta.4",
+    "puppeteer-core": "^25.9.0",
     "tailwindcss": "^4.1.14"
   }
 }
