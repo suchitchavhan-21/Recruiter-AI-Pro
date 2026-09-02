@@ -19,6 +19,22 @@ import {
 } from "../db/repository";
 import { InterviewSessionRecord, SavedSTARStoryRecord } from "../db/schema";
 import { AuthenticatedRequest } from "../middleware/auth";
+import { InterviewOrchestrator, AdaptiveInterviewState } from "../ai/orchestrator/interviewOrchestrator";
+
+export const startAdaptiveSchema = z.object({
+  sessionId: z.string().optional(),
+  role: z.string().min(1, "Role is required"),
+  company: z.string().min(1, "Company is required"),
+  difficulty: z.enum(["Entry", "Mid", "Senior", "Expert"]).optional(),
+  interviewerCount: z.union([z.number(), z.string()]).optional(),
+  questions: z.array(z.any()).optional()
+});
+
+export const processTurnSchema = z.object({
+  sessionId: z.string().min(1, "Session ID is required"),
+  answer: z.string().min(1, "Answer is required"),
+  timeTaken: z.string().optional()
+});
 
 export const analyzeJdSchema = z.object({
   jd: z.string().min(10, "Job description must be at least 10 characters long."),
@@ -201,7 +217,7 @@ export async function generateDraftAnswerHandler(req: AuthenticatedRequest, res:
     console.warn("[AI WARN] generateDraftAnswerHandler encountered error:", err?.message || err);
     return res.status(200).json({
       success: true,
-      draftAnswer: `**Situation & Context:** In our production systems for a ${targetRole} tier at ${targetCompany}, we addressed this problem by establishing strict observability baselines.\n\n**Action & Technical Execution:** I designed an automated, resilient pipeline using decoupled queues, distributed caching with deterministic key hashing, and idempotent transactions.\n\n**Quantified Results & Impact:** This refactoring reduced p99 latency from 450ms to under 45ms and sustained 25,000 requests/sec with 99.999% uptime.`
+      draftAnswer: `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.\n\n**Action & Technical Execution:** I designed a decoupled worker pipeline utilizing distributed caching with deterministic key hashing and idempotent state transitions to prevent race conditions.\n\n**Impact & Evaluation:** This structural pattern eliminated contention bottlenecks, sustained consistent latency under peak load, and ensured verifiable data consistency across replicas.`
     });
   }
 }
@@ -322,3 +338,106 @@ export async function deleteStarStoryHandler(req: AuthenticatedRequest, res: Res
     message: "STAR story deleted."
   });
 }
+
+// 8. START ADAPTIVE INTERVIEW SESSION (Bounded, Single Persistent Record)
+export async function startAdaptiveInterviewHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const { sessionId, role, company, difficulty, interviewerCount, questions } = req.body;
+  const count = parseInt(String(interviewerCount || "1"), 10);
+
+  try {
+    const sessionState = await InterviewOrchestrator.startSession({
+      sessionId,
+      userId: req.user.userId,
+      targetRole: role,
+      company,
+      difficulty,
+      interviewerCount: count,
+      initialQuestions: questions
+    });
+
+    await insertActivity({
+      userId: req.user.userId,
+      activityType: "INTERVIEW_STARTED",
+      activityName: "Adaptive Interview Started",
+      description: `Started adaptive mock interview for ${role} at ${company}.`,
+      metadata: { sessionId: sessionState.sessionId, difficulty }
+    });
+
+    return res.status(201).json({
+      success: true,
+      state: sessionState
+    });
+  } catch (err: any) {
+    console.error("[ORCHESTRATOR ERROR] startAdaptiveInterviewHandler failed:", err);
+    return res.status(500).json({
+      success: false,
+      error: { code: "START_SESSION_FAILED", message: err.message || "Failed to initialize adaptive interview session." }
+    });
+  }
+}
+
+// 9. PROCESS ADAPTIVE TURN & PROGRESS
+export async function processAdaptiveTurnHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const { sessionId, answer, timeTaken } = req.body;
+
+  try {
+    const result = await InterviewOrchestrator.submitAnswerAndProgress({
+      sessionId,
+      userId: req.user.userId,
+      candidateAnswer: answer,
+      timeTaken
+    });
+
+    if (result.isCompleted && req.user.userId) {
+      await insertActivity({
+        userId: req.user.userId,
+        activityType: "INTERVIEW_COMPLETED",
+        activityName: "Adaptive Interview Completed",
+        description: `Completed adaptive interview. Score: ${result.state.evaluation?.score || 0}%.`,
+        metadata: { sessionId, score: result.state.evaluation?.score }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      ...result
+    });
+  } catch (err: any) {
+    console.error("[ORCHESTRATOR ERROR] processAdaptiveTurnHandler failed:", err);
+    return res.status(500).json({
+      success: false,
+      error: { code: "TURN_PROCESSING_FAILED", message: err.message || "Failed to process interview turn." }
+    });
+  }
+}
+
+// 10. GET ADAPTIVE INTERVIEW STATE (Recoverable from Persistent DB)
+export async function getAdaptiveInterviewStateHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const sessionId = req.params.sessionId || req.params.id;
+  const state = await InterviewOrchestrator.loadOrRestoreState(sessionId);
+
+  if (!state || state.userId !== req.user.userId) {
+    return res.status(404).json({
+      success: false,
+      error: { code: "SESSION_NOT_FOUND", message: "Interview session state not found." }
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    state
+  });
+}
+

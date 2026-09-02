@@ -2,7 +2,8 @@ import { Router } from "express";
 import { 
   uploadAndScanResumeHandler, 
   listResumesHandler, 
-  deleteResumeHandler, 
+  deleteResumeHandler,
+  matchJDEvidenceHandler,
   resumeUploadMiddleware 
 } from "../controllers/resume.controller";
 import { requireAuth } from "../middleware/auth";
@@ -21,5 +22,7 @@ resumeRouter.use(requireAuth);
 
 resumeRouter.post("/scan", aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
 resumeRouter.post("/upload", aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
+resumeRouter.post("/match-jd", aiLimiter, matchJDEvidenceHandler);
 resumeRouter.get("/", listResumesHandler);
 resumeRouter.delete("/:id", deleteResumeHandler);
+

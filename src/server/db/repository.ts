@@ -393,7 +393,12 @@ export async function clearAllActivities(): Promise<void> {
 
 export async function insertInterview(interview: InterviewSessionRecord): Promise<InterviewSessionRecord> {
   const db = loadDatabase();
-  db.interviews.push(interview);
+  const existingIdx = db.interviews.findIndex(i => i.id === interview.id);
+  if (existingIdx !== -1) {
+    db.interviews[existingIdx] = { ...db.interviews[existingIdx], ...interview, updatedAt: new Date().toISOString() };
+  } else {
+    db.interviews.push(interview);
+  }
   await persistDatabaseAsync();
   return interview;
 }
@@ -431,7 +436,12 @@ export async function listInterviewsByUserId(userId: string): Promise<InterviewS
 
 export async function insertResume(resume: ResumeRecord): Promise<ResumeRecord> {
   const db = loadDatabase();
-  db.resumes.push(resume);
+  const existingIdx = db.resumes.findIndex(r => r.id === resume.id);
+  if (existingIdx !== -1) {
+    db.resumes[existingIdx] = { ...db.resumes[existingIdx], ...resume, updatedAt: new Date().toISOString() };
+  } else {
+    db.resumes.push(resume);
+  }
   await persistDatabaseAsync();
   return resume;
 }

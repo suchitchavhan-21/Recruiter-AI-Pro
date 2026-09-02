@@ -28,10 +28,11 @@ const CANDIDATE_MODELS = [
   "gemini-3.1-flash-lite"
 ];
 
-// Execute Gemini call with automatic fallback across supported model tiers
+// Execute Gemini call with automatic fallback across supported model tiers and strict timeout
 async function executeWithModelFallback<T>(
   actionName: string,
-  caller: (client: GoogleGenAI, modelName: string) => Promise<T>
+  caller: (client: GoogleGenAI, modelName: string) => Promise<T>,
+  timeoutMs: number = 8000
 ): Promise<T> {
   const client = getGeminiClient();
   let lastError: any = null;
@@ -39,15 +40,19 @@ async function executeWithModelFallback<T>(
   for (let i = 0; i < CANDIDATE_MODELS.length; i++) {
     const model = CANDIDATE_MODELS[i];
     try {
-      return await caller(client, model);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model '${model}'`)), timeoutMs)
+      );
+
+      return await Promise.race([caller(client, model), timeoutPromise]);
     } catch (err: any) {
       lastError = err;
       const status = err?.status || err?.code || (err?.message?.includes("503") ? 503 : 0);
-      const isTransient = status === 503 || status === 429 || err?.message?.includes("high demand") || err?.message?.includes("UNAVAILABLE");
+      const isTransient = status === 503 || status === 429 || err?.message?.includes("high demand") || err?.message?.includes("UNAVAILABLE") || err?.message?.includes("Timeout");
 
       if (isTransient && i < CANDIDATE_MODELS.length - 1) {
-        console.warn(`[GEMINI RETRY] ${actionName} on model '${model}' encountered demand spike (${status || err?.message}). Switching to fallback model '${CANDIDATE_MODELS[i + 1]}'...`);
-        await new Promise(res => setTimeout(res, 350 * (i + 1)));
+        console.warn(`[GEMINI RETRY] ${actionName} on model '${model}' encountered transient issue (${status || err?.message}). Switching to fallback model '${CANDIDATE_MODELS[i + 1]}'...`);
+        await new Promise(res => setTimeout(res, 200 * (i + 1)));
         continue;
       }
       break;
@@ -504,14 +509,14 @@ Provide a high-impact, direct 3-paragraph answer with clear context, specific ar
       });
     });
 
-    return response.text || `**Situation & Context:** In our production systems for a ${targetRole} tier at ${targetCompany}, we addressed this exact problem by establishing strict observability baselines.\n\n**Action & Technical Execution:** I designed an automated, resilient pipeline using decoupled queues, distributed caching with deterministic key hashing, and idempotent transactions.\n\n**Quantified Results & Impact:** This refactoring reduced p99 query latency from 450ms to under 45ms and sustained 25,000 requests/sec with 99.999% uptime.`;
+    return response.text || `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.\n\n**Action & Technical Execution:** I designed a decoupled worker pipeline utilizing distributed caching with deterministic key hashing and idempotent state transitions to prevent race conditions.\n\n**Impact & Evaluation:** This structural pattern eliminated contention bottlenecks, sustained consistent latency under peak load, and ensured verifiable data consistency across replicas.`;
   } catch (err: any) {
     console.warn("[GEMINI WARN] generateDraftAnswer utilizing high-fidelity fallback:", err?.message || err);
-    return `**Situation & Context:** In our production systems for a ${targetRole} tier at ${targetCompany}, we addressed this exact problem by establishing strict observability baselines and identifying bottlenecks under high throughput.
+    return `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.
 
-**Action & Technical Execution:** I designed an automated, resilient pipeline using decoupled queues, distributed caching with deterministic key hashing, and idempotent worker transactions to eliminate race conditions and reduce latency.
+**Action & Technical Execution:** I designed a decoupled worker pipeline utilizing distributed caching with deterministic key hashing and idempotent state transitions to prevent race conditions.
 
-**Quantified Results & Impact:** This refactoring reduced p99 query latency from 450ms to under 45ms, sustained 25,000 requests/sec with 99.999% uptime, and eliminated data inconsistencies across all downstream replicas.`;
+**Impact & Evaluation:** This structural pattern eliminated contention bottlenecks, sustained consistent latency under peak load, and ensured verifiable data consistency across replicas.`;
   }
 }
 
@@ -586,7 +591,7 @@ Return ONLY valid JSON matching this schema:
       critiqueTask: "Clear individual ownership and scope definition.",
       critiqueAction: "Actionable engineering decisions with solid architectural focus.",
       critiqueResult: "Positive measurable business impact delivered.",
-      expertModelStory: `**Situation**: Under high load, our primary service experienced contention bottlenecks.\n**Task**: I took ownership of redesigning the transaction queue and caching layer to meet our <50ms SLA.\n**Action**: Engineered an asynchronous batch worker pipeline with distributed locks and Redis cache invalidation.\n**Result**: Decreased p99 latency by 72% and sustained 25,000 requests/sec with zero downtime.`
+      expertModelStory: `**Situation**: Under high traffic volume, the service experienced database connection pool contention.\n**Task**: I took ownership of redesigning the transaction queue and caching layer to maintain target latency SLAs.\n**Action**: Engineered an asynchronous batch worker pipeline with distributed locks and cache-aside invalidation.\n**Result**: Eliminated contention bottlenecks and achieved consistent sub-second response times under peak load.`
     };
   }
 }
@@ -696,7 +701,7 @@ ${params.resumeText.substring(0, 25000)}
           title: "Quantify Latency & Throughput Gains",
           short: "Add concrete percentage metrics to backend API optimization bullets.",
           before: "Optimized server endpoints to improve performance for users.",
-          after: "Engineered distributed caching layer in Redis, reducing p99 API latency by 45% (380ms → 110ms) across 2M daily active users.",
+          after: "Engineered distributed caching layer in Redis with cache-aside invalidation, significantly reducing database contention and tail latency.",
           points: 6
         },
         {
@@ -733,7 +738,7 @@ ${params.resumeText.substring(0, 25000)}
           title: "Quantify Latency & Throughput Gains",
           short: "Add concrete percentage metrics to backend API optimization bullets.",
           before: "Optimized server endpoints to improve performance for users.",
-          after: "Engineered distributed caching layer in Redis, reducing p99 API latency by 45% (380ms → 110ms) across 2M daily active users.",
+          after: "Engineered distributed caching layer in Redis with cache-aside invalidation, significantly reducing database contention and tail latency.",
           points: 6
         },
         {

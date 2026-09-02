@@ -1,164 +1,125 @@
 # Recruiter AI Pro 🚀
 
-An enterprise-grade, high-performance Technical Recruiter and Interview Practice Coach powered by **Google Gemini AI**. Designed for scalability, security, and exceptional user experience, this platform facilitates live mock interviews, scores resume and job description alignments, provides behavioral STAR story evaluation, and includes a full-featured Admin Dashboard with built-in automated integration test suites and real-time activity streaming.
+An enterprise-grade, high-performance Technical Recruiter and Interview Practice Coach powered by **Google Gemini AI**. The platform facilitates adaptive mock interviews with panel simulations, evidence-based resume and job description alignment via section-aware RAG, behavioral STAR story coaching, and persistent PostgreSQL/pgvector storage with zero-fabrication evaluation rubrics.
 
 ---
 
 ### 🌐 Live Deployment & Preview
-*   **Production / Shared Platform**: [https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
+*   **Production Platform**: [https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app](https://ais-pre-7pjw7eopofiszarisybzy3-474637480139.asia-east1.run.app)
 
 ---
 
 ## 🏗️ Architecture & Tech Stack
 
-```
+```text
              ┌──────────────────────────────────────────────────┐
              │               React 19 SPA Client                │
              │     (TypeScript, Tailwind CSS, Motion/React)     │
              └────────────────────────┬─────────────────────────┘
-                                      │
-                         HTTPS Request / WebSocket
-                                      │
+                                      │  /api/* (Same-Origin)
                                       ▼
              ┌──────────────────────────────────────────────────┐
              │             Express Security Gateway             │
-             │   (Headers Protection, JWT, Sliding Rate Limit)  │
+             │   (OWASP Headers, JWT Auth, Sliding Rate Limit)  │
              └────────────────────────┬─────────────────────────┘
                                       │
-                       Internal Route Routing / Middlewares
-                                      │
-                                      ▼
-             ┌──────────────────────────────────────────────────┐
-             │             Express API App Server               │
-             │     (TypeScript, Local JSON DB, Auth Engine)     │
-             └────────────────────────┬─────────────────────────┘
-                                      │
-                          Secure TLS Handshake (SDK)
-                                      │
-                                      ▼
-             ┌──────────────────────────────────────────────────┐
-             │               Google Gemini AI                   │
-             │      (Server-Side API, @google/genai SDK)       │
-             └──────────────────────────────────────────────────┘
+                   ┌──────────────────┴──────────────────┐
+                   ▼                                     ▼
+┌──────────────────────────────────────┐     ┌──────────────────────────────────────┐
+│        AI Orchestration Layer        │     │       Data Persistence Layer         │
+│  - Gemini LLM (@google/genai)        │     │  - Dual-Mode Repository Engine       │
+│  - Embeddings (gemini-embedding-2)   │     │  - PostgreSQL Pool (Shared)          │
+│  - Section-Aware RAG Pipeline        │     │  - pgvector Store (768-dim, Cosine)  │
+│  - Bounded Adaptive Interview Engine │     │  - Strict Tenant Isolation           │
+│  - Zero-Fabrication Evaluation       │     │  - Dev Transactional JSON Fallback   │
+└──────────────────────────────────────┘     └──────────────────────────────────────┘
 ```
 
 ### Frontend Architecture
-*   **Core Library**: React 19 (TypeScript) with Vite bundler.
-*   **Style Layer**: **Tailwind CSS v4** featuring fluid, responsive, and adaptive viewport layouts.
+*   **Core Framework**: React 19 (TypeScript) with Vite bundler.
+*   **Style Layer**: **Tailwind CSS v4** featuring responsive viewports and fluid glassmorphism themes.
 *   **Motion & Choreography**: Physics-inspired micro-interactions and route transitions powered by `motion/react`.
-*   **Iconography**: High-contrast, clean icons from `lucide-react`.
+*   **Iconography**: `lucide-react`.
 
 ### Backend Architecture
-*   **Server Runtime**: Node.js with Express.js (TypeScript), loaded dynamically with `tsx` in development, and compiled to a highly optimized, bundled CommonJS server (`dist/server.cjs`) via `esbuild` for containerized deployments.
-*   **Data Persistence**: Thread-safe JSON database engine utilizing memory-mapped flushing and transactional queues to prevent race conditions during concurrent mutations.
-*   **Auth Engine**: Custom JSON Web Token (JWT) system backed by cryptographically signed HTTP-only secure cookie strategies.
+*   **Server Runtime**: Node.js with Express (TypeScript), loaded dynamically with `tsx` in development, and bundled into a production CommonJS server (`dist/server.cjs`) via `esbuild`.
+*   **Data Persistence**: Dual-mode storage architecture:
+    *   **Production**: PostgreSQL with `pgvector` extension for ACID transactional state and 768-dimensional vector similarity search.
+    *   **Development / Preview**: Thread-safe transactional JSON store with in-memory cosine vector store when `DATABASE_URL` is absent.
+*   **AI Engine**: Server-side Google Gemini SDK (`@google/genai`) with automatic model fallback across candidate tiers (`gemini-3.7-flash`, `gemini-flash-latest`, `gemini-3.1-flash-lite`).
+*   **Embedding Model**: Modern `gemini-embedding-2` producing normalized 768-dimension vectors with strict runtime dimension validation.
 
 ---
 
 ## 🔒 Security Hardening & Network Protection
 
-Our platform implements industry-standard safety measures to secure user identities, protect against automated abuse, and shield APIs from unauthorized third-party access:
-
-### 1. Sliding-Window Rate Limiting Engine
-An in-memory, sliding-window rate limiting system protects the container from brute-force denial-of-service (DoS) attempts. It dynamically extracts real-world client IPs behind proxies (using the trusted `X-Forwarded-For` header chain) and features an auto-cleaning background process that prunes expired timestamps every 5 minutes to maintain a zero-leak memory footprint.
-
-*   **Authentication Routes (`/api/login`, `/api/register`, etc.)**: Hard limit of **30 requests per minute**. Restricts brute-force password guessing.
-*   **AI Processing Routes (`/api/analyze-jd`, `/api/resumes`, etc.)**: Hard limit of **50 requests per minute**. Controls Gemini token consumption and blocks API key exhaustion attacks.
-*   **General API Endpoints (`/api/*`)**: Maximum threshold of **300 requests per minute**.
-
-### 2. OWASP Aligned HTTP Security Headers
-Every server response is protected with robust HTTP headers custom-tailored to operate securely within embedded contexts like Google AI Studio:
-*   `X-Content-Type-Options: nosniff`: Mitigates MIME-type sniffing attacks, essential for preventing script injection from user-uploaded content.
-*   `X-Frame-Options: SAMEORIGIN`: Prevents Clickjacking while maintaining support for relaxed embedding in native workspace sandboxes.
-*   `X-XSS-Protection: 1; mode=block`: Directs the browser to actively halt pages when cross-site scripting indicators are detected.
-*   `Referrer-Policy: strict-origin-when-cross-origin`: Controls referral paths to protect internal user-state leaking.
-*   `Strict-Transport-Security (HSTS)`: Automatically enforced in production with a 1-year max-age (`31536000` seconds) including subdomains to force encrypted TLS.
-
----
-
-## 🎨 Dual-Theme Design Engine
-
-The application features an advanced visual design engine configured with standard system persistence (`localStorage`), allowing seamless hot-swapping between light and dark settings with rigorous focus on high text legibility:
-
-1.  **Cosmic Dark Theme (Default)**
-    *   Styled on high-contrast zinc and absolute black tones (`#09090B`).
-    *   **Text Optimization**: Normal text is scaled up to brilliant slate-100/zinc-100 to maximize structural contrast, and muted descriptors are rendered in soft gray (`#E4E4E7`) to prevent eye-strain while preserving readability.
-2.  **Nordic Slate Theme (Light Mode)**
-    *   Utilizes a crisp, calming arctic sky and soft-grey background (`#F1F5F9`).
-    *   **Automatic Typography Shifts**: On activation, all light-colored font elements dynamically convert to ultra-dense Slate-900 (`#0F172A`) or Slate-700 (`#334155`). Filled buttons and primary active badges preserve white text inside active boundaries to prevent rendering empty blocks.
-
----
-
-## 📈 Concurrency & Scalability Metrics
-
-Our lightweight runtime footprint is optimized for elastic scaling inside Google Cloud Run containers:
-
-*   **Concurrent Connections**: Dynamically supports up to **1,500 active concurrent WebSocket/HTTPS users** per standard single container instance (512MB RAM configuration).
-*   **Zero-Dependency Limits**: Because the sliding-window limiter is entirely memory-mapped and runs with $O(1)$ lookup time using hash maps, it processes IP validations in **less than 0.05 milliseconds**, introducing virtually zero latency to the Express pipeline.
-*   **Cold-Start Isolation**: By bundling server runtimes into a single `.cjs` file with `esbuild`, container initialization is lightning fast, reducing cold-start boot delays to **less than 120 milliseconds**.
+1. **Sliding-Window Rate Limiting**:
+   * **Authentication Routes (`/api/login`, `/api/register`, etc.)**: 30 requests/minute.
+   * **AI Routes (`/api/analyze-jd`, `/api/resumes`, etc.)**: 50 requests/minute.
+   * **General API Routes (`/api/*`)**: 300 requests/minute.
+2. **OWASP HTTP Security Headers**: `nosniff`, `SAMEORIGIN`, `1; mode=block`, and HSTS in production.
+3. **Strict Tenant Isolation**: Vector queries enforce candidate boundaries (`candidate_private` vs `technical_shared`). Candidates can never retrieve another candidate's private resume vectors.
+4. **Mandatory Production Secrets**: Strict validation requires `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `DATABASE_URL` in production to prevent session invalidation across container instances.
 
 ---
 
 ## 🌟 Core Features & Modules
 
-### 1. AI Panel Interview Simulator (NEW) 👥
-An interactive multi-interviewer panel recruitment system that elevates mock interview realism to a standard-setting level:
-*   **Dynamic Panel Size Setup**: Candidates configure their practice loop with **1, 2, or 3 AI Interviewers** as part of the setup wizard step.
-*   **Distinct Recruiter Personas**: 
-    *   👩‍💼 **Sarah Jenkins (HR Manager)**: Probes communication, collaboration history, cultural fit, ownership values, and STAR behavioral framework compliance.
-    *   👨‍💻 **David Chen (Technical Expert)**: Drills down into database isolation, horizontal scalability limits, caching topologies, algorithmic complexities, and system architecture.
-    *   👨‍💼 **Marcus Brody (Hiring Manager)**: Probes leadership potential, team alignment challenges, prioritization conflicts, and high-scale organizational impact.
-*   **Rotating Speaker Schedule**: Automated speaker rotation during simulation. The active panel member "speaks" and highlights their avatar based on the current question context.
-*   **Comprehensive Consensus Scorecard**:
-    *   **Individual Scorecards**: Scoring and detailed feedback narratives from each active panel member (Sarah, David, and Marcus).
-    *   **Critical Mistakes Detected**: Direct highlight list pointing out conceptual errors or missing trade-off metrics.
-    *   **Principal Ideal Responses**: High-fidelity answers outlining how an expert or principal engineer would address each of the 5 interview prompts.
-    *   **Targeted Practice Roadmaps**: Tailored preparation plans containing 3 to 5 clear action items to patch identified gaps.
+### 1. Bounded Adaptive Interview Orchestrator
+*   **Panel Personas**: 
+    *   👩‍💼 **Sarah Jenkins (HR Director)**: Probes communication, teamwork, and culture alignment.
+    *   👨‍💻 **David Chen (Lead Architect)**: Drills into system design, trade-offs, and scalability.
+    *   👨‍💼 **Marcus Brody (VP of Engineering)**: Probes leadership, prioritization, and business impact.
+*   **State Recovery**: Session state is persisted to database on every turn (`loadOrRestoreState`), allowing seamless continuation across container restarts.
+*   **Bounded Progression**: Deterministic minimum turns (3), maximum turns (5), and hard upper limit (8) to prevent unbounded loops.
 
-### 2. Four-Phase Mock Interview Workspace
-An interactive workspace that guides users through a comprehensive, step-by-step mock recruitment cycle:
-*   **Phase 1 (JD Input & Research)**: Paste any Job Description and Target Company. Gemini acts as an expert headhunter, mapping targeted technical requirements, core skills, expected question lists, and industry expectations.
-*   **Phase 2 (Live Simulation)**: Run a voice-activated or typed technical interview. Supports browser-native Speech-to-Text SpeechRecognition APIs. Synthesizes real-time speech patterns to track verbal fillers (e.g., *"um"*, *"ah"*, *"like"*, *"you know"*).
-*   **Phase 3 (Feedback Scorecard)**: Submits interview answers for deep qualitative analysis. Returns high-impact scorecards outlining proficiency grades, technical gaps, and model responses.
-*   **Phase 4 (Behavioral Coach)**: An interactive open-chat module where users can ask custom coaching questions, request alternative interview prompts, or drill into specific architectural principles.
+### 2. Section-Aware RAG Pipeline
+*   **Automated Resume Indexing**: Normal resume uploads automatically parse, chunk by semantic section (Summary, Experience, Projects, Skills, Education), generate `gemini-embedding-2` vectors, and index into pgvector/dev-vector storage.
+*   **Document Lifecycle**: Deleting or replacing a resume automatically removes all associated vector chunks to prevent orphaned data.
+*   **Evidence-Based JD Matching**: Matches job description requirements directly against retrieved candidate resume excerpts with confidence scores and provenance.
 
-### 3. Structured STAR Story Builder
-A guided tool to structure behavioral interview answers under the **S**ituation, **T**ask, **A**ction, **R**esult methodology. Generates recruiter-optimized narratives and grades story impact instantly out of 100.
+### 3. Structured STAR Story Builder & Coach
+*   Structures behavioral answers under **S**ituation, **T**ask, **A**ction, **R**esult coordinates.
+*   Zero-fabrication evaluation generates model rewrites grounded in candidate context without synthetic or invented numbers.
 
-### 4. Study & Preparation Hub
-An organized training dashboard grouping high-impact study materials by tracks. Tracks feature curated roadmaps, cheat-sheets, and verified links to official standards (e.g., *NVIDIA Megatron-LM Parallelism*, *PostgreSQL MVCC Isolation*, *NIST Zero Trust*, etc.) opening in new, secure browser tabs.
-
-### 5. Admin Diagnostic & Operations Portal
-A secure system control center reserved for system administrators (passcode protected):
-*   **Live Event Ledger**: A live, searchable terminal stream logging all user actions, registration events, and AI evaluations. Includes tag filtering.
-*   **System Diagnostics Module**: Run high-resolution latency probes on server paths, db reads/writes, user deletions, and real-time Gemini AI connection speeds using browser performance timers.
-*   **Traffic Simulators**: Seed randomized candidate traffic, trigger bulk profile injection, reset configurations to pre-seeded clean states, or run intentional error boundary simulations.
+### 4. Admin Diagnostic & Operations Portal
+*   **System Diagnostics**: Live health probes for database connectivity, pgvector extension, active vector store mode, and Gemini AI status (`/api/health`).
+*   **Audit Logging**: Persistent administrative event ledger tracking system actions and user events.
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### 1. Local Configuration
-Create a `.env` file in the root directory to authorize the secure backend pipelines:
+### 1. Environment Configuration
+Create a `.env` file in the root directory:
 ```env
-# Required for Google Gemini AI Evaluations
+# Required for Gemini AI Live Operations
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Optional: Overrides the default administrative panel passcode (Default: ADMINSECRET2026)
+# PostgreSQL & pgvector (Required in Production)
+DATABASE_URL=postgres://user:password@localhost:5432/recruiter_ai_pro
+
+# Security Secrets (Required in Production)
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_REFRESH_SECRET=your_super_secret_refresh_key_here
 ADMIN_PASSCODE=ADMINSECRET2026
+
+# Embedding Model (Defaults to gemini-embedding-2)
+EMBEDDING_MODEL=gemini-embedding-2
 ```
 
 ### 2. Development Run
-Installs packages, resolves dependencies, and boots the local dev server on the correct port:
 ```bash
-# Start development server
+# Start development server with Vite hot reload
 npm run dev
 ```
-The application will be accessible at: `http://localhost:3000`
+Accessible at: `http://localhost:3000`
 
 ### 3. Production Build & Execution
-Compile the React single-page application and bundle the Express server into the optimized production package:
 ```bash
+# Verify TypeScript types
+npm run lint
+
 # Build production bundle
 npm run build
 
@@ -166,8 +127,7 @@ npm run build
 npm run start
 ```
 
----
-
-## 🧪 Clean Code & Diagnostic Integrity
-
-Every component is fully modular, type-safe, and self-contained to satisfy extreme performance conditions. The linter compiles with zero active warnings using strict TypeScript checks, ensuring absolute runtime safety and enterprise readiness.
+### 4. Run Automated Test Suite
+```bash
+npx tsx scripts/verify-production-suite.ts
+```

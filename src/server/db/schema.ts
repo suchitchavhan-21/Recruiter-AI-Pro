@@ -50,7 +50,7 @@ export interface InterviewSessionRecord {
   difficulty: "Entry" | "Mid" | "Senior" | "Expert";
   interviewerCount: number;
   persona: string;
-  state: "CREATED" | "PREPARING" | "READY" | "ACTIVE" | "PAUSED" | "EVALUATING" | "COMPLETED" | "CANCELLED";
+  state: "CREATED" | "PREPARING" | "READY" | "ACTIVE" | "IN_PROGRESS" | "PAUSED" | "EVALUATING" | "COMPLETED" | "CANCELLED" | "ABORTED";
   score: number;
   timeTaken: string;
   questions: Array<{
@@ -70,7 +70,7 @@ export interface InterviewSessionRecord {
     interrupted?: boolean;
     confidenceScore?: number;
   }>;
-  evaluation: {
+  evaluation?: {
     overallRating: string;
     overallFeedback: string;
     strengths: string[];
@@ -89,6 +89,7 @@ export interface InterviewSessionRecord {
     hiringRecommendation?: string;
     practicePlan?: string[];
   };
+  sessionState?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }

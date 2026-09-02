@@ -12,6 +12,11 @@ import {
 import { ResumeRecord } from "../db/schema";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { ENV } from "../config/env";
+import { 
+  indexResumeDocument, 
+  deleteResumeVectors, 
+  matchJDWithCandidateEvidence 
+} from "../ai/rag/pipeline";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -99,6 +104,22 @@ export async function uploadAndScanResumeHandler(req: AuthenticatedRequest, res:
 
     await insertResume(resumeRecord);
 
+    // Synchronous/Reliable RAG Vector Ingestion
+    try {
+      await indexResumeDocument({
+        resumeId: resumeRecord.id,
+        userId: req.user.userId,
+        resumeText,
+        metadata: {
+          resumeName: fileName,
+          targetRole,
+          atsScore: analysis.atsScore
+        }
+      });
+    } catch (ragErr: any) {
+      console.warn("[RAG INGESTION WARNING] Failed to index resume into vector store:", ragErr.message || ragErr);
+    }
+
     await insertActivity({
       userId: req.user.userId,
       activityType: "RESUME_SCANNED",
@@ -143,8 +164,46 @@ export async function deleteResumeHandler(req: AuthenticatedRequest, res: Respon
   const id = req.params.id;
   await deleteResumeById(id, req.user.userId);
 
+  // Clean up associated RAG vector chunks
+  try {
+    await deleteResumeVectors(id, req.user.userId);
+  } catch (vecErr: any) {
+    console.warn("[RAG CLEANUP WARNING] Failed to delete vector chunks for resume:", vecErr.message || vecErr);
+  }
+
   return res.status(200).json({
     success: true,
-    message: "Resume removed."
+    message: "Resume and associated vector embeddings removed."
   });
+}
+
+// 4. MATCH RESUME EVIDENCE WITH JOB DESCRIPTION
+export async function matchJDEvidenceHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
+  const { jd, targetRole } = req.body;
+  if (!jd || typeof jd !== "string") {
+    return res.status(400).json({ success: false, error: { code: "INVALID_INPUT", message: "Job description text is required." } });
+  }
+
+  try {
+    const matchResults = await matchJDWithCandidateEvidence({
+      jdText: jd,
+      userId: req.user.userId,
+      role: targetRole
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...matchResults
+    });
+  } catch (err: any) {
+    console.error("[JD MATCH ERROR]:", err);
+    return res.status(500).json({
+      success: false,
+      error: { code: "MATCH_FAILED", message: err.message || "Failed to evaluate candidate evidence." }
+    });
+  }
 }

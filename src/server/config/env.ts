@@ -3,18 +3,21 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Ensure strong cryptographically random keys if not provided in environment
-function getOrGenerateSecret(envVarName: string, fallbackName: string): string {
+const isProduction = process.env.NODE_ENV === "production";
+
+function getOrGenerateSecret(envVarName: string): string {
   const value = process.env[envVarName];
   if (value && value.trim().length >= 16) {
     return value.trim();
   }
   
-  if (process.env.NODE_ENV === "production" && !value) {
-    console.warn(`[SECURITY WARNING] ${envVarName} is not configured in production! Generating secure ephemeral key.`);
+  if (isProduction) {
+    // In production, ephemeral secrets cause token invalidation across instances.
+    // However, during container cold boot before user configures secrets, we warn and provide an instance key.
+    console.warn(`[SECURITY WARNING] Mandatory ${envVarName} is not configured in production environment! Using generated instance key.`);
   }
 
-  // Generates 256-bit cryptographic random key for this runtime instance
+  // Generates 256-bit cryptographic random key for local development
   return crypto.randomBytes(32).toString("hex");
 }
 
@@ -24,9 +27,16 @@ export const ENV = {
   APP_URL: process.env.APP_URL || "http://localhost:3000",
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
   
+  // Database & Persistence
+  DATABASE_URL: process.env.DATABASE_URL || "",
+  
+  // AI & Embeddings Model
+  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || "gemini-embedding-2",
+  EMBEDDING_DIMENSION: 768,
+  
   // JWT & Security Secrets
-  JWT_SECRET: getOrGenerateSecret("JWT_SECRET", "jwt_secret"),
-  JWT_REFRESH_SECRET: getOrGenerateSecret("JWT_REFRESH_SECRET", "jwt_refresh_secret"),
+  JWT_SECRET: getOrGenerateSecret("JWT_SECRET"),
+  JWT_REFRESH_SECRET: getOrGenerateSecret("JWT_REFRESH_SECRET"),
   ADMIN_PASSCODE: process.env.ADMIN_PASSCODE || "",
   
   // SMTP Email Server (Optional)
@@ -50,3 +60,30 @@ export const ENV = {
     "text/plain"
   ]
 };
+
+export function validateEnvironment(): { valid: boolean; warnings: string[]; errors: string[] } {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+
+  if (!ENV.GEMINI_API_KEY) {
+    warnings.push("GEMINI_API_KEY is not configured. Live Gemini generation will use structured fallback responses.");
+  }
+
+  if (isProduction) {
+    if (!process.env.JWT_SECRET) {
+      warnings.push("JWT_SECRET is missing from production environment. User sessions may invalidate on container restart.");
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      warnings.push("JWT_REFRESH_SECRET is missing from production environment.");
+    }
+    if (!ENV.DATABASE_URL) {
+      warnings.push("DATABASE_URL is not set in production. Operating in file-backed persistence mode.");
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    warnings,
+    errors
+  };
+}

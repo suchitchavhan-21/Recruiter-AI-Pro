@@ -27,11 +27,468 @@
       "accountStatus": "active",
       "createdAt": "2026-09-01T22:42:47.653Z",
       "updatedAt": "2026-09-01T22:42:47.653Z"
+    },
+    {
+      "id": "533d2bda-042c-482c-8a68-fb31600d49eb",
+      "fullName": "Test Candidate",
+      "email": "candidate_test_1788370455319@example.com",
+      "phoneNumber": "1234567890",
+      "passwordHash": "$2b$10$Lxe/rgoP8X7nfjnd3/gpgOH9KXp9Xww3Atipv3KFm.5iByoCuKMYW",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T17:34:15.529Z",
+      "updatedAt": "2026-09-02T17:34:15.814Z"
+    },
+    {
+      "id": "d08f32ce-8a80-4ae5-a551-835dcce54e76",
+      "fullName": "Test Candidate",
+      "email": "candidate_test_1788370531432@example.com",
+      "phoneNumber": "1234567890",
+      "passwordHash": "$2b$10$EBx.0maK4GJH2y5UxOaUu.uxPrjZDwhnf36K3g4i5w9NGRjXs8aU.",
+      "role": "candidate",
+      "provider": "local",
+      "emailVerified": true,
+      "accountStatus": "active",
+      "createdAt": "2026-09-02T17:35:31.557Z",
+      "updatedAt": "2026-09-02T17:35:31.776Z"
     }
   ],
   "sessions": [],
   "activities": [],
-  "interviews": [],
+  "interviews": [
+    {
+      "id": "session_1788370461217",
+      "userId": "interview_user_1788370461217",
+      "company": "Acme Cloud",
+      "role": "Staff Backend Engineer",
+      "difficulty": "Senior",
+      "interviewerCount": 2,
+      "persona": "mentor",
+      "state": "IN_PROGRESS",
+      "score": 0,
+      "timeTaken": "0m",
+      "questions": [
+        {
+          "id": 1,
+          "text": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+          "type": "technical"
+        }
+      ],
+      "answers": [],
+      "sessionState": {
+        "sessionId": "session_1788370461217",
+        "userId": "interview_user_1788370461217",
+        "targetRole": "Staff Backend Engineer",
+        "company": "Acme Cloud",
+        "difficulty": "Senior",
+        "interviewerCount": 2,
+        "currentTurn": 5,
+        "minTurns": 3,
+        "maxTurns": 5,
+        "hardTurnLimit": 8,
+        "status": "IN_PROGRESS",
+        "history": [
+          {
+            "turnIndex": 1,
+            "questionId": 1,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+            "questionType": "technical",
+            "expectedCompetency": "System architecture, trade-offs, ownership",
+            "timestamp": "2026-09-02T17:34:21.219Z",
+            "candidateAnswer": "I architected the service using event-driven microservices with RabbitMQ and PostgreSQL read replicas."
+          },
+          {
+            "turnIndex": 2,
+            "questionId": 2,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen (Lead Architect)",
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "questionType": "technical",
+            "expectedCompetency": "Distributed Systems",
+            "timestamp": "2026-09-02T17:34:21.788Z",
+            "candidateAnswer": "We resolved the stakeholder conflict by establishing clear SLI/SLO metrics and running an A/B latency experiment."
+          },
+          {
+            "turnIndex": 3,
+            "questionId": 3,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "questionType": "behavioral",
+            "expectedCompetency": "Team Collaboration & Conflict Resolution",
+            "timestamp": "2026-09-02T17:34:22.417Z",
+            "candidateAnswer": "For database failover, we used patroni with Raft consensus and automated health checks."
+          },
+          {
+            "turnIndex": 4,
+            "questionId": 4,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen (Lead Architect)",
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "questionType": "technical",
+            "expectedCompetency": "Distributed Systems",
+            "timestamp": "2026-09-02T17:34:23.036Z",
+            "candidateAnswer": "I organized weekly architecture review meetings and created blameless post-mortem templates."
+          },
+          {
+            "turnIndex": 5,
+            "questionId": 5,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "questionType": "behavioral",
+            "expectedCompetency": "Team Collaboration & Conflict Resolution",
+            "timestamp": "2026-09-02T17:34:23.755Z"
+          }
+        ],
+        "competenciesCovered": [
+          "System Architecture",
+          "Distributed Systems",
+          "Team Collaboration & Conflict Resolution"
+        ],
+        "createdAt": "2026-09-02T17:34:21.219Z",
+        "updatedAt": "2026-09-02T17:34:23.755Z"
+      },
+      "createdAt": "2026-09-02T17:34:21.219Z",
+      "updatedAt": "2026-09-02T17:34:23.755Z"
+    },
+    {
+      "id": "session_1788370536605",
+      "userId": "interview_user_1788370536605",
+      "company": "Acme Cloud",
+      "role": "Staff Backend Engineer",
+      "difficulty": "Senior",
+      "interviewerCount": 2,
+      "persona": "mentor",
+      "state": "COMPLETED",
+      "score": 22,
+      "timeTaken": "15m",
+      "questions": [
+        {
+          "id": 1,
+          "text": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+          "type": "technical"
+        }
+      ],
+      "answers": [
+        {
+          "questionId": 1,
+          "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+          "type": "technical",
+          "answerText": "I architected the service using event-driven microservices with RabbitMQ and PostgreSQL read replicas."
+        },
+        {
+          "questionId": 2,
+          "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+          "type": "technical",
+          "answerText": "We resolved the stakeholder conflict by establishing clear SLI/SLO metrics and running an A/B latency experiment."
+        },
+        {
+          "questionId": 3,
+          "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+          "type": "behavioral",
+          "answerText": "For database failover, we used patroni with Raft consensus and automated health checks."
+        },
+        {
+          "questionId": 4,
+          "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+          "type": "technical",
+          "answerText": "I organized weekly architecture review meetings and created blameless post-mortem templates."
+        },
+        {
+          "questionId": 5,
+          "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+          "type": "behavioral",
+          "answerText": "We enforced zero-trust mTLS and automated rate limiting at the ingress gateway."
+        }
+      ],
+      "sessionState": {
+        "sessionId": "session_1788370536605",
+        "userId": "interview_user_1788370536605",
+        "targetRole": "Staff Backend Engineer",
+        "company": "Acme Cloud",
+        "difficulty": "Senior",
+        "interviewerCount": 2,
+        "currentTurn": 5,
+        "minTurns": 3,
+        "maxTurns": 5,
+        "hardTurnLimit": 8,
+        "status": "COMPLETED",
+        "history": [
+          {
+            "turnIndex": 1,
+            "questionId": 1,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+            "questionType": "technical",
+            "expectedCompetency": "System architecture, trade-offs, ownership",
+            "timestamp": "2026-09-02T17:35:36.607Z",
+            "candidateAnswer": "I architected the service using event-driven microservices with RabbitMQ and PostgreSQL read replicas."
+          },
+          {
+            "turnIndex": 2,
+            "questionId": 2,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen (Lead Architect)",
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "questionType": "technical",
+            "expectedCompetency": "Distributed Systems",
+            "timestamp": "2026-09-02T17:35:37.145Z",
+            "candidateAnswer": "We resolved the stakeholder conflict by establishing clear SLI/SLO metrics and running an A/B latency experiment."
+          },
+          {
+            "turnIndex": 3,
+            "questionId": 3,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "questionType": "behavioral",
+            "expectedCompetency": "Team Collaboration & Conflict Resolution",
+            "timestamp": "2026-09-02T17:35:37.700Z",
+            "candidateAnswer": "For database failover, we used patroni with Raft consensus and automated health checks."
+          },
+          {
+            "turnIndex": 4,
+            "questionId": 4,
+            "interviewerRole": "Technical",
+            "interviewerName": "David Chen (Lead Architect)",
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "questionType": "technical",
+            "expectedCompetency": "Distributed Systems",
+            "timestamp": "2026-09-02T17:35:38.253Z",
+            "candidateAnswer": "I organized weekly architecture review meetings and created blameless post-mortem templates."
+          },
+          {
+            "turnIndex": 5,
+            "questionId": 5,
+            "interviewerRole": "HR",
+            "interviewerName": "Sarah Jenkins (HR Director)",
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "questionType": "behavioral",
+            "expectedCompetency": "Team Collaboration & Conflict Resolution",
+            "timestamp": "2026-09-02T17:35:38.801Z",
+            "candidateAnswer": "We enforced zero-trust mTLS and automated rate limiting at the ingress gateway."
+          }
+        ],
+        "competenciesCovered": [
+          "System Architecture",
+          "Distributed Systems",
+          "Team Collaboration & Conflict Resolution"
+        ],
+        "createdAt": "2026-09-02T17:35:36.607Z",
+        "updatedAt": "2026-09-02T17:35:38.804Z",
+        "evaluation": {
+          "overallRating": "No Hire",
+          "score": 22,
+          "overallFeedback": "The candidate consistently failed to answer the questions asked, providing responses that were mismatched to the prompts. The lack of coherence and inability to follow basic interview structure suggests a significant lack of preparation or inability to process complex instructions, which is disqualifying for a Staff-level role.",
+          "strengths": [
+            "Candidate possesses knowledge of industry-standard tools like RabbitMQ, Patroni, and mTLS."
+          ],
+          "improvements": [
+            "Practice active listening to ensure answers directly address the specific question asked.",
+            "Utilize the STAR (Situation, Task, Action, Result) method to provide structured, relevant responses.",
+            "Focus on demonstrating architectural decision-making processes rather than just listing technologies."
+          ],
+          "mistakesMade": [
+            "Provided answers to questions that were not asked (e.g., answering a behavioral question with a technical solution).",
+            "Failed to provide any context, metrics, or depth required for a Staff-level engineering role.",
+            "Demonstrated poor communication skills by ignoring the prompt's intent."
+          ],
+          "idealAnswers": [
+            "For architecture: Describe a specific system, the trade-offs made (e.g., consistency vs. availability), and the impact on business scalability.",
+            "For fault-tolerance: Discuss circuit breakers, bulkhead patterns, multi-region deployment strategies, and automated failover testing.",
+            "For ambiguity: Explain how you gathered requirements, negotiated scope with stakeholders, and managed technical debt while meeting deadlines."
+          ],
+          "hiringRecommendation": "No Hire",
+          "practicePlan": [
+            "Conduct mock interviews focusing on active listening and question mapping.",
+            "Review the STAR method to ensure behavioral answers include clear outcomes.",
+            "Prepare 'deep dive' case studies for past projects that highlight architectural trade-offs."
+          ],
+          "questionBreakdown": [
+            {
+              "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+              "critique": "The answer was extremely brief and lacked the depth expected for a Staff-level candidate.",
+              "modelAnswer": "I led the migration of our monolithic billing system to a distributed microservices architecture. I chose an event-driven approach using Kafka for decoupling, implemented sharded PostgreSQL for data scaling, and utilized a service mesh for observability. This reduced latency by 40% and improved system uptime to 99.99%.",
+              "score": 30,
+              "feedback": "Too brief. Did not explain the 'why' behind the architecture or the candidate's specific leadership role."
+            },
+            {
+              "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+              "critique": "The candidate provided a behavioral answer to a technical question.",
+              "modelAnswer": "I focus on redundancy at every layer: multi-AZ deployments, circuit breakers (Hystrix/Resilience4j) to prevent cascading failures, and automated failover using tools like Patroni for DBs. I also emphasize chaos engineering to validate these assumptions.",
+              "score": 10,
+              "feedback": "Completely irrelevant answer to the technical question asked."
+            },
+            {
+              "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+              "critique": "The candidate provided a technical answer to a behavioral question.",
+              "modelAnswer": "When requirements were vague, I facilitated a workshop to define the MVP scope. I prioritized features based on business value, established a weekly sync with stakeholders to manage expectations, and delivered the core functionality in phases, which allowed us to meet the deadline without compromising quality.",
+              "score": 20,
+              "feedback": "Failed to address the behavioral aspect of leadership and stakeholder management."
+            },
+            {
+              "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+              "critique": "The candidate provided a process-oriented answer to a technical question.",
+              "modelAnswer": "I design for 'graceful degradation.' In high-concurrency systems, I implement rate limiting, backpressure mechanisms, and ensure that read-only modes are available during partial outages to maintain core service availability.",
+              "score": 20,
+              "feedback": "The answer was off-topic and did not address the technical architecture of fault tolerance."
+            },
+            {
+              "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+              "critique": "The candidate provided a technical answer to a behavioral question.",
+              "modelAnswer": "I encountered a project where the requirements changed mid-sprint. I immediately paused to map out the technical risks, communicated the impact to stakeholders, and negotiated a phased delivery approach that satisfied the most critical business needs while maintaining system integrity.",
+              "score": 30,
+              "feedback": "Again, provided a technical implementation detail instead of a behavioral example."
+            }
+          ],
+          "panelFeedback": {
+            "hr": {
+              "score": 23,
+              "feedback": "Candidate struggled to communicate effectively and failed to answer the questions asked.",
+              "strengths": [
+                "Professional demeanor"
+              ],
+              "weaknesses": [
+                "Poor listening skills",
+                "Inability to follow instructions"
+              ]
+            },
+            "technical": {
+              "score": 23,
+              "feedback": "Technical answers were disjointed and did not demonstrate the depth required for a Staff Engineer.",
+              "strengths": [
+                "Familiarity with modern stack components"
+              ],
+              "weaknesses": [
+                "Lack of architectural depth",
+                "Inability to explain technical trade-offs"
+              ]
+            },
+            "hiringManager": {
+              "score": 21,
+              "feedback": "The candidate is not a fit for a leadership role given the inability to provide structured, relevant responses.",
+              "strengths": [
+                "None"
+              ],
+              "weaknesses": [
+                "Communication",
+                "Alignment with role expectations"
+              ]
+            }
+          }
+        }
+      },
+      "createdAt": "2026-09-02T17:35:36.607Z",
+      "updatedAt": "2026-09-02T17:35:56.778Z",
+      "evaluation": {
+        "overallRating": "No Hire",
+        "score": 22,
+        "overallFeedback": "The candidate consistently failed to answer the questions asked, providing responses that were mismatched to the prompts. The lack of coherence and inability to follow basic interview structure suggests a significant lack of preparation or inability to process complex instructions, which is disqualifying for a Staff-level role.",
+        "strengths": [
+          "Candidate possesses knowledge of industry-standard tools like RabbitMQ, Patroni, and mTLS."
+        ],
+        "improvements": [
+          "Practice active listening to ensure answers directly address the specific question asked.",
+          "Utilize the STAR (Situation, Task, Action, Result) method to provide structured, relevant responses.",
+          "Focus on demonstrating architectural decision-making processes rather than just listing technologies."
+        ],
+        "mistakesMade": [
+          "Provided answers to questions that were not asked (e.g., answering a behavioral question with a technical solution).",
+          "Failed to provide any context, metrics, or depth required for a Staff-level engineering role.",
+          "Demonstrated poor communication skills by ignoring the prompt's intent."
+        ],
+        "idealAnswers": [
+          "For architecture: Describe a specific system, the trade-offs made (e.g., consistency vs. availability), and the impact on business scalability.",
+          "For fault-tolerance: Discuss circuit breakers, bulkhead patterns, multi-region deployment strategies, and automated failover testing.",
+          "For ambiguity: Explain how you gathered requirements, negotiated scope with stakeholders, and managed technical debt while meeting deadlines."
+        ],
+        "hiringRecommendation": "No Hire",
+        "practicePlan": [
+          "Conduct mock interviews focusing on active listening and question mapping.",
+          "Review the STAR method to ensure behavioral answers include clear outcomes.",
+          "Prepare 'deep dive' case studies for past projects that highlight architectural trade-offs."
+        ],
+        "questionBreakdown": [
+          {
+            "questionText": "Can you walk me through your background and the most complex architecture you designed for Staff Backend Engineer?",
+            "critique": "The answer was extremely brief and lacked the depth expected for a Staff-level candidate.",
+            "modelAnswer": "I led the migration of our monolithic billing system to a distributed microservices architecture. I chose an event-driven approach using Kafka for decoupling, implemented sharded PostgreSQL for data scaling, and utilized a service mesh for observability. This reduced latency by 40% and improved system uptime to 99.99%.",
+            "score": 30,
+            "feedback": "Too brief. Did not explain the 'why' behind the architecture or the candidate's specific leadership role."
+          },
+          {
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "critique": "The candidate provided a behavioral answer to a technical question.",
+            "modelAnswer": "I focus on redundancy at every layer: multi-AZ deployments, circuit breakers (Hystrix/Resilience4j) to prevent cascading failures, and automated failover using tools like Patroni for DBs. I also emphasize chaos engineering to validate these assumptions.",
+            "score": 10,
+            "feedback": "Completely irrelevant answer to the technical question asked."
+          },
+          {
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "critique": "The candidate provided a technical answer to a behavioral question.",
+            "modelAnswer": "When requirements were vague, I facilitated a workshop to define the MVP scope. I prioritized features based on business value, established a weekly sync with stakeholders to manage expectations, and delivered the core functionality in phases, which allowed us to meet the deadline without compromising quality.",
+            "score": 20,
+            "feedback": "Failed to address the behavioral aspect of leadership and stakeholder management."
+          },
+          {
+            "questionText": "How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?",
+            "critique": "The candidate provided a process-oriented answer to a technical question.",
+            "modelAnswer": "I design for 'graceful degradation.' In high-concurrency systems, I implement rate limiting, backpressure mechanisms, and ensure that read-only modes are available during partial outages to maintain core service availability.",
+            "score": 20,
+            "feedback": "The answer was off-topic and did not address the technical architecture of fault tolerance."
+          },
+          {
+            "questionText": "Tell me about a time you had to lead through ambiguous technical requirements with tight stakeholder deadlines.",
+            "critique": "The candidate provided a technical answer to a behavioral question.",
+            "modelAnswer": "I encountered a project where the requirements changed mid-sprint. I immediately paused to map out the technical risks, communicated the impact to stakeholders, and negotiated a phased delivery approach that satisfied the most critical business needs while maintaining system integrity.",
+            "score": 30,
+            "feedback": "Again, provided a technical implementation detail instead of a behavioral example."
+          }
+        ],
+        "panelFeedback": {
+          "hr": {
+            "score": 23,
+            "feedback": "Candidate struggled to communicate effectively and failed to answer the questions asked.",
+            "strengths": [
+              "Professional demeanor"
+            ],
+            "weaknesses": [
+              "Poor listening skills",
+              "Inability to follow instructions"
+            ]
+          },
+          "technical": {
+            "score": 23,
+            "feedback": "Technical answers were disjointed and did not demonstrate the depth required for a Staff Engineer.",
+            "strengths": [
+              "Familiarity with modern stack components"
+            ],
+            "weaknesses": [
+              "Lack of architectural depth",
+              "Inability to explain technical trade-offs"
+            ]
+          },
+          "hiringManager": {
+            "score": 21,
+            "feedback": "The candidate is not a fit for a leadership role given the inability to provide structured, relevant responses.",
+            "strengths": [
+              "None"
+            ],
+            "weaknesses": [
+              "Communication",
+              "Alignment with role expectations"
+            ]
+          }
+        }
+      }
+    }
+  ],
   "resumes": [],
   "applications": [],
   "starStories": [],

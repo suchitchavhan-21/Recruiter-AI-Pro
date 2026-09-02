@@ -64,6 +64,17 @@ import {
 } from "./controllers/profile.controller";
 import { requireAuth } from "./middleware/auth";
 import { validateBody } from "./middleware/validate";
+import { checkPostgresHealth } from "./db/postgres";
+import { getVectorStore } from "./ai/vectorStore";
+import { ENV } from "./config/env";
+import { 
+  startAdaptiveInterviewHandler, 
+  processAdaptiveTurnHandler, 
+  getAdaptiveInterviewStateHandler,
+  startAdaptiveSchema,
+  processTurnSchema
+} from "./controllers/interview.controller";
+import { matchJDEvidenceHandler } from "./controllers/resume.controller";
 
 export function createExpressApp(): express.Application {
   const app = express();
@@ -76,13 +87,32 @@ export function createExpressApp(): express.Application {
   // Security Headers Middleware
   app.use(applySecurityHeaders);
 
-  // Health Check Endpoint
-  app.get("/api/health", (req, res) => {
+  // Comprehensive Health Check Endpoint
+  app.get("/api/health", async (req, res) => {
+    const dbHealth = await checkPostgresHealth();
+    let vectorStoreMode = "dev_vector_memory";
+    try {
+      const vs = await getVectorStore();
+      vectorStoreMode = vs.mode;
+    } catch {
+      vectorStoreMode = "error";
+    }
+
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
       service: "Recruiter AI Pro Engine",
-      version: "2.0.0"
+      version: "2.0.0",
+      environment: ENV.NODE_ENV,
+      persistence: {
+        database: dbHealth.ready ? "postgresql" : "file_json",
+        pgvector: dbHealth.pgvector,
+        vectorStore: vectorStoreMode
+      },
+      ai: {
+        geminiConfigured: !!ENV.GEMINI_API_KEY,
+        embeddingModel: ENV.EMBEDDING_MODEL
+      }
     });
   });
 
@@ -130,9 +160,16 @@ export function createExpressApp(): express.Application {
   app.post("/api/star-stories", requireAuth, validateBody(saveStarSchema), saveStarStoryHandler);
   app.delete("/api/star-stories/:id", requireAuth, deleteStarStoryHandler);
 
+  // Adaptive Interview Bridges
+  app.post("/api/interview/adaptive/start", requireAuth, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
+  app.post("/api/interview/adaptive/turn", requireAuth, validateBody(processTurnSchema), processAdaptiveTurnHandler);
+  app.get("/api/interview/adaptive/state/:sessionId", requireAuth, getAdaptiveInterviewStateHandler);
+
   // Resume Bridges
   app.post("/api/scan-resume", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
   app.post("/api/resumes", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
+  app.post("/api/resumes/match-jd", requireAuth, matchJDEvidenceHandler);
+  app.get("/api/resumes", requireAuth, listResumesHandler);
   app.get("/api/resumes", requireAuth, listResumesHandler);
   app.delete("/api/resumes/:id", requireAuth, deleteResumeHandler);
 

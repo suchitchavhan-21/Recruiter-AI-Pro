@@ -9,10 +9,15 @@ import {
   listStarStoriesHandler, 
   saveStarStoryHandler, 
   deleteStarStoryHandler,
+  startAdaptiveInterviewHandler,
+  processAdaptiveTurnHandler,
+  getAdaptiveInterviewStateHandler,
   analyzeJdSchema,
   evaluateInterviewSchema,
   evaluateStarSchema,
-  saveStarSchema
+  saveStarSchema,
+  startAdaptiveSchema,
+  processTurnSchema
 } from "../controllers/interview.controller";
 import { requireAuth } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
@@ -35,6 +40,11 @@ interviewRouter.post("/evaluate-interview", aiLimiter, validateBody(evaluateInte
 interviewRouter.post("/generate-draft-answer", aiLimiter, generateDraftAnswerHandler);
 interviewRouter.post("/evaluate-star", aiLimiter, validateBody(evaluateStarSchema), evaluateStarHandler);
 
+// Adaptive Interview Orchestrator Endpoints
+interviewRouter.post("/adaptive/start", aiLimiter, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
+interviewRouter.post("/adaptive/turn", aiLimiter, validateBody(processTurnSchema), processAdaptiveTurnHandler);
+interviewRouter.get("/adaptive/state/:sessionId", getAdaptiveInterviewStateHandler);
+
 interviewRouter.get("/", listInterviewsHandler);
 interviewRouter.get("/history", listInterviewsHandler);
 interviewRouter.get("/history/:id", getInterviewByIdHandler);
@@ -43,3 +53,4 @@ interviewRouter.get("/:id", getInterviewByIdHandler);
 interviewRouter.get("/star-stories", listStarStoriesHandler);
 interviewRouter.post("/star-stories", validateBody(saveStarSchema), saveStarStoryHandler);
 interviewRouter.delete("/star-stories/:id", deleteStarStoryHandler);
+
