@@ -317,6 +317,36 @@ async function runBrowserE2E() {
     const historyRes = await fetchJson(`${baseUrl}/api/interviews`, { headers: authHeaders });
     assert(historyRes.data?.interviews?.length > 0, "Interview session appears in user session history");
 
+    // Verify interviewer portraits decoding in real browser engine
+    const portraitChecks = await page.evaluate(async () => {
+      const assets = ["/assets/sarah.png", "/assets/david.png", "/assets/marcus.png"];
+      const results: { src: string; status: number; contentType: string; size: number }[] = [];
+      for (const src of assets) {
+        try {
+          const res = await fetch(src);
+          const blob = await res.blob();
+          results.push({
+            src,
+            status: res.status,
+            contentType: res.headers.get("content-type") || "",
+            size: blob.size
+          });
+        } catch (err: any) {
+          results.push({ src, status: 0, contentType: String(err), size: 0 });
+        }
+      }
+      return results;
+    });
+
+    const sarahLoaded = portraitChecks.find(p => p.src.includes("sarah.png"));
+    assert(Boolean(sarahLoaded && sarahLoaded.status === 200 && sarahLoaded.contentType.includes("image/png") && sarahLoaded.size > 1000), "Sarah Jenkins portrait decoded in browser without errors");
+
+    const davidLoaded = portraitChecks.find(p => p.src.includes("david.png"));
+    assert(Boolean(davidLoaded && davidLoaded.status === 200 && davidLoaded.contentType.includes("image/png") && davidLoaded.size > 1000), "David Chen portrait decoded in browser without errors");
+
+    const marcusLoaded = portraitChecks.find(p => p.src.includes("marcus.png"));
+    assert(Boolean(marcusLoaded && marcusLoaded.status === 200 && marcusLoaded.contentType.includes("image/png") && marcusLoaded.size > 1000), "Marcus Brody portrait decoded in browser without errors");
+
     // --- JOURNEY 8: STAR Story Answer Bank CRUD ---
     console.log("\n[TEST SCENARIO 8] STAR Story Bank Creation, Evaluation & Deletion...");
     const createStarRes = await fetchJson(`${baseUrl}/api/star-stories`, { method: "POST", headers: authHeaders }, JSON.stringify({
