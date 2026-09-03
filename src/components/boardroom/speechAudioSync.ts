@@ -36,6 +36,7 @@ class SpeechAudioSyncEngine {
 
   // Playback state
   private isPlaying: boolean = false;
+  private activePersonaId: number = 0;
   private activeUtterance: SpeechSynthesisUtterance | null = null;
   private currentAbortController: AbortController | null = null;
 
@@ -49,6 +50,20 @@ class SpeechAudioSyncEngine {
       SpeechAudioSyncEngine.instance = new SpeechAudioSyncEngine();
     }
     return SpeechAudioSyncEngine.instance;
+  }
+
+  /**
+   * Sets the active interviewer persona for voice calibration
+   * 0 = Sarah Jenkins (Salli - Female)
+   * 1 = David Chen (Matthew - Male Technical)
+   * 2 = Marcus Brody (Brian - Male Leadership)
+   */
+  public setActivePersona(personaId: number): void {
+    this.activePersonaId = personaId;
+  }
+
+  public getActivePersona(): number {
+    return this.activePersonaId;
   }
 
   /**
@@ -120,8 +135,11 @@ class SpeechAudioSyncEngine {
     }
 
     try {
+      // Determine persona voice ID
+      const voiceId = this.activePersonaId === 0 ? "Salli" : (this.activePersonaId === 1 ? "Matthew" : "Brian");
+
       // Fetch natural human speech audio from neural TTS endpoint
-      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`, {
+      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${this.activePersonaId}&voice=${voiceId}`, {
         signal: this.currentAbortController.signal
       });
 

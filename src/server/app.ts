@@ -135,6 +135,10 @@ export function createExpressApp(): express.Application {
 
   // ----------------------------------------------------
   // HIGH-FIDELITY NEURAL TTS AUDIO STREAMING ENDPOINT
+  // Supports persona-calibrated studio voices:
+  // - Sarah Jenkins: Salli (US Female Executive)
+  // - David Chen: Matthew (US Male Technical Architect)
+  // - Marcus Brody: Brian (UK Male Executive Leadership)
   // ----------------------------------------------------
   app.get("/api/tts", async (req, res) => {
     try {
@@ -143,54 +147,80 @@ export function createExpressApp(): express.Application {
         return res.status(400).json({ error: "Text parameter is required" });
       }
 
-      // Split text into punctuation-bounded segments <= 180 chars
-      const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-      const chunks: string[] = [];
-      let cur = "";
-      for (const s of sentences) {
-        if ((cur + " " + s).trim().length <= 180) {
-          cur = (cur + " " + s).trim();
-        } else {
-          if (cur) chunks.push(cur);
-          if (s.length <= 180) {
-            cur = s.trim();
-          } else {
-            const words = s.split(" ");
-            let wCur = "";
-            for (const w of words) {
-              if ((wCur + " " + w).trim().length <= 180) {
-                wCur = (wCur + " " + w).trim();
-              } else {
-                if (wCur) chunks.push(wCur);
-                wCur = w;
-              }
-            }
-            if (wCur) cur = wCur;
-          }
-        }
-      }
-      if (cur) chunks.push(cur);
+      // Determine persona-specific voice profile
+      const voiceParam = String(req.query.voice || "").toLowerCase();
+      const personaParam = String(req.query.persona || "").toLowerCase();
+      const genderParam = String(req.query.gender || "").toLowerCase();
 
-      const audioBuffers: Buffer[] = [];
-      for (const chunk of chunks) {
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=en&client=tw-ob`;
-        const resp = await fetch(url, {
+      let selectedVoice = "Salli"; // Default: Sarah Jenkins (Female)
+
+      if (voiceParam === "matthew" || personaParam.includes("david") || personaParam === "1" || (genderParam === "male" && !personaParam.includes("marcus"))) {
+        selectedVoice = "Matthew"; // David Chen (Technical Male)
+      } else if (voiceParam === "brian" || personaParam.includes("marcus") || personaParam === "2") {
+        selectedVoice = "Brian";   // Marcus Brody (Leadership Male)
+      } else if (voiceParam === "salli" || personaParam.includes("sarah") || personaParam === "0" || genderParam === "female") {
+        selectedVoice = "Salli";   // Sarah Jenkins (Executive Female)
+      }
+
+      // Try Amazon Polly studio voice via ttsmp3 engine
+      try {
+        const params = new URLSearchParams();
+        params.append("msg", text);
+        params.append("lang", selectedVoice);
+        params.append("source", "ttsmp3");
+
+        const pollyResp = await fetch("https://ttsmp3.com/makemp3_new.php", {
+          method: "POST",
+          body: params,
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
           }
         });
-        if (!resp.ok) {
-          throw new Error(`TTS upstream error: ${resp.status}`);
+
+        if (pollyResp.ok) {
+          const pollyJson: any = await pollyResp.json();
+          if (pollyJson?.URL) {
+            const audioStream = await fetch(pollyJson.URL);
+            if (audioStream.ok) {
+              const audioBytes = await audioStream.arrayBuffer();
+              res.setHeader("Content-Type", "audio/mpeg");
+              res.setHeader("Content-Length", audioBytes.byteLength);
+              res.setHeader("Cache-Control", "public, max-age=86400");
+              res.setHeader("X-TTS-Voice", selectedVoice);
+              return res.status(200).send(Buffer.from(audioBytes));
+            }
+          }
         }
-        const ab = await resp.arrayBuffer();
-        audioBuffers.push(Buffer.from(ab));
+      } catch (pollyErr) {
+        console.warn("[TTS NOTICE]: Studio voice fetch error, using resilient fallback:", pollyErr);
       }
 
-      const combined = Buffer.concat(audioBuffers);
-      res.setHeader("Content-Type", "audio/mpeg");
-      res.setHeader("Content-Length", combined.length);
-      res.setHeader("Cache-Control", "public, max-age=86400");
-      return res.status(200).send(combined);
+      // Resilient Fallback: Google Translate TTS
+      const chunks = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+      const audioBuffers: Buffer[] = [];
+      for (const chunk of chunks) {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk.trim())}&tl=en&client=tw-ob`;
+        const resp = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          }
+        });
+        if (resp.ok) {
+          const ab = await resp.arrayBuffer();
+          audioBuffers.push(Buffer.from(ab));
+        }
+      }
+
+      if (audioBuffers.length > 0) {
+        const combined = Buffer.concat(audioBuffers);
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Length", combined.length);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.setHeader("X-TTS-Voice", "GoogleFallback");
+        return res.status(200).send(combined);
+      }
+
+      return res.status(500).json({ error: "Speech synthesis failed" });
     } catch (err: any) {
       console.error("[TTS ERROR]:", err);
       return res.status(500).json({ error: "Failed to generate speech audio" });

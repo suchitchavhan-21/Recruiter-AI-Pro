@@ -208,20 +208,20 @@ export function HumanAvatar({
       const img = imageRef.current;
 
       if (canvas && ctx && img) {
-        // 1. Clear & Draw base photographic portrait
-        ctx.clearRect(0, 0, 512, 512);
-        ctx.drawImage(img, 0, 0, 512, 512);
-
         const now = Date.now();
         const isSpk = isSpeakingRef.current && isActiveRef.current;
         const landmarks = persona.facialLandmarks;
 
-        // 2. True Audio-Driven Speech Dynamics from SpeechAudioSync AnalyserNode
+        // Register active persona with audio sync engine
+        if (isSpk) {
+          speechAudioSync.setActivePersona(id);
+        }
+
+        // 1. Audio-Driven Speech Articulation from AnalyserNode
         if (isSpk) {
           const audio = speechAudioSync.getAudioAcousticMetrics();
 
           if (audio.isPlaying && audio.speechActivity > 0.02) {
-            // Target mouth parameters from actual acoustic audio analysis
             const targetOpening = audio.mouthOpening;
             const targetWidthScale = audio.mouthWidthScale;
             const targetJaw = audio.jawOffset;
@@ -231,116 +231,159 @@ export function HumanAvatar({
             mouthWidthScaleRef.current += (targetWidthScale - mouthWidthScaleRef.current) * Math.min(delta * 18, 1);
             jawOffsetRef.current += (targetJaw - jawOffsetRef.current) * Math.min(delta * 20, 1);
           } else {
-            // Audio silent or paused (punctuation / inter-word) -> mouth closes smoothly
+            // Silence gap -> smooth closure to rest
             mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 26, 1);
             mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 20, 1);
             jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 22, 1);
           }
         } else {
-          // Speech ended -> instant return to neutral closed mouth
+          // Resting neutral mouth
           mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 28, 1);
           mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 20, 1);
           jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 24, 1);
         }
 
-        // 3. Natural Irregular Blinking Logic
+        // 2. Natural Irregular Blinking Rig (100–120ms human blink cycle)
         if (now > nextBlinkTimeRef.current) {
           blinkTargetRef.current = 1;
-          // Set next blink interval (3 to 6.5 seconds)
-          nextBlinkTimeRef.current = now + 3200 + Math.random() * 3400;
+          nextBlinkTimeRef.current = now + 3000 + Math.random() * 3200;
         }
 
         if (blinkTargetRef.current === 1) {
-          blinkPhaseRef.current += delta * 15; // Fast blink down (~70ms)
+          blinkPhaseRef.current += delta * 18; // Fast close (~50ms)
           if (blinkPhaseRef.current >= 1) {
             blinkPhaseRef.current = 1;
             blinkTargetRef.current = 0;
           }
         } else {
-          blinkPhaseRef.current -= delta * 13; // Smooth blink recovery (~80ms)
+          blinkPhaseRef.current -= delta * 14; // Smooth open (~70ms)
           if (blinkPhaseRef.current <= 0) {
             blinkPhaseRef.current = 0;
           }
         }
 
-        // 4. Micro-Saccadic Eye Drift
-        if (now > nextGazeTimeRef.current) {
-          eyeGazeXRef.current = (Math.random() - 0.5) * 0.8;
-          eyeGazeYRef.current = (Math.random() - 0.5) * 0.5;
-          nextGazeTimeRef.current = now + 2000 + Math.random() * 2500;
+        // 3. Gaze Direction Logic
+        if (isThinkingRef.current) {
+          // Contemplative gaze drift slightly up and right
+          eyeGazeXRef.current = 1.0;
+          eyeGazeYRef.current = -0.8;
+        } else if (candidateSpeakingRef.current) {
+          // Attentive listening forward gaze
+          eyeGazeXRef.current = 0.0;
+          eyeGazeYRef.current = 0.2;
+        } else if (now > nextGazeTimeRef.current) {
+          eyeGazeXRef.current = (Math.random() - 0.5) * 0.6;
+          eyeGazeYRef.current = (Math.random() - 0.5) * 0.4;
+          nextGazeTimeRef.current = now + 2500 + Math.random() * 2500;
         }
 
-        // --- 5. NATURAL PHOTOGRAPHIC LOWER-FACE & JAW ARTICULATION ---
+        // 4. Head Rig Transform: Natural Breathing, Speaking Nod, & Expression Posture
+        const tSec = now * 0.001;
+        const breathingY = Math.sin(tSec * 1.6) * 0.75;
         const openVal = mouthOpenRef.current;
         const bPhase = blinkPhaseRef.current;
 
-        // When silent and not blinking, render 100% pristine photograph without any modification
-        if (openVal <= 0.4 && bPhase <= 0.02) {
-          // Base drawImage already rendered the untouched portrait
-        } else {
+        // Subconscious conversational nodding while speaking
+        const speakingNod = (isSpk && openVal > 0.6) 
+          ? Math.sin(tSec * 4.8) * Math.min(openVal * 0.05, 0.35) * (Math.PI / 180)
+          : 0;
+
+        let headTilt = persona.naturalTilt;
+        if (isThinkingRef.current) {
+          headTilt += 0.012; // Inquisitive tilt
+        } else if (candidateSpeakingRef.current) {
+          headTilt -= 0.008; // Receptive tilt
+        } else if (isSpk) {
+          headTilt += speakingNod;
+        }
+
+        // Clear canvas
+        ctx.clearRect(0, 0, 512, 512);
+
+        ctx.save();
+        // Pivot head transforms around anatomical neck/skull center (256, 256)
+        ctx.translate(256, 256);
+        ctx.rotate(headTilt);
+        ctx.translate(-256, -256 + breathingY);
+
+        // Render base authentic photograph
+        ctx.drawImage(img, 0, 0, 512, 512);
+
+        // 5. Photographic Lower-Face & Mouth Rig Warping
+        if (openVal > 0.35) {
           const m = landmarks.mouth;
-          const jawDrop = openVal * 0.38; // Anatomical mandible drop (0 to 3.8px)
+          const mouthY = m.y;
+          const wScale = mouthWidthScaleRef.current;
+          const halfW = (m.w * wScale) * 0.5;
 
-          // A. Speech Articulation: Organic lower-face displacement from source photo pixels
-          if (openVal > 0.4) {
-            const mouthY = m.y;
-            const halfW = (m.w * mouthWidthScaleRef.current) * 0.5;
+          // Anatomical Jaw & Lip Parameters
+          const lipElevate = Math.min(openVal * 0.12, 1.2); // Upper lip elevator muscle
+          const jawDrop = openVal * 0.44;                   // Mandible hinge drop (0 to 4.5px)
 
-            // Step 1: Draw upper face (forehead, eyes, nose, upper lip) directly from source photo
-            ctx.drawImage(img, 0, 0, 512, mouthY, 0, 0, 512, mouthY);
+          // Upper face down to upper lip line
+          ctx.drawImage(img, 0, 0, 512, mouthY - 14, 0, 0, 512, mouthY - 14);
 
-            // Step 2: Render organic oral cavity depth in the parting slit between lips
-            ctx.save();
-            ctx.beginPath();
-            ctx.ellipse(m.x, mouthY + jawDrop * 0.5, halfW, jawDrop * 0.5, 0, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(16, 6, 6, 0.94)";
-            ctx.fill();
-            ctx.restore();
-
-            // Step 3: Deform lower face (lower lip, chin, jawline) directly from authentic photo slices
-            const startY = mouthY;
-            const endY = 475;
-            const sliceH = 2; // Fine 2px vertical slices for continuous, seamless deformation
-            const totalRange = endY - startY;
-
-            for (let y = startY; y < endY; y += sliceH) {
-              const progress = (y - startY) / totalRange;
-              // Cosine anatomical falloff: maximum displacement at lower lip, smoothly tapering to 0 at neck
-              const displacementFactor = Math.cos(progress * Math.PI * 0.5);
-              const offsetY = jawDrop * displacementFactor;
-
-              ctx.drawImage(
-                img,
-                0, y, 512, sliceH,
-                0, y + offsetY, 512, sliceH
-              );
-            }
+          // Upper lip tissue (mouthY - 14 to mouthY): slight upward expansion
+          const upperLipH = 14;
+          for (let y = mouthY - upperLipH; y < mouthY; y += 2) {
+            const frac = (y - (mouthY - upperLipH)) / upperLipH;
+            const offsetY = -lipElevate * frac;
+            ctx.drawImage(img, 0, y, 512, 2, 0, y + offsetY, 512, 2);
           }
 
-          // B. Natural Texture-Preserving Eyelid Movement (Zero painted skin tones)
-          if (bPhase > 0.02) {
-            const eyes = [landmarks.leftEye, landmarks.rightEye];
-            eyes.forEach((eye) => {
-              const eyeX = eye.x + eyeGazeXRef.current;
-              const eyeY = eye.y + eyeGazeYRef.current;
-              const boxW = eye.w * 1.8;
-              const boxH = eye.h * 1.6;
-              const srcX = eyeX - boxW * 0.5;
-              const srcY = eyeY - boxH * 0.5;
+          // Natural Oral Cavity Depth in the parted slit between vermilion borders
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(m.x, mouthY + (jawDrop - lipElevate) * 0.5, halfW, (jawDrop + lipElevate) * 0.52, 0, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(14, 5, 5, 0.94)";
+          ctx.fill();
+          ctx.restore();
 
-              // Compress eye vertically from authentic photo texture during the ~80ms blink
-              const blinkScaleY = 1.0 - bPhase * 0.85;
-              const currentH = boxH * blinkScaleY;
-              const destY = srcY + (boxH - currentH) * 0.5;
+          // Lower Face Mesh (Lower lip, chin, jawline down to neck):
+          // Mandible rotation falloff from lower lip to collar
+          const startY = mouthY;
+          const endY = 475;
+          const sliceH = 1.5;
+          const totalRange = endY - startY;
 
-              ctx.drawImage(
-                img,
-                srcX, srcY, boxW, boxH,
-                srcX, destY, boxW, currentH
-              );
-            });
+          for (let y = startY; y < endY; y += sliceH) {
+            const progress = (y - startY) / totalRange;
+            const displacementFactor = Math.cos(progress * Math.PI * 0.5);
+            const offsetY = jawDrop * displacementFactor;
+
+            ctx.drawImage(
+              img,
+              0, y, 512, sliceH,
+              0, y + offsetY, 512, sliceH
+            );
           }
         }
+
+        // 6. Natural Texture-Preserving Eyelid Blinking Rig
+        if (bPhase > 0.02) {
+          const eyes = [landmarks.leftEye, landmarks.rightEye];
+          eyes.forEach((eye) => {
+            const eyeX = eye.x + eyeGazeXRef.current;
+            const eyeY = eye.y + eyeGazeYRef.current;
+            const boxW = eye.w * 1.8;
+            const boxH = eye.h * 1.6;
+            const srcX = eyeX - boxW * 0.5;
+            const srcY = eyeY - boxH * 0.5;
+
+            // Compress eye aperture downward using authentic eyelid skin
+            const blinkScaleY = 1.0 - bPhase * 0.88;
+            const currentH = boxH * blinkScaleY;
+            const destY = srcY + (boxH - currentH) * 0.55;
+
+            ctx.drawImage(
+              img,
+              srcX, srcY, boxW, boxH,
+              srcX, destY, boxW, currentH
+            );
+          });
+        }
+
+        ctx.restore();
       }
 
       animFrameRef.current = requestAnimationFrame(renderLoop);
