@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MicOff, Activity, Sparkles } from "lucide-react";
+import { MicOff, Sparkles } from "lucide-react";
 import { FacialExpression } from "./types";
 
 interface HumanAvatarProps {
@@ -16,6 +16,27 @@ interface HumanAvatarProps {
   interviewerCount?: number;
 }
 
+interface PersonaConfig {
+  avatarUrl: string;
+  accentColor: string;
+  ambientGlow: string;
+  skinTone: string;
+  eyelidColorTop: string;
+  eyelidColorBot: string;
+  lipColor: string;
+  leftEye: { x: number; y: number; w: number; h: number };
+  rightEye: { x: number; y: number; w: number; h: number };
+  mouth: { x: number; y: number; w: number; h: number };
+  naturalTilt: number;
+  turnOffset: number;
+  expressionText: {
+    speaking: string;
+    thinking: string;
+    listening: string;
+    standby: string;
+  };
+}
+
 export function HumanAvatar({ 
   id, 
   name, 
@@ -29,552 +50,598 @@ export function HumanAvatar({
   candidateIsSpeaking = false,
   interviewerCount = 1
 }: HumanAvatarProps) {
-  const [breath, setBreath] = useState(0);
+  // Micro-motion and expression state
   const [isBlinking, setIsBlinking] = useState(false);
   const [gaze, setGaze] = useState({ x: 0, y: 0 });
-  const [mouthMumble, setMouthMumble] = useState(0);
+  const [mouthOpening, setMouthOpening] = useState(0); // 0 (closed) to 1 (max open)
   const [expression, setExpression] = useState<FacialExpression>('neutral');
-  
-  // Gestures
-  const [nodOffset, setNodOffset] = useState({ x: 0, y: 0, r: 0 });
-  const frameRef = useRef<number | null>(null);
+  const [headNod, setHeadNod] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Feature maps for accurate facial vector mapping
-  const featureMaps: Record<number, { leftEye: { x: number, y: number }, rightEye: { x: number, y: number }, mouth: { x: number, y: number }, scale: number }> = {
-    0: { // Sarah Jenkins
-      leftEye: { x: 42.5, y: 41.2 },
-      rightEye: { x: 57.0, y: 41.2 },
-      mouth: { x: 49.5, y: 61.5 },
-      scale: 1.05
+  const speechTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const blinkTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const gazeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const nodTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check user preference for reduced motion
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setReducedMotion(mediaQuery.matches);
+      const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+      mediaQuery.addEventListener("change", listener);
+      return () => mediaQuery.removeEventListener("change", listener);
+    }
+  }, []);
+
+  // Persona configurations with tuned coordinates for Sarah, David, Marcus
+  const personaConfigs: Record<number, PersonaConfig> = {
+    0: { // Sarah Jenkins — VP of People & Culture
+      avatarUrl: "/assets/sarah.png",
+      accentColor: "#818cf8",
+      ambientGlow: "rgba(99, 102, 241, 0.12)",
+      skinTone: "#ffd8c2",
+      eyelidColorTop: "#eec0aa",
+      eyelidColorBot: "#dfad96",
+      lipColor: "#c96f6f",
+      leftEye: { x: 42.5, y: 41.2, w: 8.6, h: 4.4 },
+      rightEye: { x: 57.0, y: 41.2, w: 8.6, h: 4.4 },
+      mouth: { x: 49.5, y: 61.5, w: 17.5, h: 7.5 },
+      naturalTilt: 0.5,
+      turnOffset: 3.5,
+      expressionText: {
+        speaking: "Presenting Behavioral Prompt",
+        thinking: "Formulating Behavioral Evaluation",
+        listening: "Active Listening",
+        standby: "Standby"
+      }
     },
-    1: { // David Chen
-      leftEye: { x: 44.2, y: 41.6 },
-      rightEye: { x: 57.2, y: 41.6 },
-      mouth: { x: 50.8, y: 62.2 },
-      scale: 1.03
+    1: { // David Chen — Principal Systems Architect
+      avatarUrl: "/assets/david.png",
+      accentColor: "#60a5fa",
+      ambientGlow: "rgba(59, 130, 246, 0.12)",
+      skinTone: "#cc9c80",
+      eyelidColorTop: "#b8876e",
+      eyelidColorBot: "#a6765d",
+      lipColor: "#a85e53",
+      leftEye: { x: 44.2, y: 41.6, w: 7.8, h: 4.0 },
+      rightEye: { x: 57.2, y: 41.6, w: 7.8, h: 4.0 },
+      mouth: { x: 50.8, y: 62.2, w: 16.5, h: 7.2 },
+      naturalTilt: -0.5,
+      turnOffset: -3.0,
+      expressionText: {
+        speaking: "Exploring Technical Architecture",
+        thinking: "Analyzing Engineering Patterns",
+        listening: "Reviewing Technical Details",
+        standby: "Standby"
+      }
     },
-    2: { // Marcus Brody
-      leftEye: { x: 42.8, y: 41.0 },
-      rightEye: { x: 55.8, y: 41.0 },
-      mouth: { x: 49.0, y: 60.8 },
-      scale: 1.04
+    2: { // Marcus Brody — Head of Engineering
+      avatarUrl: "/assets/marcus.png",
+      accentColor: "#34d399",
+      ambientGlow: "rgba(16, 185, 129, 0.12)",
+      skinTone: "#d9a184",
+      eyelidColorTop: "#c48e73",
+      eyelidColorBot: "#b37b60",
+      lipColor: "#ab6159",
+      leftEye: { x: 42.8, y: 41.0, w: 8.2, h: 4.2 },
+      rightEye: { x: 55.8, y: 41.0, w: 8.2, h: 4.2 },
+      mouth: { x: 49.0, y: 60.8, w: 17.0, h: 7.5 },
+      naturalTilt: 0.3,
+      turnOffset: -4.0,
+      expressionText: {
+        speaking: "Evaluating Strategic Leadership",
+        thinking: "Measuring Delivery Velocity",
+        listening: "Observing Executive Posture",
+        standby: "Standby"
+      }
     }
   };
 
-  const coords = featureMaps[id] || featureMaps[0];
+  const persona = personaConfigs[id] || personaConfigs[0];
 
-  // 60FPS animation loop for breathing and lip sync
+  // 1. RESTRAINED PHONETIC SPEECH MODULATION
+  // Generates human-like speech cadence: alternating syllable widths, natural pauses, and return to rest
   useEffect(() => {
-    const animate = (time: number) => {
-      const breathVal = Math.sin(time * 0.0018) * 1.6;
-      setBreath(breathVal);
+    if (!isSpeaking || reducedMotion) {
+      setMouthOpening(0);
+      if (speechTimerRef.current) clearInterval(speechTimerRef.current);
+      return;
+    }
 
-      if (isSpeaking) {
-        const soundPulse = Math.abs(Math.sin(time * 0.015) * 8 + Math.cos(time * 0.008) * 4);
-        setMouthMumble(soundPulse);
-      } else {
-        setMouthMumble(0);
-      }
+    // Syllable rhythm cycle (simulating vowels, consonants, word breaks)
+    const syllableCadence = [0.25, 0.65, 0.35, 0.8, 0.45, 0.1, 0.7, 0.3, 0.05, 0.55, 0.9, 0.4, 0.15, 0.0];
+    let step = 0;
 
-      if (isActive) {
-        setNodOffset({ x: 0, y: 0, r: 0 });
-      } else if (candidateIsSpeaking) {
-        const nodY = Math.abs(Math.sin(time * 0.008)) * 1.8;
-        const tilt = Math.sin(time * 0.004) * 0.5;
-        setNodOffset({ x: 0, y: nodY, r: tilt });
-      } else {
-        setNodOffset({ x: 0, y: 0, r: 0 });
-      }
+    speechTimerRef.current = setInterval(() => {
+      const baseOpen = syllableCadence[step % syllableCadence.length];
+      // Add subtle organic variation
+      const jitter = (Math.random() - 0.5) * 0.15;
+      const finalOpen = Math.max(0, Math.min(1, baseOpen + jitter));
+      setMouthOpening(finalOpen);
+      step++;
+    }, 110);
 
-      frameRef.current = requestAnimationFrame(animate);
-    };
-    frameRef.current = requestAnimationFrame(animate);
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      if (speechTimerRef.current) clearInterval(speechTimerRef.current);
     };
-  }, [isSpeaking, isActive, candidateIsSpeaking]);
+  }, [isSpeaking, reducedMotion]);
 
-  // Expression lifecycle
+  // 2. IRREGULAR, NATURAL BLINK SYSTEM
+  // Organic non-linear intervals (3.5s to 6.5s) with independent seed and occasional double blink
   useEffect(() => {
-    const expressionInterval = setInterval(() => {
-      if (isThinking) {
-        setExpression('thinking');
-      } else if (isSpeaking) {
-        setExpression(Math.random() < 0.6 ? 'serious' : 'smiling');
-      } else if (candidateIsSpeaking) {
-        const rolls = Math.random();
-        if (rolls < 0.45) setExpression('agreeing');
-        else if (rolls < 0.70) setExpression('curious');
-        else if (rolls < 0.90) setExpression('smiling');
-        else setExpression('neutral');
-      } else {
-        setExpression('neutral');
-      }
-    }, 4000);
+    if (reducedMotion) return;
 
-    return () => clearInterval(expressionInterval);
-  }, [isThinking, isSpeaking, candidateIsSpeaking]);
+    let isMounted = true;
 
-  // Periodic blinking
-  useEffect(() => {
-    const blinkTimer = setInterval(() => {
-      if (Math.random() < 0.28) {
+    const scheduleNextBlink = () => {
+      const nextInterval = 3200 + Math.random() * 3200 + (id * 400); // de-synchronize panel
+      blinkTimerRef.current = setTimeout(() => {
+        if (!isMounted) return;
+
+        // Perform natural single blink
         setIsBlinking(true);
-        setTimeout(() => setIsBlinking(false), 120);
-      }
-    }, 1800);
-    return () => clearInterval(blinkTimer);
-  }, []);
+        setTimeout(() => {
+          if (!isMounted) return;
+          setIsBlinking(false);
 
-  // Eye gaze tracking
+          // 7% probability of immediate natural double-blink
+          if (Math.random() < 0.07) {
+            setTimeout(() => {
+              if (!isMounted) return;
+              setIsBlinking(true);
+              setTimeout(() => {
+                if (isMounted) setIsBlinking(false);
+              }, 90);
+            }, 120);
+          }
+
+          scheduleNextBlink();
+        }, 110);
+      }, nextInterval);
+    };
+
+    scheduleNextBlink();
+
+    return () => {
+      isMounted = false;
+      if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+    };
+  }, [id, reducedMotion]);
+
+  // 3. CONTROLLED MICRO-SACCADES & GAZE DIRECTION
   useEffect(() => {
-    const gazeTimer = setInterval(() => {
-      if (isActive) {
-        if (Math.random() < 0.25) {
-          setGaze({
-            x: (Math.random() - 0.5) * 1.2,
-            y: (Math.random() - 0.5) * 0.8
-          });
-        } else {
-          setGaze({ x: 0, y: 0 });
-        }
+    if (reducedMotion) {
+      setGaze({ x: 0, y: 0 });
+      return;
+    }
+
+    const gazeInterval = setInterval(() => {
+      if (isActive && isSpeaking) {
+        // Direct, focused contact with candidate / camera with micro-saccades (<0.3px)
+        setGaze({
+          x: (Math.random() - 0.5) * 0.3,
+          y: (Math.random() - 0.5) * 0.2
+        });
+      } else if (isThinking) {
+        // Subtle downward contemplation glance
+        setGaze({
+          x: (Math.random() - 0.5) * 0.4,
+          y: 0.6 + Math.random() * 0.3
+        });
+      } else if (candidateIsSpeaking) {
+        // Attentive direct gaze toward candidate
+        setGaze({
+          x: (Math.random() - 0.5) * 0.25,
+          y: (Math.random() - 0.5) * 0.2
+        });
       } else if (interviewerCount > 1 && activeSpeakerIdx !== id) {
+        // Inactive panelist naturally orients gaze slightly toward active speaker
         const turnRight = id === 0 || (id === 1 && activeSpeakerIdx === 2);
         setGaze({
-          x: turnRight ? 2.8 : -2.8,
-          y: -0.5
+          x: turnRight ? 0.8 : -0.8,
+          y: -0.1
         });
       } else {
+        // Relaxed standby gaze
         setGaze({
-          x: (Math.random() - 0.5) * 2.5,
-          y: (Math.random() - 0.5) * 1.5
+          x: (Math.random() - 0.5) * 0.4,
+          y: (Math.random() - 0.5) * 0.3
         });
       }
-    }, 2500);
+    }, 3200);
 
-    return () => clearInterval(gazeTimer);
-  }, [isActive, activeSpeakerIdx, id, interviewerCount]);
+    return () => clearInterval(gazeInterval);
+  }, [isActive, isSpeaking, isThinking, candidateIsSpeaking, activeSpeakerIdx, id, interviewerCount, reducedMotion]);
 
-  const getMeetingRoomTurnAngle = () => {
-    if (isActive) return 0;
-    if (interviewerCount <= 1) return 0;
-    if (id === 0) return 11;
-    if (id === 2) return -11;
-    if (id === 1) {
-      return activeSpeakerIdx === 0 ? -9 : 9;
+  // 4. CANDIDATE LISTENING MICRO-NODS
+  useEffect(() => {
+    if (!candidateIsSpeaking || reducedMotion) {
+      setHeadNod(0);
+      if (nodTimerRef.current) clearInterval(nodTimerRef.current);
+      return;
     }
+
+    // Occasional gentle professional nod (0.8px - 1.2px) every 4-5 seconds
+    nodTimerRef.current = setInterval(() => {
+      if (Math.random() < 0.65) {
+        setHeadNod(1.2);
+        setTimeout(() => setHeadNod(0), 450);
+      }
+    }, 4200);
+
+    return () => {
+      if (nodTimerRef.current) clearInterval(nodTimerRef.current);
+    };
+  }, [candidateIsSpeaking, reducedMotion]);
+
+  // 5. EXPRESSION STATE HARMONIZATION
+  useEffect(() => {
+    if (isThinking) {
+      setExpression('thinking');
+    } else if (isSpeaking) {
+      setExpression('serious');
+    } else if (candidateIsSpeaking) {
+      setExpression('agreeing');
+    } else {
+      setExpression('neutral');
+    }
+  }, [isThinking, isSpeaking, candidateIsSpeaking]);
+
+  // Turn angle calculation for multi-interviewer stage
+  const getPanelTurnAngle = () => {
+    if (isActive || interviewerCount <= 1 || reducedMotion) return 0;
+    if (id === 0) return 3.2; // Sarah turns slightly toward center
+    if (id === 2) return -3.2; // Marcus turns slightly toward center
+    if (id === 1) return activeSpeakerIdx === 0 ? -2.5 : 2.5; // David orients toward speaker
     return 0;
   };
 
-  const breathingY = breath * 0.35;
-  const breathingScale = 1 + (breath * 0.001);
-  const roomTurnY = getMeetingRoomTurnAngle();
-
-  let headTilt = nodOffset.r;
+  const panelTurnY = getPanelTurnAngle();
+  
+  // Head posture shifts
+  let finalHeadTilt = persona.naturalTilt;
   if (isThinking) {
-    headTilt = id === 0 ? -3.5 : 3.0;
-  } else if (expression === 'curious') {
-    headTilt = -4.0;
+    finalHeadTilt = id === 0 ? -1.4 : 1.2;
+  } else if (candidateIsSpeaking) {
+    finalHeadTilt = persona.naturalTilt + 0.4;
   } else if (isActive && isSpeaking) {
-    headTilt = Math.sin(breath * 0.4) * 1.2;
+    finalHeadTilt = persona.naturalTilt + (Math.sin(mouthOpening * Math.PI) * 0.4);
   }
 
-  const headY = breathingY + nodOffset.y;
-  const headX = nodOffset.x + (roomTurnY * 0.15);
+  const headTranslateY = headNod;
+  const headTranslateX = panelTurnY * 0.2;
 
-  const avatarUrl = id === 0 
-    ? "/assets/sarah.png"
-    : id === 1
-      ? "/assets/david.png"
-      : "/assets/marcus.png";
-
-  const avatarVisuals: Record<number, { skin: string, lips: string, irisColor: string, eyeWidth: number, eyeHeight: number, mouthWidth: number, mouthHeight: number }> = {
-    0: {
-      skin: "#ffd8c2",
-      lips: "#e07a7a",
-      irisColor: "#503020",
-      eyeWidth: 9.8,
-      eyeHeight: 5.6,
-      mouthWidth: 19.5,
-      mouthHeight: 9.6
-    },
-    1: {
-      skin: "#cc9c80",
-      lips: "#bc6f62",
-      irisColor: "#3e2417",
-      eyeWidth: 8.8,
-      eyeHeight: 4.8,
-      mouthWidth: 17.5,
-      mouthHeight: 8.6
-    },
-    2: {
-      skin: "#d9a184",
-      lips: "#be7067",
-      irisColor: "#2e3747",
-      eyeWidth: 9.2,
-      eyeHeight: 5.2,
-      mouthWidth: 18.5,
-      mouthHeight: 9.2
+  // Live status badge information
+  const getStatusBadge = () => {
+    if (isActive && isSpeaking) {
+      return {
+        label: "Speaking",
+        dotClass: "bg-indigo-400",
+        containerClass: "bg-indigo-950/80 border-indigo-500/40 text-indigo-200 shadow-indigo-500/10",
+        icon: (
+          <span className="flex items-end gap-0.5 h-2.5 mr-0.5">
+            <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.6s] h-2" />
+            <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.4s] h-2.5" />
+            <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.5s] h-1.5" />
+          </span>
+        )
+      };
     }
+    if (isActive && isThinking) {
+      return {
+        label: "Evaluating",
+        dotClass: "bg-amber-400 animate-pulse",
+        containerClass: "bg-amber-950/80 border-amber-500/40 text-amber-200 shadow-amber-500/10",
+        icon: <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-spin mr-0.5" />
+      };
+    }
+    if (candidateIsSpeaking) {
+      return {
+        label: "Listening",
+        dotClass: "bg-emerald-400 animate-pulse",
+        containerClass: "bg-emerald-950/80 border-emerald-500/40 text-emerald-200 shadow-emerald-500/10",
+        icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-0.5" />
+      };
+    }
+    return {
+      label: "Standby",
+      dotClass: "bg-slate-500",
+      containerClass: "bg-slate-950/70 border-white/10 text-slate-400",
+      icon: <span className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-0.5" />
+    };
   };
 
-  const visuals = avatarVisuals[id] || avatarVisuals[0];
-
-  const getExpressionText = () => {
-    if (!isActive) {
-      if (candidateIsSpeaking) {
-        if (expression === 'agreeing') return "🤝 Nodding in agreement...";
-        if (expression === 'curious') return "👂 Registering complexity...";
-        if (expression === 'smiling') return "😊 Encouraging posture...";
-        return "👂 Active listening...";
-      }
-      return "○ Boardroom Standby";
-    }
-    if (isThinking) {
-      if (id === 0) return "🤔 Formulating behavioral evaluation...";
-      if (id === 1) return "🤔 Analyzing engineering patterns...";
-      return "🤔 Measuring organizational strategic value...";
-    }
-    if (isSpeaking) {
-      if (id === 0) return "💬 Presenting behavioral prompt...";
-      if (id === 1) return "💬 Exploring technical architecture...";
-      return "💬 Evaluating executive posture...";
-    }
-    return "👁️ Concentrated assessment...";
-  };
-
-  const eyeSquint = (expression === 'thinking' || expression === 'curious') ? 0.82 : 1.0;
+  const statusBadge = getStatusBadge();
 
   return (
     <div 
       id={`avatar-container-${id}`}
-      className={`relative h-full w-full rounded-2xl overflow-hidden transition-all duration-700 ease-out ${
+      className={`relative h-full w-full rounded-2xl overflow-hidden bg-[#07090e] select-none transition-all duration-500 ease-out ${
         isActive 
-          ? "border border-indigo-500/40 shadow-2xl shadow-indigo-500/20 scale-[1.01] z-10" 
-          : "border border-white/5 opacity-85 hover:opacity-100 hover:border-white/15"
+          ? "border border-indigo-500/50 shadow-2xl shadow-indigo-500/15 ring-1 ring-indigo-500/30 scale-[1.005] z-10" 
+          : "border border-white/10 opacity-90 hover:opacity-100 hover:border-white/20"
       }`}
     >
-      {/* Immersive Executive Boardroom Studio Backdrop */}
-      <div className="absolute inset-0 z-0 overflow-hidden select-none pointer-events-none bg-[#090b13]">
-        {/* Soft glass architectural dividers */}
-        <div className="absolute inset-y-0 left-1/3 w-px bg-white/[0.04]" />
-        <div className="absolute inset-y-0 right-1/3 w-px bg-white/[0.04]" />
-        <div className="absolute h-px inset-x-0 bottom-1/4 bg-white/[0.04]" />
-        
-        {/* Subtle Watermark Branding */}
-        <div className="absolute top-3.5 right-4 opacity-10 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-[7.5px] font-mono tracking-widest text-white uppercase font-bold">EXECUTIVE BOARDROOM V3</span>
-        </div>
-
-        {/* Ambient Studio Lighting Glow */}
+      {/* 1. LAYER 1: Deep Near-Black Executive Studio Backdrop */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-[#0a0d16] via-[#07090e] to-[#04060a]">
+        {/* Soft persona-tinted back-lighting */}
         <div 
-          className={`absolute inset-0 bg-cover bg-center filter blur-3xl opacity-20 scale-110 transition-all duration-1000 ${
-            isActive ? "opacity-35 blur-3xl scale-125" : "opacity-10"
-          }`} 
-          style={{ backgroundImage: `url(${avatarUrl})` }} 
+          className="absolute inset-0 opacity-20 filter blur-3xl scale-125 transition-opacity duration-1000"
+          style={{ 
+            background: `radial-gradient(circle at 50% 30%, ${persona.accentColor} 0%, transparent 70%)` 
+          }}
         />
         
-        {id === 0 && <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent opacity-60" />}
-        {id === 1 && <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent opacity-60" />}
-        {id === 2 && <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,_var(--tw-gradient-stops))] from-emerald-500/20 via-transparent to-transparent opacity-60" />}
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-[#05070d] via-slate-950/30 to-black/60" />
+        {/* Subtle camera studio vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_45%,_rgba(4,6,10,0.8)_100%)] pointer-events-none" />
       </div>
 
-      {/* Main Avatar Stage */}
-      <div className="relative w-full h-full flex flex-col justify-center items-center z-10 pb-8 select-none">
+      {/* 2. LAYER 2 & 3: High-Fidelity Portrait Stage (Hero Visual) */}
+      <div className="relative w-full h-full flex items-center justify-center z-10 overflow-hidden">
         
-        {/* Halo Frame around the recruiter portrait */}
+        {/* Head Rig & Breathing Layer */}
         <div 
-          className={`relative rounded-2xl p-1 transition-all duration-700 ease-out ${
-            isActive && isSpeaking 
-              ? "avatar-speaking-glow ring-2 ring-indigo-400 scale-[1.03]" 
-              : isActive && isThinking
-                ? "avatar-thinking-glow ring-2 ring-amber-400 scale-[1.01]"
-                : candidateIsSpeaking
-                  ? "avatar-listening-glow ring-1 ring-emerald-400/80 scale-[1.005]"
-                  : "ring-1 ring-white/10"
+          className={`w-full h-full relative transition-transform duration-300 ease-out ${
+            !reducedMotion ? "animate-avatar-breathe" : ""
           }`}
-          style={isActive && isSpeaking ? { transform: `scale(${1.03 + (mouthMumble * 0.003)})` } : undefined}
+          style={{
+            transform: `translate3d(${headTranslateX}px, ${headTranslateY}px, 0) rotate(${finalHeadTilt}deg) rotateY(${panelTurnY}deg)`,
+          }}
         >
-          {/* Portrait composite frame */}
-          <div className="w-48 h-56 md:w-56 md:h-64 lg:w-64 lg:h-72 rounded-2xl overflow-hidden border border-white/15 bg-[#070b13] shadow-2xl relative select-none">
-            
-            {/* Rigged Facial Layer */}
-            <div 
-              className="w-full h-full relative transition-transform duration-150 ease-out"
-              style={{
-                transform: `scale(${coords.scale * breathingScale}) translate3d(${headX}px, ${headY}px, 0) rotate(${headTilt}deg) rotateY(${roomTurnY}deg)`,
-              }}
-            >
-              {/* 1. Base Portrait Image */}
-              <img 
-                src={avatarUrl}
-                alt={name}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover pointer-events-none"
-                style={{ 
-                  filter: isThinking 
-                      ? "brightness(0.94) contrast(1.05) saturate(0.95)" 
-                      : "brightness(1) contrast(1.02)"
-                }}
-              />
+          {/* Base Executive Video Portrait Image */}
+          <img 
+            src={persona.avatarUrl}
+            alt={name}
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover object-[50%_28%] pointer-events-none select-none transition-all duration-500"
+            style={{ 
+              filter: isThinking 
+                ? "brightness(0.97) contrast(1.03) saturate(0.98)" 
+                : isActive && isSpeaking 
+                  ? "brightness(1.02) contrast(1.02)" 
+                  : "brightness(1.0) contrast(1.0)"
+            }}
+          />
 
-              {/* 2. Micro-Smiling Cheek Lift Glow */}
-              {expression === 'smiling' && (
-                <>
-                  <div 
-                    className="absolute pointer-events-none rounded-full bg-rose-500/15 blur-md transition-opacity duration-500 mix-blend-soft-light"
-                    style={{ 
-                      left: `${coords.leftEye.x - 4}%`, 
-                      top: `${coords.leftEye.y + 10}%`,
-                      width: "16%",
-                      height: "12%"
-                    }}
-                  />
-                  <div 
-                    className="absolute pointer-events-none rounded-full bg-rose-500/15 blur-md transition-opacity duration-500 mix-blend-soft-light"
-                    style={{ 
-                      left: `${coords.rightEye.x - 12}%`, 
-                      top: `${coords.rightEye.y + 10}%`,
-                      width: "16%",
-                      height: "12%"
-                    }}
-                  />
-                </>
-              )}
-
-              {/* 3. Eye Gaze Reflectors */}
-              {!isBlinking && (
-                <>
-                  {/* Left Eye Gaze */}
-                  <div 
-                    className="absolute pointer-events-none flex items-center justify-center rounded-full transition-transform duration-300 ease-out"
-                    style={{
-                      left: `${coords.leftEye.x - visuals.eyeWidth / 2}%`,
-                      top: `${coords.leftEye.y - visuals.eyeHeight / 2}%`,
-                      width: `${visuals.eyeWidth}%`,
-                      height: `${visuals.eyeHeight}%`,
-                    }}
-                  >
-                    <div 
-                      className="w-[45%] h-[45%] rounded-full relative transition-transform duration-200"
-                      style={{
-                        transform: `translate3d(${gaze.x * 0.16}px, ${gaze.y * 0.12}px, 0) scaleY(${eyeSquint})`,
-                        background: `radial-gradient(circle at 35% 35%, #ffffff 0%, ${visuals.irisColor} 30%, #000000 85%)`,
-                        boxShadow: "0 0 1px rgba(0,0,0,0.4)"
-                      }}
-                    >
-                      <div className="absolute w-[25%] h-[25%] rounded-full bg-white/80 top-[15%] left-[15%] blur-[0.2px]" />
-                    </div>
-                  </div>
-
-                  {/* Right Eye Gaze */}
-                  <div 
-                    className="absolute pointer-events-none flex items-center justify-center rounded-full transition-transform duration-300 ease-out"
-                    style={{
-                      left: `${coords.rightEye.x - visuals.eyeWidth / 2}%`,
-                      top: `${coords.rightEye.y - visuals.eyeHeight / 2}%`,
-                      width: `${visuals.eyeWidth}%`,
-                      height: `${visuals.eyeHeight}%`,
-                    }}
-                  >
-                    <div 
-                      className="w-[45%] h-[45%] rounded-full relative transition-transform duration-200"
-                      style={{
-                        transform: `translate3d(${gaze.x * 0.16}px, ${gaze.y * 0.12}px, 0) scaleY(${eyeSquint})`,
-                        background: `radial-gradient(circle at 35% 35%, #ffffff 0%, ${visuals.irisColor} 30%, #000000 85%)`,
-                        boxShadow: "0 0 1px rgba(0,0,0,0.4)"
-                      }}
-                    >
-                      <div className="absolute w-[25%] h-[25%] rounded-full bg-white/80 top-[15%] left-[15%] blur-[0.2px]" />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 4. Blinking Eyelid Shutters */}
+          {/* 3. LAYER 4: Natural Eye System (Corneal Catchlight & Micro-Saccades) */}
+          {/* Note: The original high-res eyes remain fully visible. We add realistic ocular sheen and saccade catchlight */}
+          {!isBlinking && (
+            <>
+              {/* Left Eye Specular Reflection */}
               <div 
-                className="absolute pointer-events-none transition-transform duration-100 origin-top rounded-full blur-[0.5px]"
+                className="absolute pointer-events-none transition-transform duration-300 ease-out"
                 style={{
-                  left: `${coords.leftEye.x - visuals.eyeWidth / 2}%`,
-                  top: `${coords.leftEye.y - visuals.eyeHeight / 2 - 1}%`,
-                  width: `${visuals.eyeWidth}%`,
-                  height: `${visuals.eyeHeight + 2}%`,
-                  transform: `scaleY(${isBlinking ? 1 : 0})`,
-                  background: `linear-gradient(180deg, ${visuals.skin}e0 0%, ${visuals.skin} 100%)`,
-                  opacity: 0.96
+                  left: `${persona.leftEye.x - persona.leftEye.w / 2}%`,
+                  top: `${persona.leftEye.y - persona.leftEye.h / 2}%`,
+                  width: `${persona.leftEye.w}%`,
+                  height: `${persona.leftEye.h}%`,
+                  transform: `translate3d(${gaze.x}px, ${gaze.y}px, 0)`
                 }}
-              />
-              <div 
-                className="absolute pointer-events-none transition-transform duration-100 origin-top rounded-full blur-[0.5px]"
-                style={{
-                  left: `${coords.rightEye.x - visuals.eyeWidth / 2}%`,
-                  top: `${coords.rightEye.y - visuals.eyeHeight / 2 - 1}%`,
-                  width: `${visuals.eyeWidth}%`,
-                  height: `${visuals.eyeHeight + 2}%`,
-                  transform: `scaleY(${isBlinking ? 1 : 0})`,
-                  background: `linear-gradient(180deg, ${visuals.skin}e0 0%, ${visuals.skin} 100%)`,
-                  opacity: 0.96
-                }}
-              />
-
-              {/* 5. Realistic Phoneme Lip-Syncing Vector Mouth Layer */}
-              {isSpeaking && mouthMumble > 0 && (
+              >
+                {/* Micro corneal specular catchlight */}
                 <div 
-                  className="absolute pointer-events-none flex items-center justify-center transition-opacity duration-150"
+                  className="w-full h-full rounded-full opacity-60 mix-blend-screen"
                   style={{
-                    left: `${coords.mouth.x - visuals.mouthWidth / 2}%`,
-                    top: `${coords.mouth.y - visuals.mouthHeight / 2}%`,
-                    width: `${visuals.mouthWidth}%`,
-                    height: `${visuals.mouthHeight}%`,
-                  }}
-                >
-                  <svg 
-                    viewBox="0 0 100 50" 
-                    className="w-full h-full overflow-visible drop-shadow-md"
-                  >
-                    <path 
-                      d={`M 10,25 Q 50,${25 - mouthMumble * 0.4} 90,25 Q 50,${25 + mouthMumble * 1.8} 10,25 Z`} 
-                      fill="#1a0a08" 
-                    />
-                    
-                    <path 
-                      d={`M 10,25 Q 50,${25 + mouthMumble * 1.9} 90,25 Q 50,${25 + mouthMumble * 2.2} 10,25 Z`} 
-                      fill={visuals.lips} 
-                      className="opacity-95"
-                    />
-
-                    {mouthMumble > 2.5 && (
-                      <path 
-                        d="M 22,23 Q 50,22 78,23 Q 50,26 22,23 Z" 
-                        fill="#f3f4f6" 
-                        className="opacity-95"
-                        filter="url(#mesh-soften-boardroom)"
-                      />
-                    )}
-
-                    {mouthMumble > 5 && (
-                      <ellipse 
-                        cx="50" 
-                        cy={`${32 + mouthMumble * 0.3}`} 
-                        rx="18" 
-                        ry={`${4 + mouthMumble * 0.6}`} 
-                        fill="#cf525b" 
-                        className="opacity-90"
-                        filter="url(#mesh-soften-boardroom)"
-                      />
-                    )}
-
-                    <path 
-                      d={`M 10,25 Q 50,${25 - mouthMumble * 0.6} 90,25 Q 50,${25 - mouthMumble * 0.2} 10,25 Z`} 
-                      fill={visuals.lips} 
-                      className="opacity-95"
-                    />
-                    
-                    <defs>
-                      <filter id="mesh-soften-boardroom">
-                        <feGaussianBlur stdDeviation="0.8" />
-                      </filter>
-                    </defs>
-                  </svg>
-                </div>
-              )}
-
-              {/* 6. Cognitive Furrow */}
-              {(expression === 'thinking' || expression === 'curious') && (
-                <div 
-                  className="absolute pointer-events-none rounded-full bg-[#110905]/15 blur-[2px] transition-all duration-300 mix-blend-multiply"
-                  style={{
-                    left: `${coords.leftEye.x - 2}%`,
-                    top: `${coords.leftEye.y - 7}%`,
-                    width: `${coords.rightEye.x - coords.leftEye.x + 4}%`,
-                    height: "3%",
-                    transform: "rotate(-1deg)"
+                    background: "radial-gradient(circle at 45% 38%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.15) 30%, transparent 65%)"
                   }}
                 />
-              )}
-            </div>
-
-            {/* Cinematic Lens Flare Reflection */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none mix-blend-overlay" />
-          </div>
-
-          {/* Micro-waveform speaking ripple */}
-          {isActive && isSpeaking && (
-            <div className="absolute bottom-1 right-1 bg-indigo-600 rounded-full p-1.5 border border-white/20 flex items-center justify-center gap-0.5 shadow-lg">
-              <span className="w-1 h-2.5 bg-white rounded-full animate-bounce [animation-delay:0.1s]" />
-              <span className="w-1 h-4 bg-white rounded-full animate-bounce [animation-delay:0.3s]" />
-              <span className="w-1 h-2.5 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
-            </div>
-          )}
-
-          {/* Thinking status */}
-          {isActive && isThinking && (
-            <div className="absolute bottom-1 right-1 bg-amber-500 rounded-full p-1.5 border border-white/20 animate-pulse flex items-center justify-center shadow-lg">
-              <Sparkles className="w-3 h-3 text-white animate-spin" />
-            </div>
-          )}
-        </div>
-
-        {/* Top Floating Meet Quality Status */}
-        <div className="absolute top-3.5 inset-x-4 flex justify-between items-start z-20 pointer-events-none">
-          <span className={`px-2.5 py-1 rounded-full text-[8.5px] font-bold uppercase tracking-wider font-mono shadow border flex items-center gap-1.5 backdrop-blur-xl transition-all duration-300 ${
-            isActive && isSpeaking
-              ? "bg-indigo-600/90 text-white border-indigo-400 shadow-indigo-600/30" 
-              : isActive && isThinking
-                ? "bg-amber-500/90 text-white border-amber-300 shadow-amber-500/30"
-                : candidateIsSpeaking
-                  ? "bg-emerald-600/90 text-white border-emerald-400 shadow-emerald-600/30"
-                  : "liquid-glass-subtle text-slate-400 border-white/10"
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              isActive && isSpeaking ? "bg-white animate-ping" : isActive && isThinking ? "bg-white animate-pulse" : candidateIsSpeaking ? "bg-white animate-pulse" : "bg-slate-500"
-            }`} />
-            <span>{isActive && isSpeaking ? "LIVE SPEAKER" : isActive && isThinking ? "EVALUATING" : candidateIsSpeaking ? "LISTENING" : "STANDBY"}</span>
-          </span>
-
-          <span className="text-[8px] font-mono font-bold text-slate-300 liquid-glass-subtle px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/10 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-            <span>1080P HD</span>
-          </span>
-        </div>
-
-        {/* Bottom Floating Google Meet / Liquid Glass Nameplate */}
-        <div className="absolute bottom-3.5 inset-x-4 z-20 flex justify-between items-end pointer-events-none">
-          <div className="liquid-glass-strong px-3.5 py-2 rounded-xl flex items-center gap-2.5 max-w-[85%] border border-white/15 shadow-xl">
-            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-black/40 border border-white/10 shrink-0">
-              {isActive && isSpeaking ? (
-                <div className="flex items-end gap-0.5 h-3">
-                  <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce h-2 [animation-duration:0.6s]" />
-                  <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce h-3 [animation-duration:0.4s]" />
-                  <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce h-1.5 [animation-duration:0.5s]" />
-                </div>
-              ) : (
-                <MicOff className="w-3 h-3 text-slate-400" />
-              )}
-            </div>
-            
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white leading-none truncate">{name}</span>
-                <span className="text-[7.5px] font-mono font-bold bg-indigo-500/25 border border-indigo-500/35 text-indigo-200 px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                  {focus}
-                </span>
               </div>
-              <span className="text-[9px] text-slate-400 font-mono mt-0.5 leading-none truncate">{role}</span>
-            </div>
-          </div>
 
-          <div className="hidden sm:block max-w-[45%] text-right liquid-glass-subtle border border-white/10 px-3 py-1.5 rounded-xl shadow-lg">
-            <span className="text-[8.5px] font-mono font-semibold text-slate-200 leading-tight block">
-              {getExpressionText()}
+              {/* Right Eye Specular Reflection */}
+              <div 
+                className="absolute pointer-events-none transition-transform duration-300 ease-out"
+                style={{
+                  left: `${persona.rightEye.x - persona.rightEye.w / 2}%`,
+                  top: `${persona.rightEye.y - persona.rightEye.h / 2}%`,
+                  width: `${persona.rightEye.w}%`,
+                  height: `${persona.rightEye.h}%`,
+                  transform: `translate3d(${gaze.x}px, ${gaze.y}px, 0)`
+                }}
+              >
+                {/* Micro corneal specular catchlight */}
+                <div 
+                  className="w-full h-full rounded-full opacity-60 mix-blend-screen"
+                  style={{
+                    background: "radial-gradient(circle at 45% 38%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.15) 30%, transparent 65%)"
+                  }}
+                />
+              </div>
+            </>
+          )}
+
+          {/* 4. Natural Blinking Eyelid Shutter */}
+          {/* Organic skin-toned feathered curve that sweeps down smoothly */}
+          <div 
+            className="absolute pointer-events-none transition-transform duration-100 ease-in-out origin-top rounded-full"
+            style={{
+              left: `${persona.leftEye.x - persona.leftEye.w / 2 - 0.5}%`,
+              top: `${persona.leftEye.y - persona.leftEye.h / 2 - 0.5}%`,
+              width: `${persona.leftEye.w + 1.0}%`,
+              height: `${persona.leftEye.h + 1.5}%`,
+              transform: `scaleY(${isBlinking ? 1 : 0})`,
+              background: `linear-gradient(180deg, ${persona.eyelidColorTop} 0%, ${persona.eyelidColorBot} 100%)`,
+              boxShadow: isBlinking ? "0 1px 2px rgba(0,0,0,0.3)" : "none",
+              filter: "blur(0.35px)",
+              opacity: 0.98
+            }}
+          />
+          <div 
+            className="absolute pointer-events-none transition-transform duration-100 ease-in-out origin-top rounded-full"
+            style={{
+              left: `${persona.rightEye.x - persona.rightEye.w / 2 - 0.5}%`,
+              top: `${persona.rightEye.y - persona.rightEye.h / 2 - 0.5}%`,
+              width: `${persona.rightEye.w + 1.0}%`,
+              height: `${persona.rightEye.h + 1.5}%`,
+              transform: `scaleY(${isBlinking ? 1 : 0})`,
+              background: `linear-gradient(180deg, ${persona.eyelidColorTop} 0%, ${persona.eyelidColorBot} 100%)`,
+              boxShadow: isBlinking ? "0 1px 2px rgba(0,0,0,0.3)" : "none",
+              filter: "blur(0.35px)",
+              opacity: 0.98
+            }}
+          />
+
+          {/* 5. Restrained Phonetic Speech Mouth Aperture */}
+          {/* Active only during speech; resting mouth is 100% genuine photo */}
+          {isSpeaking && mouthOpening > 0.05 && (
+            <div 
+              className="absolute pointer-events-none flex items-center justify-center transition-opacity duration-100"
+              style={{
+                left: `${persona.mouth.x - persona.mouth.w / 2}%`,
+                top: `${persona.mouth.y - persona.mouth.h / 2}%`,
+                width: `${persona.mouth.w}%`,
+                height: `${persona.mouth.h}%`,
+              }}
+            >
+              <svg 
+                viewBox="0 0 100 50" 
+                className="w-full h-full overflow-visible"
+                style={{ filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.35))" }}
+              >
+                <defs>
+                  {/* Soft feathered oral cavity blur */}
+                  <filter id={`feather-mouth-${id}`} x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="0.4" />
+                  </filter>
+                </defs>
+
+                {/* Inner Oral Depth & Cavity Aperture */}
+                <path 
+                  d={`M 14,25 Q 50,${25 - mouthOpening * 1.5} 86,25 Q 50,${25 + mouthOpening * 8.5} 14,25 Z`} 
+                  fill="#150604" 
+                  filter={`url(#feather-mouth-${id})`}
+                />
+
+                {/* Subtle Upper Teeth Line (only visible on medium/wide openings) */}
+                {mouthOpening > 0.35 && (
+                  <path 
+                    d={`M 26,24.5 Q 50,23.5 74,24.5 Q 50,${24.5 + mouthOpening * 2.2} 26,24.5 Z`} 
+                    fill="#f3f4f6" 
+                    opacity="0.85"
+                    filter={`url(#feather-mouth-${id})`}
+                  />
+                )}
+
+                {/* Soft feathered lower lip boundary contour */}
+                <path 
+                  d={`M 14,25 Q 50,${25 + mouthOpening * 8.0} 86,25 Q 50,${25 + mouthOpening * 9.5} 14,25 Z`} 
+                  fill={persona.lipColor} 
+                  opacity="0.9"
+                  filter={`url(#feather-mouth-${id})`}
+                />
+
+                {/* Soft feathered upper lip highlight */}
+                <path 
+                  d={`M 14,25 Q 50,${25 - mouthOpening * 1.8} 86,25 Q 50,${25 - mouthOpening * 0.5} 14,25 Z`} 
+                  fill={persona.lipColor} 
+                  opacity="0.8"
+                  filter={`url(#feather-mouth-${id})`}
+                />
+              </svg>
+            </div>
+          )}
+
+          {/* 6. Subtle Cognitive Brow Accent (Thinking / Curiosity) */}
+          {(expression === 'thinking') && (
+            <div 
+              className="absolute pointer-events-none rounded-full bg-[#120804]/10 blur-[1.5px] transition-opacity duration-300 mix-blend-multiply"
+              style={{
+                left: `${persona.leftEye.x - 1}%`,
+                top: `${persona.leftEye.y - 6}%`,
+                width: `${persona.rightEye.x - persona.leftEye.x + 2}%`,
+                height: "2.5%",
+                transform: "rotate(-0.5deg)"
+              }}
+            />
+          )}
+        </div>
+
+        {/* Cinematic Studio Lens & Lighting Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/[0.04] pointer-events-none mix-blend-overlay" />
+        
+        {/* Soft edge rim light when active */}
+        {isActive && (
+          <div 
+            className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-500"
+            style={{
+              boxShadow: `inset 0 0 16px ${persona.ambientGlow}`
+            }}
+          />
+        )}
+      </div>
+
+      {/* 7. LAYER 5: Clean Video Call UI & Metadata (Google Meet Style) */}
+      
+      {/* Top Left: Live Status Pill */}
+      <div className="absolute top-3 inset-x-3 flex justify-between items-center z-20 pointer-events-none">
+        <div className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider font-mono shadow-md border flex items-center gap-1.5 backdrop-blur-md transition-all duration-300 ${statusBadge.containerClass}`}>
+          {statusBadge.icon}
+          <span>{statusBadge.label}</span>
+        </div>
+
+        {/* Top Right: Studio Feed Quality Indicator */}
+        <div className="text-[8px] font-mono font-medium text-slate-300 backdrop-blur-md bg-slate-950/60 px-2 py-0.8 rounded-full flex items-center gap-1.5 border border-white/10 shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_#34d399]" />
+          <span>1080p Studio</span>
+        </div>
+      </div>
+
+      {/* Bottom Floating Executive Nameplate */}
+      <div className="absolute bottom-3 inset-x-3 z-20 flex justify-between items-end pointer-events-none">
+        <div className="backdrop-blur-md bg-slate-950/80 px-3 py-2 rounded-xl flex items-center gap-2.5 max-w-[85%] border border-white/15 shadow-xl">
+          {/* Status Mic Icon */}
+          <div className={`flex items-center justify-center w-5 h-5 rounded-lg border shrink-0 transition-colors ${
+            isActive && isSpeaking 
+              ? "bg-indigo-600/30 border-indigo-400/40 text-indigo-300" 
+              : "bg-black/40 border-white/10 text-slate-400"
+          }`}>
+            {isActive && isSpeaking ? (
+              <span className="flex items-end gap-0.5 h-2.5">
+                <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.6s] h-1.5" />
+                <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.4s] h-2.5" />
+                <span className="w-0.5 bg-indigo-400 rounded-full animate-bounce [animation-duration:0.5s] h-2" />
+              </span>
+            ) : (
+              <MicOff className="w-2.5 h-2.5" />
+            )}
+          </div>
+          
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-white leading-none truncate font-sans tracking-tight">
+                {name}
+              </span>
+              <span 
+                className="text-[7.5px] font-mono font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider shrink-0 border"
+                style={{
+                  backgroundColor: `${persona.accentColor}20`,
+                  borderColor: `${persona.accentColor}40`,
+                  color: persona.accentColor
+                }}
+              >
+                {focus}
+              </span>
+            </div>
+            <span className="text-[9px] text-slate-400 font-mono mt-0.5 leading-none truncate">
+              {role}
             </span>
           </div>
         </div>
 
+        {/* Contextual Status Sub-Label (Desktop only) */}
+        <div className="hidden md:block max-w-[42%] text-right backdrop-blur-md bg-slate-950/60 border border-white/10 px-2.5 py-1 rounded-lg shadow-md">
+          <span className="text-[8px] font-mono font-medium text-slate-300 leading-tight block truncate">
+            {isSpeaking 
+              ? persona.expressionText.speaking 
+              : isThinking 
+                ? persona.expressionText.thinking 
+                : candidateIsSpeaking 
+                  ? persona.expressionText.listening 
+                  : persona.expressionText.standby}
+          </span>
+        </div>
       </div>
+
     </div>
   );
 }
