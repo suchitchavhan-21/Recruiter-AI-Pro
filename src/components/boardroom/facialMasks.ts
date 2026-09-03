@@ -24,116 +24,100 @@ export interface FacialMasks {
 export function buildFacialMasks(geom: FaceGeometry): FacialMasks {
   const lm = geom.landmarks;
 
+  // Helper to construct closed polygon from array of landmark indices
+  function buildPolygon(indices: number[]): Path2D {
+    const path = new Path2D();
+    if (indices.length === 0) return path;
+
+    const firstPt = lm[indices[0]];
+    if (firstPt) {
+      path.moveTo(firstPt.x, firstPt.y);
+      for (let i = 1; i < indices.length; i++) {
+        const pt = lm[indices[i]];
+        if (pt) path.lineTo(pt.x, pt.y);
+      }
+      path.closePath();
+    }
+    return path;
+  }
+
   // 1. FACE_MASK: complete facial area (jawline polygon closed across upper temple/forehead)
   const facePath = new Path2D();
-  if (lm.length >= 27) {
-    facePath.moveTo(lm[0].x, lm[0].y);
-    for (let i = 1; i <= 16; i++) {
-      facePath.lineTo(lm[i].x, lm[i].y);
+  const jawIdx = geom.regions.jaw;
+  if (jawIdx.length > 0) {
+    const firstPt = lm[jawIdx[0]];
+    if (firstPt) {
+      facePath.moveTo(firstPt.x, firstPt.y);
+      for (let i = 1; i < jawIdx.length; i++) {
+        const pt = lm[jawIdx[i]];
+        if (pt) facePath.lineTo(pt.x, pt.y);
+      }
+      facePath.closePath();
     }
-    // Top arch through temples and forehead
-    const foreheadY = Math.max(20, geom.boundingBox.y - 15);
-    facePath.lineTo(lm[26].x + 15, foreheadY + 20);
-    facePath.lineTo(geom.boundingBox.x + geom.boundingBox.width * 0.5, foreheadY);
-    facePath.lineTo(lm[17].x - 15, foreheadY + 20);
-    facePath.closePath();
   }
 
-  // 2. LEFT_EYE_MASK: smooth closed polygon around left eye contour (indices 36–41)
-  const leftEyePath = new Path2D();
-  const leIdx = geom.regions.leftEye;
-  if (leIdx.length > 0) {
-    leftEyePath.moveTo(lm[leIdx[0]].x, lm[leIdx[0]].y);
-    for (let i = 1; i < leIdx.length; i++) {
-      leftEyePath.lineTo(lm[leIdx[i]].x, lm[leIdx[i]].y);
-    }
-    leftEyePath.closePath();
-  }
+  // 2. LEFT_EYE_MASK & RIGHT_EYE_MASK: smooth closed polygons around eye contours
+  const leftEyePath = buildPolygon(geom.regions.leftEye);
+  const rightEyePath = buildPolygon(geom.regions.rightEye);
 
-  // 3. RIGHT_EYE_MASK: smooth closed polygon around right eye contour (indices 42–47)
-  const rightEyePath = new Path2D();
-  const reIdx = geom.regions.rightEye;
-  if (reIdx.length > 0) {
-    rightEyePath.moveTo(lm[reIdx[0]].x, lm[reIdx[0]].y);
-    for (let i = 1; i < reIdx.length; i++) {
-      rightEyePath.lineTo(lm[reIdx[i]].x, lm[reIdx[i]].y);
-    }
-    rightEyePath.closePath();
-  }
-
-  // 4. LEFT_EYELID_MASK: covers upper eyelid skin crease down to lower lid
+  // 3. LEFT_EYELID_MASK & RIGHT_EYELID_MASK: upper eyelid skin crease to eye aperture
   const leftEyelidPath = new Path2D();
-  if (leIdx.length >= 6) {
-    const browOffset = 10;
+  const leIdx = geom.regions.leftEye;
+  const lebIdx = geom.regions.leftEyebrow;
+  if (leIdx.length > 0 && lebIdx.length > 0) {
     leftEyelidPath.moveTo(lm[leIdx[0]].x, lm[leIdx[0]].y);
-    leftEyelidPath.lineTo(lm[leIdx[1]].x, lm[leIdx[1]].y - browOffset);
-    leftEyelidPath.lineTo(lm[leIdx[2]].x, lm[leIdx[2]].y - browOffset);
-    leftEyelidPath.lineTo(lm[leIdx[3]].x, lm[leIdx[3]].y);
-    leftEyelidPath.lineTo(lm[leIdx[4]].x, lm[leIdx[4]].y + 2);
-    leftEyelidPath.lineTo(lm[leIdx[5]].x, lm[leIdx[5]].y + 2);
+    for (const idx of lebIdx) {
+      if (lm[idx]) leftEyelidPath.lineTo(lm[idx].x, lm[idx].y);
+    }
+    for (let i = leIdx.length - 1; i >= 0; i--) {
+      const pt = lm[leIdx[i]];
+      if (pt) leftEyelidPath.lineTo(pt.x, pt.y);
+    }
     leftEyelidPath.closePath();
   }
 
-  // 5. RIGHT_EYELID_MASK
   const rightEyelidPath = new Path2D();
-  if (reIdx.length >= 6) {
-    const browOffset = 10;
+  const reIdx = geom.regions.rightEye;
+  const rebIdx = geom.regions.rightEyebrow;
+  if (reIdx.length > 0 && rebIdx.length > 0) {
     rightEyelidPath.moveTo(lm[reIdx[0]].x, lm[reIdx[0]].y);
-    rightEyelidPath.lineTo(lm[reIdx[1]].x, lm[reIdx[1]].y - browOffset);
-    rightEyelidPath.lineTo(lm[reIdx[2]].x, lm[reIdx[2]].y - browOffset);
-    rightEyelidPath.lineTo(lm[reIdx[3]].x, lm[reIdx[3]].y);
-    rightEyelidPath.lineTo(lm[reIdx[4]].x, lm[reIdx[4]].y + 2);
-    rightEyelidPath.lineTo(lm[reIdx[5]].x, lm[reIdx[5]].y + 2);
+    for (const idx of rebIdx) {
+      if (lm[idx]) rightEyelidPath.lineTo(lm[idx].x, lm[idx].y);
+    }
+    for (let i = reIdx.length - 1; i >= 0; i--) {
+      const pt = lm[reIdx[i]];
+      if (pt) rightEyelidPath.lineTo(pt.x, pt.y);
+    }
     rightEyelidPath.closePath();
   }
 
-  // 6. MOUTH_MASK: outer lip contour (indices 48–59)
-  const mouthPath = new Path2D();
-  const mOutIdx = geom.regions.mouthOuter;
-  if (mOutIdx.length > 0) {
-    mouthPath.moveTo(lm[mOutIdx[0]].x, lm[mOutIdx[0]].y);
-    for (let i = 1; i < mOutIdx.length; i++) {
-      mouthPath.lineTo(lm[mOutIdx[i]].x, lm[mOutIdx[i]].y);
-    }
-    mouthPath.closePath();
-  }
+  // 4. MOUTH_MASK: outer lip contour
+  const mouthPath = buildPolygon(geom.regions.mouthOuter);
 
-  // 7. ORAL_CAVITY_MASK: inner mouth region (indices 60–67)
-  const oralCavityPath = new Path2D();
-  const mInIdx = geom.regions.mouthInner;
-  if (mInIdx.length > 0) {
-    oralCavityPath.moveTo(lm[mInIdx[0]].x, lm[mInIdx[0]].y);
-    for (let i = 1; i < mInIdx.length; i++) {
-      oralCavityPath.lineTo(lm[mInIdx[i]].x, lm[mInIdx[i]].y);
-    }
-    oralCavityPath.closePath();
-  }
+  // 5. ORAL_CAVITY_MASK: inner mouth region
+  const oralCavityPath = buildPolygon(geom.regions.mouthInner);
 
-  // 8. LOWER_FACE_MASK: lower lip -> chin -> jaw
+  // 6. LOWER_FACE_MASK: lower lip -> chin -> jaw
   const lowerFacePath = new Path2D();
-  if (lm.length >= 17) {
-    lowerFacePath.moveTo(lm[4].x, lm[4].y);
-    for (let i = 5; i <= 12; i++) {
-      lowerFacePath.lineTo(lm[i].x, lm[i].y);
+  const mouthLeft = lm[61] || lm[geom.regions.mouthOuter[0]];
+  const mouthRight = lm[291] || lm[geom.regions.mouthOuter[Math.floor(geom.regions.mouthOuter.length / 2)]];
+  const chin = lm[152] || lm[geom.regions.jaw[Math.floor(geom.regions.jaw.length / 2)]];
+  if (mouthLeft && mouthRight && chin) {
+    lowerFacePath.moveTo(mouthLeft.x, mouthLeft.y);
+    // trace along lower lip
+    for (const idx of geom.regions.lowerLip) {
+      if (lm[idx]) lowerFacePath.lineTo(lm[idx].x, lm[idx].y);
     }
-    // Return through mouth center
-    lowerFacePath.lineTo(lm[54].x, lm[54].y);
-    lowerFacePath.lineTo(lm[48].x, lm[48].y);
+    lowerFacePath.lineTo(mouthRight.x, mouthRight.y);
+    // trace down along jawline to chin
+    lowerFacePath.lineTo(chin.x + 30, chin.y);
+    lowerFacePath.lineTo(chin.x, chin.y + 15);
+    lowerFacePath.lineTo(chin.x - 30, chin.y);
     lowerFacePath.closePath();
   }
 
-  // 9. JAW_MASK: Along the mandible curve (indices 0–16)
-  const jawPath = new Path2D();
-  if (lm.length >= 17) {
-    jawPath.moveTo(lm[0].x, lm[0].y);
-    for (let i = 1; i <= 16; i++) {
-      jawPath.lineTo(lm[i].x, lm[i].y);
-    }
-    jawPath.lineTo(lm[16].x - 10, lm[16].y + 20);
-    jawPath.lineTo(lm[8].x, lm[8].y + 30);
-    jawPath.lineTo(lm[0].x + 10, lm[0].y + 20);
-    jawPath.closePath();
-  }
+  // 7. JAW_MASK: Mandible curve
+  const jawPath = buildPolygon(geom.regions.jaw);
 
   return {
     face: facePath,

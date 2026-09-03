@@ -343,7 +343,7 @@ export function HumanAvatar({
           ctx.lineWidth = 1.5;
           ctx.strokeRect(geom.boundingBox.x, geom.boundingBox.y, geom.boundingBox.width, geom.boundingBox.height);
 
-          // Mesh Triangles (Cyan)
+          // Mesh Triangles (Cyan wireframe)
           if (triangles) {
             ctx.strokeStyle = "rgba(6, 182, 212, 0.35)";
             ctx.lineWidth = 0.8;
@@ -352,37 +352,94 @@ export function HumanAvatar({
               const p0 = geom.landmarks[tri.p0];
               const p1 = geom.landmarks[tri.p1];
               const p2 = geom.landmarks[tri.p2];
+              if (p0 && p1 && p2) {
+                ctx.beginPath();
+                ctx.moveTo(p0.x, p0.y);
+                ctx.lineTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.closePath();
+                ctx.stroke();
+              }
+            }
+          }
+
+          // Detector Landmarks (All 468 points in faint green)
+          ctx.fillStyle = "rgba(34, 197, 94, 0.75)";
+          for (let i = 0; i < geom.landmarks.length; i++) {
+            const p = geom.landmarks[i];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Extracted Animation Region Points (Purple rings)
+          ctx.strokeStyle = "#a855f7";
+          ctx.lineWidth = 1.0;
+          const animIndices = [
+            ...geom.regions.leftEye,
+            ...geom.regions.rightEye,
+            ...geom.regions.mouthOuter,
+            ...geom.regions.mouthInner,
+            ...geom.regions.jaw
+          ];
+          for (const idx of animIndices) {
+            const p = geom.landmarks[idx];
+            if (p) {
               ctx.beginPath();
-              ctx.moveTo(p0.x, p0.y);
-              ctx.lineTo(p1.x, p1.y);
-              ctx.lineTo(p2.x, p2.y);
-              ctx.closePath();
+              ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
               ctx.stroke();
             }
           }
 
-          // Facial Landmark Points (Green dots)
-          ctx.fillStyle = "#22c55e";
-          for (let i = 0; i < geom.landmarks.length; i++) {
-            const p = geom.landmarks[i];
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
-            ctx.fill();
+          // Nose Landmarks (Orange dots)
+          ctx.fillStyle = "#f97316";
+          for (const idx of geom.regions.nose) {
+            const p = geom.landmarks[idx];
+            if (p) {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, 2.0, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
 
           // Anatomical Contours: Eyes (Blue), Mouth (Red), Jaw (Magenta)
           if (masks) {
             ctx.strokeStyle = "#3b82f6";
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = 1.5;
             ctx.stroke(masks.leftEye);
             ctx.stroke(masks.rightEye);
 
             ctx.strokeStyle = "#ef4444";
+            ctx.lineWidth = 1.5;
             ctx.stroke(masks.mouth);
             ctx.stroke(masks.oralCavity);
 
             ctx.strokeStyle = "#d946ef";
+            ctx.lineWidth = 1.5;
             ctx.stroke(masks.jaw);
+          }
+
+          // Current Deformed Target Landmarks (Crimson dots when actively articulating)
+          if (openVal > 0.25 || bPhase > 0.02) {
+            const deformed = computeDeformedLandmarks(
+              geom.landmarks,
+              openVal,
+              mouthWidthScaleRef.current,
+              jawOffsetRef.current,
+              bPhase,
+              bPhase,
+              eyeGazeXRef.current,
+              eyeGazeYRef.current
+            );
+            ctx.fillStyle = "#f43f5e";
+            for (const idx of [...geom.regions.mouthOuter, ...geom.regions.mouthInner]) {
+              const p = deformed[idx];
+              if (p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
           }
 
           ctx.restore();

@@ -1,9 +1,10 @@
-import { FaceGeometry } from "./faceLandmarks";
+import { FaceGeometry, FACIAL_REGION_INDICES } from "./faceLandmarks";
 
 /**
- * 2D Local Mesh Deformation Engine
- * 
+ * 2D Local Mesh Deformation Engine (MediaPipe Face Mesh Topology)
+ *
  * Performs authentic photographic triangular mesh warping:
+ * - Uses real detector landmark indices
  * - Warps local triangles for mouth, jaw, chin, cheeks, eyes, and eyelids
  * - Every pixel rendered comes directly from the original photograph
  * - Deformation falls off smoothly toward surrounding skin
@@ -23,102 +24,97 @@ export interface Triangle {
 }
 
 /**
- * Generates triangular mesh topology for the 68-landmark face
+ * Generates triangular mesh topology for MediaPipe 468/478 landmarks
  */
 export function buildFacialMeshTriangles(geom: FaceGeometry): Triangle[] {
   const triangles: Triangle[] = [];
+  const lm = geom.landmarks;
 
   function addTri(p0: number, p1: number, p2: number, region?: Triangle["region"]) {
-    triangles.push({ p0, p1, p2, region });
+    if (lm[p0] && lm[p1] && lm[p2]) {
+      triangles.push({ p0, p1, p2, region });
+    }
   }
 
-  // 1. Mouth Outer & Inner Mesh (Vermilion borders & lip tissue)
-  // Outer: 48..59, Inner: 60..67
-  // Upper Lip
-  addTri(48, 49, 60, "mouth");
-  addTri(49, 61, 60, "mouth");
-  addTri(49, 50, 61, "mouth");
-  addTri(50, 62, 61, "mouth");
-  addTri(50, 51, 62, "mouth");
-  addTri(51, 52, 62, "mouth");
-  addTri(52, 63, 62, "mouth");
-  addTri(52, 53, 63, "mouth");
-  addTri(53, 54, 64, "mouth");
-  addTri(53, 64, 63, "mouth");
+  const outer = FACIAL_REGION_INDICES.mouthOuter;
+  const inner = FACIAL_REGION_INDICES.mouthInner;
 
-  // Lower Lip
-  addTri(48, 60, 67, "mouth");
-  addTri(48, 67, 59, "mouth");
-  addTri(59, 67, 58, "mouth");
-  addTri(58, 67, 66, "mouth");
-  addTri(58, 66, 57, "mouth");
-  addTri(57, 66, 56, "mouth");
-  addTri(56, 66, 65, "mouth");
-  addTri(56, 65, 55, "mouth");
-  addTri(55, 65, 64, "mouth");
-  addTri(55, 64, 54, "mouth");
+  // 1. Mouth Outer to Inner Lip Ribbon
+  // Both outer and inner have 20 matching circumferential points
+  const n = Math.min(outer.length, inner.length);
+  for (let i = 0; i < n; i++) {
+    const next = (i + 1) % n;
+    addTri(outer[i], outer[next], inner[i], "mouth");
+    addTri(outer[next], inner[next], inner[i], "mouth");
+  }
 
-  // 2. Philtrum / Upper Lip to Nose Base (smooth transition above upper lip)
-  // Nose base: 31..35
-  addTri(31, 49, 48, "mouth");
-  addTri(31, 32, 50, "mouth");
-  addTri(31, 50, 49, "mouth");
-  addTri(32, 33, 51, "mouth");
-  addTri(32, 51, 50, "mouth");
-  addTri(33, 34, 52, "mouth");
-  addTri(33, 52, 51, "mouth");
-  addTri(34, 35, 53, "mouth");
-  addTri(34, 53, 52, "mouth");
-  addTri(35, 54, 53, "mouth");
+  // 2. Upper Lip to Nose & Philtrum
+  // Nose base: 98, 97, 2, 326, 327, 1
+  addTri(61, 185, 98, "mouth");
+  addTri(185, 40, 98, "mouth");
+  addTri(40, 39, 97, "mouth");
+  addTri(39, 37, 2, "mouth");
+  addTri(37, 0, 2, "mouth");
+  addTri(0, 267, 2, "mouth");
+  addTri(267, 269, 326, "mouth");
+  addTri(269, 270, 326, "mouth");
+  addTri(270, 409, 327, "mouth");
+  addTri(409, 291, 327, "mouth");
+  addTri(98, 97, 2, "mouth");
+  addTri(2, 326, 327, "mouth");
+  addTri(2, 1, 326, "mouth");
 
-  // 3. Lower Lip to Chin & Jaw (Mandibular deformation)
-  // Chin: 8, Jaw: 4..12
-  addTri(48, 59, 5, "jaw");
-  addTri(59, 6, 5, "jaw");
-  addTri(59, 58, 6, "jaw");
-  addTri(58, 7, 6, "jaw");
-  addTri(58, 57, 8, "jaw");
-  addTri(58, 8, 7, "jaw");
-  addTri(57, 56, 8, "jaw");
-  addTri(56, 9, 8, "jaw");
-  addTri(56, 55, 9, "jaw");
-  addTri(55, 10, 9, "jaw");
-  addTri(55, 54, 11, "jaw");
-  addTri(55, 11, 10, "jaw");
+  // 3. Lower Lip to Chin & Jaw (Mandibular Hinge)
+  // Chin: 152, Jaw: 148, 176, 149, 150, 377, 400, 378, 379
+  addTri(61, 146, 172, "jaw");
+  addTri(146, 91, 136, "jaw");
+  addTri(91, 181, 150, "jaw");
+  addTri(181, 84, 149, "jaw");
+  addTri(84, 17, 176, "jaw");
+  addTri(17, 314, 148, "jaw");
+  addTri(148, 176, 152, "jaw");
+  addTri(17, 148, 152, "jaw");
+  addTri(314, 405, 377, "jaw");
+  addTri(152, 148, 377, "jaw");
+  addTri(405, 321, 400, "jaw");
+  addTri(377, 400, 378, "jaw");
+  addTri(321, 375, 378, "jaw");
+  addTri(375, 291, 379, "jaw");
+  addTri(291, 365, 379, "jaw");
 
-  // 4. Cheeks (Smooth falloff anchors)
-  addTri(48, 4, 3, "cheek");
-  addTri(48, 5, 4, "cheek");
-  addTri(31, 48, 3, "cheek");
-  addTri(54, 12, 11, "cheek");
-  addTri(54, 13, 12, "cheek");
-  addTri(35, 13, 54, "cheek");
+  // 4. Cheeks (Low-deformation anchor transitions)
+  addTri(61, 205, 98, "cheek");
+  addTri(61, 172, 205, "cheek");
+  addTri(291, 425, 327, "cheek");
+  addTri(291, 365, 425, "cheek");
 
-  // 5. Left Eye & Eyelid (36..41)
-  addTri(36, 37, 41, "eyeLeft");
-  addTri(37, 38, 40, "eyeLeft");
-  addTri(37, 40, 41, "eyeLeft");
-  addTri(38, 39, 40, "eyeLeft");
-  // Eyebrow to Eye (Upper eyelid skin)
-  addTri(17, 18, 37, "eyeLeft");
-  addTri(17, 37, 36, "eyeLeft");
-  addTri(18, 19, 38, "eyeLeft");
-  addTri(18, 38, 37, "eyeLeft");
-  addTri(19, 20, 39, "eyeLeft");
-  addTri(19, 39, 38, "eyeLeft");
+  // 5. Left Eye & Eyelid
+  // Contour: 33, 160, 158, 133, 153, 144
+  addTri(33, 160, 144, "eyeLeft");
+  addTri(160, 158, 153, "eyeLeft");
+  addTri(160, 153, 144, "eyeLeft");
+  addTri(158, 133, 153, "eyeLeft");
+  // Eyebrow upper fold: 70, 63, 105, 66
+  addTri(70, 63, 160, "eyeLeft");
+  addTri(70, 160, 33, "eyeLeft");
+  addTri(63, 105, 158, "eyeLeft");
+  addTri(63, 158, 160, "eyeLeft");
+  addTri(105, 66, 133, "eyeLeft");
+  addTri(105, 133, 158, "eyeLeft");
 
-  // 6. Right Eye & Eyelid (42..47)
-  addTri(42, 43, 47, "eyeRight");
-  addTri(43, 44, 46, "eyeRight");
-  addTri(43, 46, 47, "eyeRight");
-  addTri(44, 45, 46, "eyeRight");
-  // Eyebrow to Eye (Upper eyelid skin)
-  addTri(22, 23, 43, "eyeRight");
-  addTri(22, 43, 42, "eyeRight");
-  addTri(23, 24, 44, "eyeRight");
-  addTri(23, 44, 43, "eyeRight");
-  addTri(24, 25, 45, "eyeRight");
-  addTri(24, 45, 44, "eyeRight");
+  // 6. Right Eye & Eyelid
+  // Contour: 362, 385, 387, 263, 373, 380
+  addTri(362, 385, 380, "eyeRight");
+  addTri(385, 387, 373, "eyeRight");
+  addTri(385, 373, 380, "eyeRight");
+  addTri(387, 263, 373, "eyeRight");
+  // Eyebrow upper fold: 300, 293, 334, 296
+  addTri(300, 293, 385, "eyeRight");
+  addTri(300, 385, 362, "eyeRight");
+  addTri(293, 334, 387, "eyeRight");
+  addTri(293, 387, 385, "eyeRight");
+  addTri(334, 296, 263, "eyeRight");
+  addTri(334, 263, 387, "eyeRight");
 
   return triangles;
 }
@@ -138,74 +134,92 @@ export function computeDeformedLandmarks(
 ): Point2D[] {
   const result: Point2D[] = baseLandmarks.map(p => ({ x: p.x, y: p.y }));
 
-  // 1. Mouth Deformation
+  // 1. Mouth & Speech Deformation
   if (mouthOpen > 0.2) {
     const lipLift = Math.min(mouthOpen * 0.15, 1.4);
     const jawDrop = mouthOpen * 0.52;
-    const mouthW = baseLandmarks[54].x - baseLandmarks[48].x;
+    const mouthW = Math.abs(baseLandmarks[291].x - baseLandmarks[61].x);
     const cornerShiftX = (widthScale - 1.0) * mouthW * 0.45;
 
-    // Upper lip (moves upward subtly)
-    [49, 50, 51, 52, 53, 61, 62, 63].forEach(idx => {
-      result[idx].y -= lipLift;
+    // Upper lip (elevates slightly)
+    FACIAL_REGION_INDICES.upperLip.forEach(idx => {
+      if (result[idx]) result[idx].y -= lipLift;
     });
 
-    // Lower lip (moves downward with jaw)
-    [55, 56, 57, 58, 59, 65, 66, 67].forEach(idx => {
-      result[idx].y += jawDrop;
+    // Lower lip (depresses with mandible)
+    FACIAL_REGION_INDICES.lowerLip.forEach(idx => {
+      if (result[idx]) result[idx].y += jawDrop;
     });
 
-    // Mouth corners (horizontal spread/round)
-    result[48].x -= cornerShiftX;
-    result[48].y += mouthOpen * 0.08;
-    result[60].x -= cornerShiftX * 0.8;
-    result[54].x += cornerShiftX;
-    result[54].y += mouthOpen * 0.08;
-    result[64].x += cornerShiftX * 0.8;
-
-    // Chin & Mandible (anatomical hinge falloff)
-    // Points 5..11
-    for (let i = 5; i <= 11; i++) {
-      const distFromCenter = Math.abs(i - 8) / 3.0; // 0 at chin point 8, 1 at 5 and 11
-      const falloff = Math.cos(Math.min(distFromCenter, 1.0) * Math.PI * 0.5);
-      result[i].y += (jawOffset * 0.95 + jawDrop * 0.6) * falloff;
+    // Mouth corners (horizontal stretch/round)
+    if (result[61]) {
+      result[61].x -= cornerShiftX;
+      result[61].y += mouthOpen * 0.08;
+    }
+    if (result[78]) {
+      result[78].x -= cornerShiftX * 0.8;
+    }
+    if (result[291]) {
+      result[291].x += cornerShiftX;
+      result[291].y += mouthOpen * 0.08;
+    }
+    if (result[308]) {
+      result[308].x += cornerShiftX * 0.8;
     }
 
+    // Chin & Mandible Hinge
+    // Point 152 is Chin apex
+    if (result[152]) {
+      result[152].y += jawOffset * 0.95 + jawDrop * 0.6;
+    }
+    [148, 176, 149, 150, 377, 400, 378].forEach((idx, i) => {
+      if (result[idx]) {
+        const falloff = Math.cos((i / 7) * Math.PI * 0.4);
+        result[idx].y += (jawOffset * 0.85 + jawDrop * 0.5) * falloff;
+      }
+    });
+
     // Cheeks follow subtly
-    [3, 4].forEach(idx => {
-      result[idx].y += jawOffset * 0.15;
-    });
-    [12, 13].forEach(idx => {
-      result[idx].y += jawOffset * 0.15;
+    [205, 425].forEach(idx => {
+      if (result[idx]) result[idx].y += jawOffset * 0.15;
     });
   }
 
-  // 2. Eye Blinking & Gaze
-  // Left eye
+  // 2. Eye Blinking (Upper eyelid landmarks descend toward lower eyelid)
+  // Left eye: upper [159, 158, 157, 160], lower [145, 153, 154]
   if (blinkPhaseLeft > 0.02) {
-    const eyeH = baseLandmarks[41].y - baseLandmarks[37].y;
-    const drop = blinkPhaseLeft * eyeH * 0.92;
-    result[37].y += drop;
-    result[38].y += drop;
-  }
-  // Right eye
-  if (blinkPhaseRight > 0.02) {
-    const eyeH = baseLandmarks[47].y - baseLandmarks[43].y;
-    const drop = blinkPhaseRight * eyeH * 0.92;
-    result[43].y += drop;
-    result[44].y += drop;
+    const upperLeft = [159, 158, 157, 160];
+    const lowerLeftY = (baseLandmarks[145].y + baseLandmarks[153].y) * 0.5;
+    upperLeft.forEach(idx => {
+      if (result[idx]) {
+        const drop = (lowerLeftY - baseLandmarks[idx].y) * blinkPhaseLeft * 0.94;
+        result[idx].y += drop;
+      }
+    });
   }
 
-  // Gaze micro-displacement on eye centers
+  // Right eye: upper [386, 387, 388, 385], lower [374, 373, 380]
+  if (blinkPhaseRight > 0.02) {
+    const upperRight = [386, 387, 388, 385];
+    const lowerRightY = (baseLandmarks[374].y + baseLandmarks[373].y) * 0.5;
+    upperRight.forEach(idx => {
+      if (result[idx]) {
+        const drop = (lowerRightY - baseLandmarks[idx].y) * blinkPhaseRight * 0.94;
+        result[idx].y += drop;
+      }
+    });
+  }
+
+  // 3. Gaze micro-displacement on irises
   if (Math.abs(gazeX) > 0.05 || Math.abs(gazeY) > 0.05) {
-    [37, 38, 40, 41].forEach(idx => {
-      result[idx].x += gazeX * 0.5;
-      result[idx].y += gazeY * 0.3;
-    });
-    [43, 44, 46, 47].forEach(idx => {
-      result[idx].x += gazeX * 0.5;
-      result[idx].y += gazeY * 0.3;
-    });
+    if (result[468]) {
+      result[468].x += gazeX * 0.6;
+      result[468].y += gazeY * 0.4;
+    }
+    if (result[473]) {
+      result[473].x += gazeX * 0.6;
+      result[473].y += gazeY * 0.4;
+    }
   }
 
   return result;
@@ -281,6 +295,8 @@ export function renderLocalMeshWarp(
     const d1 = deformedLandmarks[t.p1];
     const d2 = deformedLandmarks[t.p2];
 
-    drawWarpedTriangle(ctx, sourceImage, s0, s1, s2, d0, d1, d2);
+    if (s0 && s1 && s2 && d0 && d1 && d2) {
+      drawWarpedTriangle(ctx, sourceImage, s0, s1, s2, d0, d1, d2);
+    }
   }
 }
