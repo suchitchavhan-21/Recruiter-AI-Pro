@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MicOff, Sparkles, User } from "lucide-react";
 import { speechAudioSync } from "./speechAudioSync";
+import { detectFaceGeometry, FaceGeometry } from "./faceLandmarks";
+import { buildFacialMasks, FacialMasks } from "./facialMasks";
+import { buildFacialMeshTriangles, computeDeformedLandmarks, renderLocalMeshWarp, Triangle } from "./meshWarp";
 
 interface HumanAvatarProps {
   id: number;
@@ -23,16 +26,6 @@ interface PersonaConfig {
   objectPosition: string;
   scale: number;
   naturalTilt: number;
-  facialLandmarks: {
-    leftEye: { x: number; y: number; w: number; h: number };
-    rightEye: { x: number; y: number; w: number; h: number };
-    mouth: { x: number; y: number; w: number; h: number };
-    skinTone: string;
-    skinHighlight: string;
-    lipColor: string;
-    lipInner: string;
-    teethColor: string;
-  };
   expressionText: {
     speaking: string;
     thinking: string;
@@ -62,6 +55,11 @@ export function HumanAvatar({
   const [hasImageError, setHasImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Automatic Face Detection & Mesh Deformation Refs
+  const faceGeometryRef = useRef<FaceGeometry | null>(null);
+  const facialMasksRef = useRef<FacialMasks | null>(null);
+  const meshTrianglesRef = useRef<Triangle[] | null>(null);
 
   // State refs for 60fps zero-re-render physics loop
   const isSpeakingRef = useRef(isSpeaking);
@@ -105,7 +103,7 @@ export function HumanAvatar({
     }
   }, []);
 
-  // Persona configurations with calibrated facial coordinates
+  // Persona configurations (facial coordinates are detected automatically from image)
   const personaConfigs: Record<number, PersonaConfig> = {
     0: { // Sarah Jenkins — VP of People & Culture
       avatarUrl: "/assets/sarah.png",
@@ -114,16 +112,6 @@ export function HumanAvatar({
       objectPosition: "50% 16%",
       scale: 1.10,
       naturalTilt: 0.15,
-      facialLandmarks: {
-        leftEye: { x: 224, y: 194, w: 24, h: 11 },
-        rightEye: { x: 290, y: 194, w: 24, h: 11 },
-        mouth: { x: 256, y: 310, w: 46, h: 10 },
-        skinTone: "#edd0be",
-        skinHighlight: "#f5ded0",
-        lipColor: "#c26363",
-        lipInner: "#381212",
-        teethColor: "#f7f0eb"
-      },
       expressionText: {
         speaking: "Presenting Behavioral Assessment",
         thinking: "Evaluating Behavioral Competencies",
@@ -138,16 +126,6 @@ export function HumanAvatar({
       objectPosition: "50% 14%",
       scale: 1.10,
       naturalTilt: -0.15,
-      facialLandmarks: {
-        leftEye: { x: 222, y: 188, w: 23, h: 10 },
-        rightEye: { x: 290, y: 188, w: 23, h: 10 },
-        mouth: { x: 256, y: 302, w: 42, h: 9 },
-        skinTone: "#cca28a",
-        skinHighlight: "#dab39d",
-        lipColor: "#aa5d54",
-        lipInner: "#341010",
-        teethColor: "#f4ebe5"
-      },
       expressionText: {
         speaking: "Exploring Technical Architecture",
         thinking: "Evaluating Systems Scalability",
@@ -162,16 +140,6 @@ export function HumanAvatar({
       objectPosition: "50% 16%",
       scale: 1.10,
       naturalTilt: 0.1,
-      facialLandmarks: {
-        leftEye: { x: 225, y: 202, w: 24, h: 11 },
-        rightEye: { x: 288, y: 202, w: 24, h: 11 },
-        mouth: { x: 256, y: 316, w: 44, h: 10 },
-        skinTone: "#7d5038",
-        skinHighlight: "#916045",
-        lipColor: "#673a2c",
-        lipInner: "#260e0a",
-        teethColor: "#ece2da"
-      },
       expressionText: {
         speaking: "Assessing Strategic Leadership",
         thinking: "Measuring Delivery Velocity",
@@ -183,23 +151,43 @@ export function HumanAvatar({
 
   const persona = personaConfigs[id] || personaConfigs[0];
 
-  // Load portrait image into memory for high-performance canvas composite
+  // Load portrait image and perform automatic face detection
   useEffect(() => {
+    let isCancelled = false;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.src = persona.avatarUrl;
-    img.onload = () => {
+
+    img.onload = async () => {
+      if (isCancelled) return;
       imageRef.current = img;
+
+      // 1. Detect Face Geometry automatically from source image pixels
+      const geom = await detectFaceGeometry(img, persona.avatarUrl);
+      if (geom) {
+        faceGeometryRef.current = geom;
+        facialMasksRef.current = buildFacialMasks(geom);
+        meshTrianglesRef.current = buildFacialMeshTriangles(geom);
+      } else {
+        console.warn(`[HumanAvatar] Face detection failed for persona ${id}. Displaying unwarped original portrait.`);
+      }
+
       setImageLoaded(true);
       setHasImageError(false);
     };
+
     img.onerror = () => {
+      if (isCancelled) return;
       setHasImageError(true);
       setImageLoaded(false);
     };
-  }, [persona.avatarUrl]);
 
-  // Real-Time 60 FPS Speech-Synchronized Facial Rig Loop
+    return () => {
+      isCancelled = true;
+    };
+  }, [persona.avatarUrl, id]);
+
+  // Real-Time 60 FPS Speech-Synchronized Facial Rig Loop with 2D Triangular Mesh Warping
   useEffect(() => {
     if (!imageLoaded || reducedMotion) return;
 
@@ -216,7 +204,9 @@ export function HumanAvatar({
       if (canvas && ctx && img) {
         const now = Date.now();
         const isSpk = isSpeakingRef.current && isActiveRef.current;
-        const landmarks = persona.facialLandmarks;
+        const geom = faceGeometryRef.current;
+        const masks = facialMasksRef.current;
+        const triangles = meshTrianglesRef.current;
 
         // Register active persona with audio sync engine
         if (isSpk) {
@@ -249,20 +239,20 @@ export function HumanAvatar({
           jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 24, 1);
         }
 
-        // 2. Natural Irregular Blinking Rig (100–120ms human blink cycle)
+        // 2. Natural Irregular Blinking Rig (100–160ms human blink cycle)
         if (now > nextBlinkTimeRef.current) {
           blinkTargetRef.current = 1;
-          nextBlinkTimeRef.current = now + 3000 + Math.random() * 3200;
+          nextBlinkTimeRef.current = now + 2800 + Math.random() * 3200;
         }
 
         if (blinkTargetRef.current === 1) {
-          blinkPhaseRef.current += delta * 18; // Fast close (~50ms)
+          blinkPhaseRef.current += delta * 16; // Fast close (~55ms)
           if (blinkPhaseRef.current >= 1) {
             blinkPhaseRef.current = 1;
             blinkTargetRef.current = 0;
           }
         } else {
-          blinkPhaseRef.current -= delta * 14; // Smooth open (~70ms)
+          blinkPhaseRef.current -= delta * 12; // Smooth open (~80ms)
           if (blinkPhaseRef.current <= 0) {
             blinkPhaseRef.current = 0;
           }
@@ -270,35 +260,35 @@ export function HumanAvatar({
 
         // 3. Gaze Direction Logic
         if (isThinkingRef.current) {
-          // Contemplative gaze drift slightly up and right
+          // Contemplative upward/side gaze
           eyeGazeXRef.current = 1.0;
           eyeGazeYRef.current = -0.8;
         } else if (candidateSpeakingRef.current) {
           // Attentive listening forward gaze
           eyeGazeXRef.current = 0.0;
-          eyeGazeYRef.current = 0.2;
+          eyeGazeYRef.current = 0.3;
         } else if (now > nextGazeTimeRef.current) {
+          // Very subtle random gaze drift
           eyeGazeXRef.current = (Math.random() - 0.5) * 0.6;
           eyeGazeYRef.current = (Math.random() - 0.5) * 0.4;
           nextGazeTimeRef.current = now + 2500 + Math.random() * 2500;
         }
 
-        // 4. Head Rig Transform: Natural Breathing, Speaking Nod, & Expression Posture
+        // 4. Head Rig Transform: Significantly reduced breathing & conversational micro-nod
         const tSec = now * 0.001;
-        const breathingY = Math.sin(tSec * 1.6) * 0.75;
+        const breathingY = Math.sin(tSec * 1.5) * 0.45; // Subtly reduced
         const openVal = mouthOpenRef.current;
         const bPhase = blinkPhaseRef.current;
 
-        // Subconscious conversational nodding while speaking
         const speakingNod = (isSpk && openVal > 0.6) 
-          ? Math.sin(tSec * 4.8) * Math.min(openVal * 0.05, 0.35) * (Math.PI / 180)
+          ? Math.sin(tSec * 4.2) * Math.min(openVal * 0.03, 0.22) * (Math.PI / 180)
           : 0;
 
-        let headTilt = persona.naturalTilt;
+        let headTilt = persona.naturalTilt * 0.7;
         if (isThinkingRef.current) {
-          headTilt += 0.012; // Inquisitive tilt
+          headTilt += 0.008; // Inquisitive tilt
         } else if (candidateSpeakingRef.current) {
-          headTilt -= 0.008; // Receptive tilt
+          headTilt -= 0.005; // Receptive tilt
         } else if (isSpk) {
           headTilt += speakingNod;
         }
@@ -312,81 +302,90 @@ export function HumanAvatar({
         ctx.rotate(headTilt);
         ctx.translate(-256, -256 + breathingY);
 
-        // Render base authentic photograph
+        // Always draw authentic base photograph
         ctx.drawImage(img, 0, 0, 512, 512);
 
-        // 5. Photographic Lower-Face & Mouth Rig Warping
-        if (openVal > 0.35) {
-          const m = landmarks.mouth;
-          const mouthY = m.y;
-          const wScale = mouthWidthScaleRef.current;
-          const halfW = (m.w * wScale) * 0.5;
+        // 5. Local Photographic Mesh Deformation
+        if (geom && masks && triangles) {
+          if (openVal > 0.25 || bPhase > 0.02) {
+            // Compute subtle left/right blink asymmetry
+            const blinkLeft = Math.min(1, Math.max(0, bPhase * 1.02));
+            const blinkRight = Math.min(1, Math.max(0, bPhase * 0.98));
 
-          // Anatomical Jaw & Lip Parameters
-          const lipElevate = Math.min(openVal * 0.12, 1.2); // Upper lip elevator muscle
-          const jawDrop = openVal * 0.44;                   // Mandible hinge drop (0 to 4.5px)
+            const deformed = computeDeformedLandmarks(
+              geom.landmarks,
+              openVal,
+              mouthWidthScaleRef.current,
+              jawOffsetRef.current,
+              blinkLeft,
+              blinkRight,
+              eyeGazeXRef.current,
+              eyeGazeYRef.current
+            );
 
-          // Upper face down to upper lip line
-          ctx.drawImage(img, 0, 0, 512, mouthY - 14, 0, 0, 512, mouthY - 14);
-
-          // Upper lip tissue (mouthY - 14 to mouthY): slight upward expansion
-          const upperLipH = 14;
-          for (let y = mouthY - upperLipH; y < mouthY; y += 2) {
-            const frac = (y - (mouthY - upperLipH)) / upperLipH;
-            const offsetY = -lipElevate * frac;
-            ctx.drawImage(img, 0, y, 512, 2, 0, y + offsetY, 512, 2);
-          }
-
-          // Natural Oral Cavity Depth in the parted slit between vermilion borders
-          ctx.save();
-          ctx.beginPath();
-          ctx.ellipse(m.x, mouthY + (jawDrop - lipElevate) * 0.5, halfW, (jawDrop + lipElevate) * 0.52, 0, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(14, 5, 5, 0.94)";
-          ctx.fill();
-          ctx.restore();
-
-          // Lower Face Mesh (Lower lip, chin, jawline down to neck):
-          // Mandible rotation falloff from lower lip to collar
-          const startY = mouthY;
-          const endY = 475;
-          const sliceH = 1.5;
-          const totalRange = endY - startY;
-
-          for (let y = startY; y < endY; y += sliceH) {
-            const progress = (y - startY) / totalRange;
-            const displacementFactor = Math.cos(progress * Math.PI * 0.5);
-            const offsetY = jawDrop * displacementFactor;
-
-            ctx.drawImage(
+            renderLocalMeshWarp(
+              ctx,
               img,
-              0, y, 512, sliceH,
-              0, y + offsetY, 512, sliceH
+              geom.landmarks,
+              deformed,
+              triangles,
+              masks.oralCavity,
+              openVal
             );
           }
         }
 
-        // 6. Natural Texture-Preserving Eyelid Blinking Rig
-        if (bPhase > 0.02) {
-          const eyes = [landmarks.leftEye, landmarks.rightEye];
-          eyes.forEach((eye) => {
-            const eyeX = eye.x + eyeGazeXRef.current;
-            const eyeY = eye.y + eyeGazeYRef.current;
-            const boxW = eye.w * 1.8;
-            const boxH = eye.h * 1.6;
-            const srcX = eyeX - boxW * 0.5;
-            const srcY = eyeY - boxH * 0.5;
+        // 6. Development-Only Debug Mode (window.__DEBUG_AVATAR_FACE__ === true)
+        if (typeof window !== "undefined" && (window as any).__DEBUG_AVATAR_FACE__ && geom) {
+          ctx.save();
+          // Bounding Box (Yellow)
+          ctx.strokeStyle = "#eab308";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(geom.boundingBox.x, geom.boundingBox.y, geom.boundingBox.width, geom.boundingBox.height);
 
-            // Compress eye aperture downward using authentic eyelid skin
-            const blinkScaleY = 1.0 - bPhase * 0.88;
-            const currentH = boxH * blinkScaleY;
-            const destY = srcY + (boxH - currentH) * 0.55;
+          // Mesh Triangles (Cyan)
+          if (triangles) {
+            ctx.strokeStyle = "rgba(6, 182, 212, 0.35)";
+            ctx.lineWidth = 0.8;
+            for (let i = 0; i < triangles.length; i++) {
+              const tri = triangles[i];
+              const p0 = geom.landmarks[tri.p0];
+              const p1 = geom.landmarks[tri.p1];
+              const p2 = geom.landmarks[tri.p2];
+              ctx.beginPath();
+              ctx.moveTo(p0.x, p0.y);
+              ctx.lineTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.closePath();
+              ctx.stroke();
+            }
+          }
 
-            ctx.drawImage(
-              img,
-              srcX, srcY, boxW, boxH,
-              srcX, destY, boxW, currentH
-            );
-          });
+          // Facial Landmark Points (Green dots)
+          ctx.fillStyle = "#22c55e";
+          for (let i = 0; i < geom.landmarks.length; i++) {
+            const p = geom.landmarks[i];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Anatomical Contours: Eyes (Blue), Mouth (Red), Jaw (Magenta)
+          if (masks) {
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 1.2;
+            ctx.stroke(masks.leftEye);
+            ctx.stroke(masks.rightEye);
+
+            ctx.strokeStyle = "#ef4444";
+            ctx.stroke(masks.mouth);
+            ctx.stroke(masks.oralCavity);
+
+            ctx.strokeStyle = "#d946ef";
+            ctx.stroke(masks.jaw);
+          }
+
+          ctx.restore();
         }
 
         ctx.restore();
@@ -402,7 +401,7 @@ export function HumanAvatar({
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [imageLoaded, reducedMotion, id]);
+  }, [imageLoaded, reducedMotion, id, persona.naturalTilt]);
 
   // Gentle panel turn angle for multi-interviewer boardroom stage
   const getPanelTurnAngle = () => {
