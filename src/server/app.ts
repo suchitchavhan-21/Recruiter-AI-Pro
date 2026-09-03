@@ -195,6 +195,17 @@ export function createExpressApp(): express.Application {
   app.get("/api/dashboard", requireAuth, getDashboardAnalyticsHandler);
   app.get("/api/analytics/dashboard", requireAuth, getDashboardAnalyticsHandler);
 
+  // 404 handler for undefined API routes
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: "API_NOT_FOUND",
+        message: `API endpoint not found: ${req.method} ${req.path}`
+      }
+    });
+  });
+
   // Centralized Error Handling Middleware
   app.use(centralErrorHandler);
 

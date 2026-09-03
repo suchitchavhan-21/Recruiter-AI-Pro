@@ -398,6 +398,22 @@ async function runProductionVerification() {
     assert("SECRETS_AUDIT", !hasSecretKeyInPkg, "No sensitive production API keys or database passwords committed");
 
     // -------------------------------------------------------------------------
+    // 8.5. VERIFY OFFICIAL AVATAR ASSETS SERVED WITH IMAGE/PNG
+    // -------------------------------------------------------------------------
+    console.log("\n[10/16] Verifying Official Interviewer Avatar PNG Asset Serving...");
+    const sarahRes = await fetchJson(`${baseB}/assets/sarah.png`);
+    assert("AVATAR_ASSETS", sarahRes.status === 200 && Boolean(sarahRes.headers["content-type"]?.includes("image/png")), "Sarah portrait (/assets/sarah.png) served with HTTP 200 and image/png Content-Type");
+
+    const davidRes = await fetchJson(`${baseB}/assets/david.png`);
+    assert("AVATAR_ASSETS", davidRes.status === 200 && Boolean(davidRes.headers["content-type"]?.includes("image/png")), "David portrait (/assets/david.png) served with HTTP 200 and image/png Content-Type");
+
+    const marcusRes = await fetchJson(`${baseB}/assets/marcus.png`);
+    assert("AVATAR_ASSETS", marcusRes.status === 200 && Boolean(marcusRes.headers["content-type"]?.includes("image/png")), "Marcus portrait (/assets/marcus.png) served with HTTP 200 and image/png Content-Type");
+
+    const missingRes = await fetchJson(`${baseB}/api/nonexistent-endpoint`);
+    assert("ERROR_HANDLING", missingRes.status === 404 || missingRes.status === 401, "Nonexistent endpoint returns error response");
+
+    // -------------------------------------------------------------------------
     // 9. CLEAN UP TEST DATA
     // -------------------------------------------------------------------------
     console.log("\n[10/16] Cleaning up temporary production verification test data...");

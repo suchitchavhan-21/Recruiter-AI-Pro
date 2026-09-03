@@ -55,21 +55,58 @@ async function startServer() {
 
   if (ENV.NODE_ENV !== "production") {
     console.log("🚀 Starting server in DEVELOPMENT mode with Vite Middleware on port", port);
+    // Explicit static mount for /assets in dev mode before Vite middleware
+    const publicAssetsDir = path.join(process.cwd(), "public", "assets");
+    if (fs.existsSync(publicAssetsDir)) {
+      app.use("/assets", express.static(publicAssetsDir));
+    }
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    let finalDistPath = path.join(process.cwd(), "dist");
-    if (__dirname.endsWith("dist") || fs.existsSync(path.join(__dirname, "index.html"))) {
-      finalDistPath = __dirname;
+    // Robust resolution of production dist directory
+    let distPath = path.join(process.cwd(), "dist");
+    if (fs.existsSync(path.join(__dirname, "index.html")) && __dirname.endsWith("dist")) {
+      distPath = __dirname;
+    } else if (fs.existsSync(path.join(__dirname, "dist", "index.html"))) {
+      distPath = path.join(__dirname, "dist");
     }
 
-    console.log(`🚀 Starting server in PRODUCTION mode serving static assets from: ${finalDistPath} on port ${port}`);
-    app.use(express.static(finalDistPath));
+    const publicPath = path.join(process.cwd(), "public");
+
+    console.log(`🚀 Starting server in PRODUCTION mode serving static assets from: ${distPath} on port ${port}`);
+    
+    // 1. Primary static distribution assets
+    app.use(express.static(distPath));
+    if (fs.existsSync(path.join(distPath, "assets"))) {
+      app.use("/assets", express.static(path.join(distPath, "assets")));
+    }
+
+    // 2. Secondary public directory fallback
+    if (fs.existsSync(publicPath)) {
+      app.use(express.static(publicPath));
+      if (fs.existsSync(path.join(publicPath, "assets"))) {
+        app.use("/assets", express.static(path.join(publicPath, "assets")));
+      }
+    }
+
+    // 3. SPA catch-all navigation handler (prevents returning index.html for missing static files)
     app.get("*", (req, res) => {
-      res.sendFile(path.join(finalDistPath, "index.html"));
+      if (req.path.startsWith("/api/") || req.path.startsWith("/assets/") || path.extname(req.path)) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: `Resource not found: ${req.path}`
+          }
+        });
+      }
+      const indexPath = fs.existsSync(path.join(distPath, "index.html"))
+        ? path.join(distPath, "index.html")
+        : path.join(process.cwd(), "index.html");
+      res.sendFile(indexPath);
     });
   }
 
