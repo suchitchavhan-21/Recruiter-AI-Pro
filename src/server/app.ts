@@ -25,6 +25,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema
 } from "./controllers/auth.controller";
+import { resolveInterviewerVoice } from "./voice/interviewerVoices";
 import { 
   analyzeJdHandler, 
   evaluateInterviewHandler, 
@@ -134,11 +135,11 @@ export function createExpressApp(): express.Application {
   app.use("/api/admin", adminRouter);
 
   // ----------------------------------------------------
-  // HIGH-FIDELITY NEURAL TTS AUDIO STREAMING ENDPOINT
-  // Supports persona-calibrated studio voices:
-  // - Sarah Jenkins: Salli (US Female Executive)
-  // - David Chen: Matthew (US Male Technical Architect)
-  // - Marcus Brody: Brian (UK Male Executive Leadership)
+  // AUTHORITATIVE PERSONA NEURAL TTS AUDIO STREAMING ENDPOINT
+  // Strict persona-to-voice mapping:
+  // - Sarah Jenkins (persona=0): Salli (Female, US Executive)
+  // - David Chen (persona=1): Matthew (Male, US Technical Architect)
+  // - Marcus Brody (persona=2): Brian (Male, UK Engineering Leadership)
   // ----------------------------------------------------
   app.get("/api/tts", async (req, res) => {
     try {
@@ -147,83 +148,91 @@ export function createExpressApp(): express.Application {
         return res.status(400).json({ error: "Text parameter is required" });
       }
 
-      // Determine persona-specific voice profile
-      const voiceParam = String(req.query.voice || "").toLowerCase();
-      const personaParam = String(req.query.persona || "").toLowerCase();
-      const genderParam = String(req.query.gender || "").toLowerCase();
-
-      let selectedVoice = "Salli"; // Default: Sarah Jenkins (Female)
-
-      if (voiceParam === "matthew" || personaParam.includes("david") || personaParam === "1" || (genderParam === "male" && !personaParam.includes("marcus"))) {
-        selectedVoice = "Matthew"; // David Chen (Technical Male)
-      } else if (voiceParam === "brian" || personaParam.includes("marcus") || personaParam === "2") {
-        selectedVoice = "Brian";   // Marcus Brody (Leadership Male)
-      } else if (voiceParam === "salli" || personaParam.includes("sarah") || personaParam === "0" || genderParam === "female") {
-        selectedVoice = "Salli";   // Sarah Jenkins (Executive Female)
-      }
-
-      // Try Amazon Polly studio voice via ttsmp3 engine
+      // 1. Authoritative Persona Resolution
+      let personaConfig;
       try {
-        const params = new URLSearchParams();
-        params.append("msg", text);
-        params.append("lang", selectedVoice);
-        params.append("source", "ttsmp3");
+        personaConfig = resolveInterviewerVoice(req.query.persona);
+      } catch (personaErr: any) {
+        return res.status(400).json({ error: personaErr.message });
+      }
 
-        const pollyResp = await fetch("https://ttsmp3.com/makemp3_new.php", {
-          method: "POST",
-          body: params,
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-          }
+      // 2. Reject conflicting client-provided voice parameters
+      const voiceParam = req.query.voice ? String(req.query.voice).trim() : null;
+      if (voiceParam && voiceParam.toLowerCase() !== personaConfig.voiceId.toLowerCase()) {
+        return res.status(400).json({
+          error: `VOICE_CONFLICT: Voice '${voiceParam}' conflicts with persona ${personaConfig.personaId} (${personaConfig.personaName}). Authoritative voice is '${personaConfig.voiceId}'`
         });
+      }
 
-        if (pollyResp.ok) {
-          const pollyJson: any = await pollyResp.json();
-          if (pollyJson?.URL) {
-            const audioStream = await fetch(pollyJson.URL);
-            if (audioStream.ok) {
-              const audioBytes = await audioStream.arrayBuffer();
-              res.setHeader("Content-Type", "audio/mpeg");
-              res.setHeader("Content-Length", audioBytes.byteLength);
-              res.setHeader("Cache-Control", "public, max-age=86400");
-              res.setHeader("X-TTS-Voice", selectedVoice);
-              return res.status(200).send(Buffer.from(audioBytes));
+      const selectedVoice = personaConfig.voiceId;
+      const personaShortName = personaConfig.personaName.split(" ")[0]; // "Sarah" | "David" | "Marcus"
+
+      // 3. Robust Synthesis with Limited Retries for the SAME voice (Attempt 1 & Attempt 2)
+      let audioBuffer: Buffer | null = null;
+      let lastError: Error | null = null;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const params = new URLSearchParams();
+          params.append("msg", text);
+          params.append("lang", selectedVoice);
+          params.append("source", "ttsmp3");
+
+          const pollyResp = await fetch("https://ttsmp3.com/makemp3_new.php", {
+            method: "POST",
+            body: params,
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
             }
+          });
+
+          if (!pollyResp.ok) {
+            throw new Error(`TTS upstream returned status ${pollyResp.status}`);
+          }
+
+          const pollyJson: any = await pollyResp.json();
+          if (!pollyJson?.URL || pollyJson.Speaker !== selectedVoice) {
+            throw new Error(`TTS upstream voice mismatch or missing URL (expected: ${selectedVoice}, got: ${pollyJson?.Speaker})`);
+          }
+
+          const audioStream = await fetch(pollyJson.URL);
+          if (!audioStream.ok) {
+            throw new Error(`Failed to download audio file: ${audioStream.status}`);
+          }
+
+          const audioBytes = await audioStream.arrayBuffer();
+          audioBuffer = Buffer.from(audioBytes);
+          break; // Success
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[TTS RETRY NOTICE]: Attempt ${attempt} for voice '${selectedVoice}' failed:`, err?.message);
+          if (attempt === 1) {
+            await new Promise(r => setTimeout(r, 400));
           }
         }
-      } catch (pollyErr) {
-        console.warn("[TTS NOTICE]: Studio voice fetch error, using resilient fallback:", pollyErr);
       }
 
-      // Resilient Fallback: Google Translate TTS
-      const chunks = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-      const audioBuffers: Buffer[] = [];
-      for (const chunk of chunks) {
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk.trim())}&tl=en&client=tw-ob`;
-        const resp = await fetch(url, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          }
+      // 4. If all retries for the SAME voice failed, return 503 TTS_UNAVAILABLE
+      // NO fallback to generic Google Translate! Never substitute another gender or voice!
+      if (!audioBuffer || audioBuffer.length === 0) {
+        console.error(`[TTS UNAVAILABLE]: Persona '${personaConfig.personaName}' voice '${selectedVoice}' failed:`, lastError?.message);
+        return res.status(503).json({
+          error: "TTS_UNAVAILABLE",
+          message: `Speech synthesis currently unavailable for ${personaConfig.personaName} (voice: ${selectedVoice})`
         });
-        if (resp.ok) {
-          const ab = await resp.arrayBuffer();
-          audioBuffers.push(Buffer.from(ab));
-        }
       }
 
-      if (audioBuffers.length > 0) {
-        const combined = Buffer.concat(audioBuffers);
-        res.setHeader("Content-Type", "audio/mpeg");
-        res.setHeader("Content-Length", combined.length);
-        res.setHeader("Cache-Control", "public, max-age=86400");
-        res.setHeader("X-TTS-Voice", "GoogleFallback");
-        return res.status(200).send(combined);
-      }
-
-      return res.status(500).json({ error: "Speech synthesis failed" });
+      // 5. Response with Authoritative Headers
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Length", audioBuffer.byteLength);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Access-Control-Expose-Headers", "X-TTS-Voice, X-TTS-Persona");
+      res.setHeader("X-TTS-Voice", selectedVoice);
+      res.setHeader("X-TTS-Persona", personaShortName);
+      return res.status(200).send(audioBuffer);
     } catch (err: any) {
-      console.error("[TTS ERROR]:", err);
-      return res.status(500).json({ error: "Failed to generate speech audio" });
+      console.error("[TTS FATAL ERROR]:", err);
+      return res.status(500).json({ error: "Internal server error during speech synthesis" });
     }
   });
 

@@ -135,11 +135,18 @@ class SpeechAudioSyncEngine {
     }
 
     try {
+      // Resolve persona ID reliably: from utterance, window global, or active persona
+      const personaId = (utterance as any).personaId !== undefined
+        ? Number((utterance as any).personaId)
+        : ((typeof window !== "undefined" && (window as any).__ACTIVE_INTERVIEWER_PERSONA_ID__ !== undefined)
+            ? Number((window as any).__ACTIVE_INTERVIEWER_PERSONA_ID__)
+            : this.activePersonaId);
+
       // Determine persona voice ID
-      const voiceId = this.activePersonaId === 0 ? "Salli" : (this.activePersonaId === 1 ? "Matthew" : "Brian");
+      const voiceId = personaId === 0 ? "Salli" : (personaId === 1 ? "Matthew" : "Brian");
 
       // Fetch natural human speech audio from neural TTS endpoint
-      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${this.activePersonaId}&voice=${voiceId}`, {
+      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${personaId}&voice=${voiceId}`, {
         signal: this.currentAbortController.signal
       });
 

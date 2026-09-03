@@ -86,7 +86,13 @@ export function HumanAvatar({
     isThinkingRef.current = isThinking;
     candidateSpeakingRef.current = candidateIsSpeaking;
     isActiveRef.current = isActive;
-  }, [isSpeaking, isThinking, candidateIsSpeaking, isActive]);
+    if (isActive) {
+      speechAudioSync.setActivePersona(id);
+      if (typeof window !== "undefined") {
+        (window as any).__ACTIVE_INTERVIEWER_PERSONA_ID__ = id;
+      }
+    }
+  }, [isSpeaking, isThinking, candidateIsSpeaking, isActive, id]);
 
   // Respect prefers-reduced-motion
   useEffect(() => {
