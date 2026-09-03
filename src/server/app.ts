@@ -134,6 +134,70 @@ export function createExpressApp(): express.Application {
   app.use("/api/admin", adminRouter);
 
   // ----------------------------------------------------
+  // HIGH-FIDELITY NEURAL TTS AUDIO STREAMING ENDPOINT
+  // ----------------------------------------------------
+  app.get("/api/tts", async (req, res) => {
+    try {
+      const text = String(req.query.text || "").trim();
+      if (!text) {
+        return res.status(400).json({ error: "Text parameter is required" });
+      }
+
+      // Split text into punctuation-bounded segments <= 180 chars
+      const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+      const chunks: string[] = [];
+      let cur = "";
+      for (const s of sentences) {
+        if ((cur + " " + s).trim().length <= 180) {
+          cur = (cur + " " + s).trim();
+        } else {
+          if (cur) chunks.push(cur);
+          if (s.length <= 180) {
+            cur = s.trim();
+          } else {
+            const words = s.split(" ");
+            let wCur = "";
+            for (const w of words) {
+              if ((wCur + " " + w).trim().length <= 180) {
+                wCur = (wCur + " " + w).trim();
+              } else {
+                if (wCur) chunks.push(wCur);
+                wCur = w;
+              }
+            }
+            if (wCur) cur = wCur;
+          }
+        }
+      }
+      if (cur) chunks.push(cur);
+
+      const audioBuffers: Buffer[] = [];
+      for (const chunk of chunks) {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=en&client=tw-ob`;
+        const resp = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          }
+        });
+        if (!resp.ok) {
+          throw new Error(`TTS upstream error: ${resp.status}`);
+        }
+        const ab = await resp.arrayBuffer();
+        audioBuffers.push(Buffer.from(ab));
+      }
+
+      const combined = Buffer.concat(audioBuffers);
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Length", combined.length);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.status(200).send(combined);
+    } catch (err: any) {
+      console.error("[TTS ERROR]:", err);
+      return res.status(500).json({ error: "Failed to generate speech audio" });
+    }
+  });
+
+  // ----------------------------------------------------
   // DIRECT BACKWARD-COMPATIBLE API BRIDGES
   // (Guarantees every frontend button & fetch url continues working instantly)
   // ----------------------------------------------------

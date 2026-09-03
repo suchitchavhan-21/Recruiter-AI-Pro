@@ -270,95 +270,76 @@ export function HumanAvatar({
           nextGazeTimeRef.current = now + 2000 + Math.random() * 2500;
         }
 
-        // --- 5. RENDER NATURAL MOUTH & JAW ARTICULATION ---
+        // --- 5. NATURAL PHOTOGRAPHIC LOWER-FACE & JAW ARTICULATION ---
         const openVal = mouthOpenRef.current;
-        // Only render opening when speech is active (preserves 100% photographic portrait in silence)
-        if (openVal > 0.6) {
-          const m = landmarks.mouth;
-          const wScale = mouthWidthScaleRef.current;
-          const halfW = (m.w * wScale) / 2;
-          const mX = m.x;
-          const mY = m.y + jawOffsetRef.current * 0.25;
-          const openH = openVal;
-
-          // A. Subtle Lower Jaw & Chin Displacement
-          if (jawOffsetRef.current > 0.4) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.ellipse(mX, mY + 36, 36, 20, 0, 0, Math.PI * 2);
-            ctx.fillStyle = landmarks.skinTone;
-            ctx.globalAlpha = Math.min(jawOffsetRef.current * 0.035, 0.12);
-            ctx.filter = "blur(5px)";
-            ctx.fill();
-            ctx.restore();
-          }
-
-          // B. Anatomical Oral Cavity Depth (Dark interior mouth with soft feathering)
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(mX - halfW, mY);
-          ctx.bezierCurveTo(mX - halfW * 0.5, mY - openH * 0.25, mX + halfW * 0.5, mY - openH * 0.25, mX + halfW, mY);
-          ctx.bezierCurveTo(mX + halfW * 0.5, mY + openH * 0.95, mX - halfW * 0.5, mY + openH * 0.95, mX - halfW, mY);
-          
-          const mouthGrad = ctx.createLinearGradient(mX, mY - openH * 0.3, mX, mY + openH);
-          mouthGrad.addColorStop(0, "rgba(22, 8, 8, 0.98)");
-          mouthGrad.addColorStop(1, landmarks.lipInner);
-          ctx.fillStyle = mouthGrad;
-          ctx.fill();
-
-          // C. Upper Teeth Row (Visible during open vowels & consonants with natural translucency)
-          if (openH > 2.8) {
-            const teethH = Math.min(openH * 0.38, 3.8);
-            const teethW = halfW * 0.68;
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(mX - teethW, mY - openH * 0.12, teethW * 2, teethH);
-            const teethGrad = ctx.createLinearGradient(mX, mY - openH * 0.12, mX, mY + teethH);
-            teethGrad.addColorStop(0, landmarks.teethColor);
-            teethGrad.addColorStop(0.85, "rgba(240, 230, 222, 0.92)");
-            teethGrad.addColorStop(1, "rgba(200, 185, 175, 0.6)");
-            ctx.fillStyle = teethGrad;
-            ctx.fill();
-            ctx.restore();
-          }
-
-          // D. Seamless Feathered Lip Shading (Blends oral opening into photographic lips)
-          ctx.beginPath();
-          ctx.moveTo(mX - halfW * 1.02, mY);
-          ctx.bezierCurveTo(mX - halfW * 0.4, mY - openH * 0.18, mX + halfW * 0.4, mY - openH * 0.18, mX + halfW * 1.02, mY);
-          ctx.bezierCurveTo(mX + halfW * 0.4, mY + openH * 0.75, mX - halfW * 0.4, mY + openH * 0.75, mX - halfW * 1.02, mY);
-          ctx.strokeStyle = landmarks.lipColor;
-          ctx.lineWidth = 1.2;
-          ctx.stroke();
-
-          ctx.restore();
-        }
-
-        // --- 6. RENDER NATURAL EYELID BLINK ---
         const bPhase = blinkPhaseRef.current;
-        if (bPhase > 0.02) {
-          const eyes = [landmarks.leftEye, landmarks.rightEye];
-          eyes.forEach((eye) => {
-            const eyeX = eye.x + eyeGazeXRef.current;
-            const eyeY = eye.y + eyeGazeYRef.current;
-            const eyeH = eye.h * bPhase * 1.1;
 
+        // When silent and not blinking, render 100% pristine photograph without any modification
+        if (openVal <= 0.4 && bPhase <= 0.02) {
+          // Base drawImage already rendered the untouched portrait
+        } else {
+          const m = landmarks.mouth;
+          const jawDrop = openVal * 0.38; // Anatomical mandible drop (0 to 3.8px)
+
+          // A. Speech Articulation: Organic lower-face displacement from source photo pixels
+          if (openVal > 0.4) {
+            const mouthY = m.y;
+            const halfW = (m.w * mouthWidthScaleRef.current) * 0.5;
+
+            // Step 1: Draw upper face (forehead, eyes, nose, upper lip) directly from source photo
+            ctx.drawImage(img, 0, 0, 512, mouthY, 0, 0, 512, mouthY);
+
+            // Step 2: Render organic oral cavity depth in the parting slit between lips
             ctx.save();
-            // Upper Eyelid descent with soft skin gradient
             ctx.beginPath();
-            ctx.ellipse(eyeX, eyeY - 2 + eyeH * 0.5, eye.w * 0.52, eyeH * 0.65, 0, 0, Math.PI * 2);
-            ctx.fillStyle = landmarks.skinTone;
+            ctx.ellipse(m.x, mouthY + jawDrop * 0.5, halfW, jawDrop * 0.5, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(16, 6, 6, 0.94)";
             ctx.fill();
-
-            // Subtle lash line crease
-            ctx.beginPath();
-            ctx.moveTo(eyeX - eye.w * 0.48, eyeY - 2 + eyeH);
-            ctx.quadraticCurveTo(eyeX, eyeY - 1 + eyeH + 0.8, eyeX + eye.w * 0.48, eyeY - 2 + eyeH);
-            ctx.strokeStyle = "rgba(40, 20, 15, 0.45)";
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
             ctx.restore();
-          });
+
+            // Step 3: Deform lower face (lower lip, chin, jawline) directly from authentic photo slices
+            const startY = mouthY;
+            const endY = 475;
+            const sliceH = 2; // Fine 2px vertical slices for continuous, seamless deformation
+            const totalRange = endY - startY;
+
+            for (let y = startY; y < endY; y += sliceH) {
+              const progress = (y - startY) / totalRange;
+              // Cosine anatomical falloff: maximum displacement at lower lip, smoothly tapering to 0 at neck
+              const displacementFactor = Math.cos(progress * Math.PI * 0.5);
+              const offsetY = jawDrop * displacementFactor;
+
+              ctx.drawImage(
+                img,
+                0, y, 512, sliceH,
+                0, y + offsetY, 512, sliceH
+              );
+            }
+          }
+
+          // B. Natural Texture-Preserving Eyelid Movement (Zero painted skin tones)
+          if (bPhase > 0.02) {
+            const eyes = [landmarks.leftEye, landmarks.rightEye];
+            eyes.forEach((eye) => {
+              const eyeX = eye.x + eyeGazeXRef.current;
+              const eyeY = eye.y + eyeGazeYRef.current;
+              const boxW = eye.w * 1.8;
+              const boxH = eye.h * 1.6;
+              const srcX = eyeX - boxW * 0.5;
+              const srcY = eyeY - boxH * 0.5;
+
+              // Compress eye vertically from authentic photo texture during the ~80ms blink
+              const blinkScaleY = 1.0 - bPhase * 0.85;
+              const currentH = boxH * blinkScaleY;
+              const destY = srcY + (boxH - currentH) * 0.5;
+
+              ctx.drawImage(
+                img,
+                srcX, srcY, boxW, boxH,
+                srcX, destY, boxW, currentH
+              );
+            });
+          }
         }
       }
 
