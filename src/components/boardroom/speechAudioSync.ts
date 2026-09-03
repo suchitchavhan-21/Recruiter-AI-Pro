@@ -1,62 +1,62 @@
 /**
- * Real-Time Speech Audio & Viseme Synchronization Engine
+ * Real-Time Audio-Driven Speech & Analyser Synchronization Engine
  * 
- * Provides true audio-synchronized speech analysis for AI interviewer avatars:
- * 1. Hooks window.speechSynthesis to intercept speech utterances and boundary events.
- * 2. Analyzes spoken words, graphemes, phonemes, and punctuation pauses.
- * 3. Tracks real speech activity, pause detection, and viseme coordinates.
- * 4. Connects to Web Audio API AnalyserNode for audio amplitude and frequency analysis.
+ * Implements the required target architecture:
+ * Gemini interviewer text
+ *         ↓
+ * controlled TTS audio (Acoustic Synthesizer or Audio Element)
+ *         ↓
+ * HTMLAudioElement / AudioBuffer
+ *         ↓
+ * Web Audio API (AudioBufferSourceNode / MediaElementAudioSourceNode)
+ *         ↓
+ * AnalyserNode (RMS amplitude, low/mid/high spectral analysis)
+ *         ↓
+ * speech activity / spectral features
+ *         ↓
+ * facial articulation
+ *         ↓
+ * HumanAvatar canvas
+ * 
+ * The same audio source is simultaneously heard by the candidate (via audioCtx.destination)
+ * and analyzed by the avatar (via analyserNode).
  */
 
-export type VisemeType = 
-  | "neutral"        // Silence, pause, rest
-  | "open_vowel"    // 'a', 'ah', 'ar' (AA, AE, AH) — open mouth, jaw drop
-  | "wide_vowel"    // 'e', 'ee', 'i' (IY, EH, EY) — wide lips, teeth visible
-  | "rounded_vowel" // 'o', 'u', 'oo', 'w' (OW, UW, AO) — rounded, narrowed lips
-  | "fricative"     // 'f', 'v', 's', 'z', 'th', 'sh' — narrow teeth aperture
-  | "bilabial"      // 'm', 'b', 'p' — lips closed tightly
-  | "dental";       // 't', 'd', 'n', 'l', 'k', 'g' — slight opening, tongue
+import { synthesizeAcousticSpeech, VoiceOptions } from "./controlledAudioTts";
 
-export interface SpeechState {
-  isSpeaking: boolean;
-  isPaused: boolean;
-  audioTime: number; // in milliseconds
-  speechActivity: number; // 0.0 (silent) to 1.0 (loud/active vowel)
-  viseme: VisemeType;
-  mouthOpening: number; // 0.0 to 12.0 pixels
-  mouthWidthScale: number; // 0.88 to 1.12
-  jawOffset: number; // 0.0 to 3.5 pixels
-  currentWord: string;
-  currentChar: string;
+export interface AudioAcousticMetrics {
+  isPlaying: boolean;
+  rms: number;             // Root Mean Square amplitude (0.0 to 1.0)
+  spectralEnergy: number;  // Average spectral bin magnitude (0 to 255)
+  midEnergy: number;       // Vowel formant energy (400 - 2200 Hz)
+  highEnergy: number;      // Fricative / consonant energy (2500 - 6000 Hz)
+  speechActivity: number;  // 0.0 (silent/pause) to 1.0 (loud speech)
+  mouthOpening: number;    // Derived directly from acoustic energy (0.0 to 11.5px)
+  mouthWidthScale: number; // Lip spread/rounding (0.90 to 1.10)
+  jawOffset: number;       // Proportional chin displacement (0.0 to 3.7px)
 }
 
 class SpeechAudioSyncEngine {
   private static instance: SpeechAudioSyncEngine | null = null;
 
-  // Active utterance state
-  private activeUtterance: SpeechSynthesisUtterance | null = null;
-  private spokenText: string = "";
-  private speechStartTime: number = 0;
-  private isSpeaking: boolean = false;
-  private isPaused: boolean = false;
-
-  // Boundary tracking
-  private currentCharIndex: number = 0;
-  private currentCharLength: number = 0;
-  private currentWord: string = "";
-  private lastBoundaryTime: number = 0;
-
-  // Web Audio API
+  // Web Audio API Core
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
+  private gainNode: GainNode | null = null;
+  private currentSource: AudioBufferSourceNode | null = null;
+  private currentMediaElementSource: MediaElementAudioSourceNode | null = null;
+
+  // Analyser buffers
+  private timeData: Uint8Array | null = null;
   private freqData: Uint8Array | null = null;
 
-  // Speech timing cache
-  private wordTimings: Array<{ word: string; start: number; end: number; isPause: boolean; visemes: VisemeType[] }> = [];
+  // Playback state
+  private isPlaying: boolean = false;
+  private activeUtterance: SpeechSynthesisUtterance | null = null;
 
   private constructor() {
-    this.initGlobalSpeechHook();
     this.initWebAudio();
+    this.initGlobalSpeechHook();
   }
 
   public static getInstance(): SpeechAudioSyncEngine {
@@ -67,335 +67,252 @@ class SpeechAudioSyncEngine {
   }
 
   /**
-   * Initializes Web Audio API context and analyser node
+   * Initializes the Web Audio API audio graph
    */
-  private initWebAudio() {
+  public initWebAudio() {
     if (typeof window === "undefined") return;
+
     try {
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtxClass) {
+      if (AudioCtxClass && !this.audioCtx) {
         this.audioCtx = new AudioCtxClass();
         this.analyser = this.audioCtx.createAnalyser();
-        this.analyser.fftSize = 128;
+        this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.35;
+
+        this.gainNode = this.audioCtx.createGain();
+        this.gainNode.gain.value = 1.0;
+
+        // Routing: source -> gain -> analyser -> destination (Candidate hears audio)
+        this.gainNode.connect(this.analyser);
+        this.analyser.connect(this.audioCtx.destination);
+
+        this.timeData = new Uint8Array(this.analyser.fftSize);
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
       }
-    } catch (e) {
-      // AudioContext may be restricted until user gesture; will resume on interaction
+    } catch (err) {
+      // AudioContext may be restricted until first user interaction
     }
   }
 
   /**
-   * Hooks window.speechSynthesis.speak to capture utterance events
+   * Hooks window.speechSynthesis to route speech through the controlled audio pipeline
    */
   private initGlobalSpeechHook() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
     const originalSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
+    const originalCancel = window.speechSynthesis.cancel.bind(window.speechSynthesis);
 
     window.speechSynthesis.speak = (utterance: SpeechSynthesisUtterance) => {
-      this.attachUtteranceListeners(utterance);
-      originalSpeak(utterance);
+      this.playUtteranceWithAudio(utterance);
+    };
+
+    window.speechSynthesis.cancel = () => {
+      this.stopCurrentAudio();
+      originalCancel();
     };
   }
 
   /**
-   * Attaches real-time boundary and lifecycle listeners to speech utterance
+   * Plays speech using controlled acoustic audio routed through Web Audio API & AnalyserNode
    */
-  public attachUtteranceListeners(utterance: SpeechSynthesisUtterance) {
-    this.activeUtterance = utterance;
-    this.spokenText = utterance.text || "";
-    this.currentCharIndex = 0;
-    this.currentWord = "";
-    this.parseTextPhonetics(this.spokenText, utterance.rate || 1.0);
+  public playUtteranceWithAudio(utterance: SpeechSynthesisUtterance) {
+    this.initWebAudio();
+    this.stopCurrentAudio();
 
-    const origOnStart = utterance.onstart;
-    const origOnEnd = utterance.onend;
-    const origOnError = utterance.onerror;
-    const origOnPause = utterance.onpause;
-    const origOnResume = utterance.onresume;
-    const origOnBoundary = utterance.onboundary;
-
-    utterance.onstart = (e) => {
-      this.isSpeaking = true;
-      this.isPaused = false;
-      this.speechStartTime = performance.now();
-      this.lastBoundaryTime = performance.now();
-      if (this.audioCtx && this.audioCtx.state === "suspended") {
-        this.audioCtx.resume().catch(() => {});
-      }
-      if (origOnStart) origOnStart.call(utterance, e);
-    };
-
-    utterance.onend = (e) => {
-      this.isSpeaking = false;
-      this.isPaused = false;
-      this.activeUtterance = null;
-      this.currentWord = "";
-      this.currentCharIndex = this.spokenText.length;
-      if (origOnEnd) origOnEnd.call(utterance, e);
-    };
-
-    utterance.onerror = (e) => {
-      this.isSpeaking = false;
-      this.isPaused = false;
-      this.activeUtterance = null;
-      if (origOnError) origOnError.call(utterance, e);
-    };
-
-    utterance.onpause = (e) => {
-      this.isPaused = true;
-      if (origOnPause) origOnPause.call(utterance, e);
-    };
-
-    utterance.onresume = (e) => {
-      this.isPaused = false;
-      if (origOnResume) origOnResume.call(utterance, e);
-    };
-
-    utterance.onboundary = (e) => {
-      this.lastBoundaryTime = performance.now();
-      this.currentCharIndex = e.charIndex;
-      this.currentCharLength = e.charLength || 0;
-
-      // Extract current word
-      if (this.spokenText && e.charIndex < this.spokenText.length) {
-        const remaining = this.spokenText.slice(e.charIndex);
-        const match = remaining.match(/^(\w+)/);
-        this.currentWord = match ? match[1] : "";
-      }
-
-      if (origOnBoundary) origOnBoundary.call(utterance, e);
-    };
-  }
-
-  /**
-   * Parses spoken text into phonetically timed segments and punctuation pauses
-   */
-  private parseTextPhonetics(text: string, rate: number = 1.0) {
-    this.wordTimings = [];
-    if (!text) return;
-
-    // Split text into tokens with punctuation markers
-    const tokens = text.match(/\S+|\s+/g) || [];
-    let cumulativeTime = 0;
-    const baseWpm = 150 * rate;
-    const msPerChar = 60000 / (baseWpm * 5); // Average ~80ms per character
-
-    tokens.forEach((token) => {
-      const isWhitespace = /^\s+$/.test(token);
-      if (isWhitespace) return;
-
-      const isPunctuationPause = /^[,\.\?!;—\-\(\)]+$/.test(token);
-      let durationMs = 0;
-
-      if (isPunctuationPause) {
-        // Punctuation produces silence/pause
-        durationMs = token.includes(".") || token.includes("?") || token.includes("!") ? 400 : 220;
-        this.wordTimings.push({
-          word: token,
-          start: cumulativeTime,
-          end: cumulativeTime + durationMs,
-          isPause: true,
-          visemes: ["neutral"]
-        });
-      } else {
-        // Strip trailing punctuation to analyze word
-        const cleanWord = token.replace(/[^a-zA-Z]/g, "").toLowerCase();
-        const visemes = this.deriveWordVisemes(cleanWord);
-        durationMs = Math.max(cleanWord.length * msPerChar, 140);
-
-        this.wordTimings.push({
-          word: cleanWord,
-          start: cumulativeTime,
-          end: cumulativeTime + durationMs,
-          isPause: false,
-          visemes
-        });
-
-        // Small inter-word micro pause (35ms)
-        cumulativeTime += 35;
-      }
-
-      cumulativeTime += durationMs;
-    });
-  }
-
-  /**
-   * Converts word characters into phonetic viseme categories
-   */
-  private deriveWordVisemes(word: string): VisemeType[] {
-    if (!word) return ["neutral"];
-    const visemes: VisemeType[] = [];
-
-    for (let i = 0; i < word.length; i++) {
-      const char = word[i];
-      const nextChar = word[i + 1] || "";
-      const combo = char + nextChar;
-
-      if (["mb", "mp", "bb", "pp"].includes(combo) || ["m", "b", "p"].includes(char)) {
-        visemes.push("bilabial");
-      } else if (["oo", "ou", "ow"].includes(combo) || ["o", "u", "w"].includes(char)) {
-        visemes.push("rounded_vowel");
-      } else if (["ee", "ea", "ei"].includes(combo) || ["e", "i", "y"].includes(char)) {
-        visemes.push("wide_vowel");
-      } else if (["ah", "ar", "ai", "au"].includes(combo) || ["a"].includes(char)) {
-        visemes.push("open_vowel");
-      } else if (["th", "sh", "ch"].includes(combo) || ["f", "v", "s", "z"].includes(char)) {
-        visemes.push("fricative");
-      } else {
-        visemes.push("dental");
-      }
+    if (!this.audioCtx || !this.analyser || !this.gainNode) {
+      // Fallback if Web Audio unavailable
+      if (utterance.onstart) (utterance as any).onstart();
+      setTimeout(() => { if (utterance.onend) (utterance as any).onend(); }, 2000);
+      return;
     }
 
-    return visemes.length > 0 ? visemes : ["dental"];
+    if (this.audioCtx.state === "suspended") {
+      this.audioCtx.resume().catch(() => {});
+    }
+
+    this.activeUtterance = utterance;
+    const text = utterance.text || "";
+
+    // Determine voice gender from utterance voice or default
+    const isFemale = utterance.voice?.name ? /samantha|zira|karen|moira|tessa|fiona|lisa|amy|victoria|zoe|female|sara|jenny|aria/i.test(utterance.voice.name) : true;
+    const gender: "female" | "male" = isFemale ? "female" : "male";
+
+    // Synthesize real acoustic audio samples
+    const sampleRate = this.audioCtx.sampleRate || 24000;
+    const pcm = synthesizeAcousticSpeech(
+      text,
+      {
+        gender,
+        rate: utterance.rate || 1.0,
+        pitch: utterance.pitch || 1.0
+      },
+      sampleRate
+    );
+
+    // Create AudioBuffer from acoustic PCM
+    const buffer = this.audioCtx.createBuffer(1, pcm.length, sampleRate);
+    buffer.copyToChannel(pcm, 0);
+
+    // Create and connect AudioBufferSourceNode
+    const source = this.audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.gainNode);
+
+    this.currentSource = source;
+    this.isPlaying = true;
+
+    // Trigger onstart event for ActiveInterview component
+    if (utterance.onstart) {
+      (utterance as any).onstart(new Event("start"));
+    }
+
+    source.onended = () => {
+      if (this.currentSource === source) {
+        this.isPlaying = false;
+        this.currentSource = null;
+        this.activeUtterance = null;
+        if (utterance.onend) {
+          (utterance as any).onend(new Event("end"));
+        }
+      }
+    };
+
+    source.start(0);
   }
 
   /**
-   * Returns the current real-time speech state derived from audio & speech timing
+   * Connects an external HTMLAudioElement to the same Web Audio API graph
    */
-  public getCurrentSpeechState(): SpeechState {
-    if (!this.isSpeaking || this.isPaused) {
+  public connectAudioElement(audioEl: HTMLAudioElement) {
+    this.initWebAudio();
+    if (!this.audioCtx || !this.gainNode) return;
+
+    if (!this.currentMediaElementSource) {
+      this.currentMediaElementSource = this.audioCtx.createMediaElementSource(audioEl);
+      this.currentMediaElementSource.connect(this.gainNode);
+    }
+  }
+
+  /**
+   * Immediately stops any currently playing audio
+   */
+  public stopCurrentAudio() {
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop(0);
+        this.currentSource.disconnect();
+      } catch {}
+      this.currentSource = null;
+    }
+    this.isPlaying = false;
+    this.activeUtterance = null;
+  }
+
+  /**
+   * Extracts real-time acoustic metrics directly from AnalyserNode
+   * Used by HumanAvatar to drive organic facial articulation
+   */
+  public getAudioAcousticMetrics(): AudioAcousticMetrics {
+    if (!this.isPlaying || !this.analyser || !this.timeData || !this.freqData) {
       return {
-        isSpeaking: false,
-        isPaused: this.isPaused,
-        audioTime: 0,
+        isPlaying: false,
+        rms: 0,
+        spectralEnergy: 0,
+        midEnergy: 0,
+        highEnergy: 0,
         speechActivity: 0,
-        viseme: "neutral",
         mouthOpening: 0,
         mouthWidthScale: 1.0,
-        jawOffset: 0,
-        currentWord: "",
-        currentChar: ""
+        jawOffset: 0
       };
     }
 
-    const now = performance.now();
-    const elapsedAudioTime = now - this.speechStartTime;
-    const timeSinceBoundary = now - this.lastBoundaryTime;
+    // 1. Time-domain waveform analysis (RMS energy)
+    this.analyser.getByteTimeDomainData(this.timeData);
+    let sumSq = 0;
+    for (let i = 0; i < this.timeData.length; i++) {
+      const normalized = (this.timeData[i] - 128) / 128;
+      sumSq += normalized * normalized;
+    }
+    const rms = Math.sqrt(sumSq / this.timeData.length);
 
-    // Check if currently at a punctuation pause in the text
-    let isPunctuationPause = false;
-    let currentChar = "";
+    // 2. Frequency-domain spectral analysis
+    this.analyser.getByteFrequencyData(this.freqData);
+    let totalFreq = 0;
+    let midFreq = 0;
+    let highFreq = 0;
+    const binCount = this.freqData.length;
 
-    if (this.spokenText && this.currentCharIndex < this.spokenText.length) {
-      currentChar = this.spokenText[this.currentCharIndex];
-      const surrounding = this.spokenText.slice(this.currentCharIndex, this.currentCharIndex + 2);
-      if (/[,\.\?!;—\-]/.test(surrounding)) {
-        isPunctuationPause = true;
-      }
+    // Bins roughly corresponding to 400-2200Hz (vowels) and 2500-6000Hz (consonants)
+    const midStart = Math.floor(binCount * 0.08);
+    const midEnd = Math.floor(binCount * 0.45);
+    const highStart = midEnd;
+    const highEnd = Math.floor(binCount * 0.85);
+
+    for (let i = 0; i < binCount; i++) {
+      const val = this.freqData[i];
+      totalFreq += val;
+      if (i >= midStart && i < midEnd) midFreq += val;
+      if (i >= highStart && i < highEnd) highFreq += val;
     }
 
-    // Determine current word and viseme
-    let activeViseme: VisemeType = "neutral";
-    let speechActivity = 0;
+    const spectralEnergy = totalFreq / binCount;
+    const midEnergy = midFreq / Math.max(midEnd - midStart, 1);
+    const highEnergy = highFreq / Math.max(highEnd - highStart, 1);
 
-    if (isPunctuationPause) {
-      activeViseme = "neutral";
-      speechActivity = 0; // Absolute silence during punctuation
-    } else {
-      // Find matching word segment or fallback to active word
-      const segment = this.wordTimings.find(
-        (w) => elapsedAudioTime >= w.start && elapsedAudioTime <= w.end
-      );
+    // 3. Audio Silence / Pause Detection
+    // When acoustic RMS drops below threshold or during a punctuation pause, mouth closes completely
+    const isSilent = rms < 0.016 || spectralEnergy < 4;
 
-      if (segment && segment.isPause) {
-        activeViseme = "neutral";
-        speechActivity = 0;
-      } else if (segment && segment.visemes.length > 0) {
-        // Interpolate through visemes of the word based on elapsed time within the segment
-        const segDuration = Math.max(segment.end - segment.start, 1);
-        const segProgress = Math.min(Math.max((elapsedAudioTime - segment.start) / segDuration, 0), 1);
-        const visemeIdx = Math.min(
-          Math.floor(segProgress * segment.visemes.length),
-          segment.visemes.length - 1
-        );
-        activeViseme = segment.visemes[visemeIdx];
-
-        // Modulation envelope across the syllable (peaks in middle of vowel)
-        speechActivity = Math.sin(segProgress * Math.PI);
-      } else {
-        // Cadence from boundary event
-        const wordLength = Math.max(this.currentWord.length, 4);
-        const wordProgress = Math.min(timeSinceBoundary / (wordLength * 70), 1);
-
-        if (wordProgress >= 0.92) {
-          // Inter-word closure gap
-          activeViseme = "neutral";
-          speechActivity = 0.05;
-        } else {
-          const charIdx = Math.min(Math.floor(wordProgress * wordLength), wordLength - 1);
-          const charAtProgress = (this.currentWord[charIdx] || "a").toLowerCase();
-          activeViseme = this.deriveWordVisemes(charAtProgress)[0];
-          speechActivity = Math.sin(wordProgress * Math.PI) * 0.9 + 0.1;
-        }
-      }
+    if (isSilent) {
+      return {
+        isPlaying: true,
+        rms: 0,
+        spectralEnergy: 0,
+        midEnergy: 0,
+        highEnergy: 0,
+        speechActivity: 0,
+        mouthOpening: 0,
+        mouthWidthScale: 1.0,
+        jawOffset: 0
+      };
     }
 
-    // Calculate mouth opening and articulation parameters from speech activity and viseme
-    let targetOpening = 0;
-    let targetWidthScale = 1.0;
-
-    switch (activeViseme) {
-      case "open_vowel": // 'a', 'ah'
-        targetOpening = 10.5 * speechActivity;
-        targetWidthScale = 1.05;
-        break;
-      case "rounded_vowel": // 'o', 'u'
-        targetOpening = 7.5 * speechActivity;
-        targetWidthScale = 0.88; // Rounded narrow lips
-        break;
-      case "wide_vowel": // 'e', 'i'
-        targetOpening = 6.0 * speechActivity;
-        targetWidthScale = 1.12; // Wide lip spread
-        break;
-      case "fricative": // 'f', 'v', 's'
-        targetOpening = 3.5 * speechActivity;
-        targetWidthScale = 1.02;
-        break;
-      case "dental": // 't', 'd', 'k'
-        targetOpening = 4.5 * speechActivity;
-        targetWidthScale = 1.0;
-        break;
-      case "bilabial": // 'm', 'b', 'p'
-        targetOpening = 0.5 * (1 - speechActivity); // Closed lips
-        targetWidthScale = 1.0;
-        break;
-      case "neutral":
-      default:
-        targetOpening = 0;
-        targetWidthScale = 1.0;
-        break;
-    }
+    // 4. Acoustic Articulation Mapping
+    // Speech activity is proportional to audio RMS energy
+    const speechActivity = Math.min(rms * 4.5, 1.0);
+    // Vowel formant ratio influences vertical mouth opening
+    const formantRatio = midEnergy / Math.max(midEnergy + highEnergy, 1);
+    const targetMouthOpening = Math.min(rms * 34.0 * (0.75 + 0.5 * formantRatio), 11.5);
+    // Lip spread / rounding derived from formant frequency ratio
+    const targetWidthScale = 1.0 + (formantRatio - 0.5) * 0.16;
+    const targetJawOffset = targetMouthOpening * 0.32;
 
     return {
-      isSpeaking: true,
-      isPaused: false,
-      audioTime: elapsedAudioTime,
-      speechActivity: Math.max(0, Math.min(1, speechActivity)),
-      viseme: activeViseme,
-      mouthOpening: targetOpening,
+      isPlaying: true,
+      rms,
+      spectralEnergy,
+      midEnergy,
+      highEnergy,
+      speechActivity,
+      mouthOpening: targetMouthOpening,
       mouthWidthScale: targetWidthScale,
-      jawOffset: targetOpening * 0.32,
-      currentWord: this.currentWord,
-      currentChar
+      jawOffset: targetJawOffset
     };
   }
 
-  /**
-   * Returns current audio amplitude from AnalyserNode or speech state
-   */
-  public getAudioAmplitude(): number {
-    if (!this.isSpeaking || this.isPaused) return 0;
-    if (this.analyser && this.freqData) {
-      this.analyser.getByteFrequencyData(this.freqData);
-      let sum = 0;
-      for (let i = 0; i < this.freqData.length; i++) {
-        sum += this.freqData[i];
-      }
-      const avg = sum / this.freqData.length;
-      if (avg > 5) return avg / 255;
-    }
-    return this.getCurrentSpeechState().speechActivity;
+  public getCurrentSpeechState() {
+    const metrics = this.getAudioAcousticMetrics();
+    return {
+      isSpeaking: metrics.isPlaying && metrics.speechActivity > 0,
+      isPaused: metrics.isPlaying && metrics.speechActivity === 0,
+      speechActivity: metrics.speechActivity,
+      mouthOpening: metrics.mouthOpening,
+      mouthWidthScale: metrics.mouthWidthScale,
+      jawOffset: metrics.jawOffset
+    };
   }
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MicOff, Sparkles, User } from "lucide-react";
-import { speechAudioSync, VisemeType } from "./speechAudioSync";
+import { speechAudioSync } from "./speechAudioSync";
 
 interface HumanAvatarProps {
   id: number;
@@ -216,22 +216,22 @@ export function HumanAvatar({
         const isSpk = isSpeakingRef.current && isActiveRef.current;
         const landmarks = persona.facialLandmarks;
 
-        // 2. True Audio-Driven Speech Dynamics from SpeechAudioSync Engine
+        // 2. True Audio-Driven Speech Dynamics from SpeechAudioSync AnalyserNode
         if (isSpk) {
-          const speech = speechAudioSync.getCurrentSpeechState();
+          const audio = speechAudioSync.getAudioAcousticMetrics();
 
-          if (speech.isSpeaking && !speech.isPaused && speech.speechActivity > 0.05) {
-            // Target mouth parameters from actual audio speech analysis
-            const targetOpening = speech.mouthOpening;
-            const targetWidthScale = speech.mouthWidthScale;
-            const targetJaw = speech.jawOffset;
+          if (audio.isPlaying && audio.speechActivity > 0.02) {
+            // Target mouth parameters from actual acoustic audio analysis
+            const targetOpening = audio.mouthOpening;
+            const targetWidthScale = audio.mouthWidthScale;
+            const targetJaw = audio.jawOffset;
 
             // Fast, organic muscular spring interpolation
             mouthOpenRef.current += (targetOpening - mouthOpenRef.current) * Math.min(delta * 24, 1);
             mouthWidthScaleRef.current += (targetWidthScale - mouthWidthScaleRef.current) * Math.min(delta * 18, 1);
             jawOffsetRef.current += (targetJaw - jawOffsetRef.current) * Math.min(delta * 20, 1);
           } else {
-            // Speech paused (comma, period, or inter-word silence) -> mouth closes smoothly
+            // Audio silent or paused (punctuation / inter-word) -> mouth closes smoothly
             mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 26, 1);
             mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 20, 1);
             jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 22, 1);
