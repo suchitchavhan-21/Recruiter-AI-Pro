@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MicOff, Sparkles, User } from "lucide-react";
+import { speechAudioSync, VisemeType } from "./speechAudioSync";
 
 interface HumanAvatarProps {
   id: number;
@@ -78,7 +79,6 @@ export function HumanAvatar({
   const eyeGazeXRef = useRef(0);
   const eyeGazeYRef = useRef(0);
   const nextGazeTimeRef = useRef(Date.now() + 2500);
-  const speechPhonemePhaseRef = useRef(0);
 
   // Keep refs in sync with props
   useEffect(() => {
@@ -115,7 +115,7 @@ export function HumanAvatar({
         skinTone: "#edd0be",
         skinHighlight: "#f5ded0",
         lipColor: "#c26363",
-        lipInner: "#4e1a1a",
+        lipInner: "#381212",
         teethColor: "#f7f0eb"
       },
       expressionText: {
@@ -139,7 +139,7 @@ export function HumanAvatar({
         skinTone: "#cca28a",
         skinHighlight: "#dab39d",
         lipColor: "#aa5d54",
-        lipInner: "#421616",
+        lipInner: "#341010",
         teethColor: "#f4ebe5"
       },
       expressionText: {
@@ -163,7 +163,7 @@ export function HumanAvatar({
         skinTone: "#7d5038",
         skinHighlight: "#916045",
         lipColor: "#673a2c",
-        lipInner: "#341612",
+        lipInner: "#260e0a",
         teethColor: "#ece2da"
       },
       expressionText: {
@@ -208,7 +208,7 @@ export function HumanAvatar({
       const img = imageRef.current;
 
       if (canvas && ctx && img) {
-        // 1. Clear & Draw base portrait
+        // 1. Clear & Draw base photographic portrait
         ctx.clearRect(0, 0, 512, 512);
         ctx.drawImage(img, 0, 0, 512, 512);
 
@@ -216,30 +216,31 @@ export function HumanAvatar({
         const isSpk = isSpeakingRef.current && isActiveRef.current;
         const landmarks = persona.facialLandmarks;
 
-        // 2. Viseme Speech Dynamics (Audio-Synchronized Mouth Articulation)
+        // 2. True Audio-Driven Speech Dynamics from SpeechAudioSync Engine
         if (isSpk) {
-          speechPhonemePhaseRef.current += delta * 14; // Conversational speech oscillation speed
-          const pPhase = speechPhonemePhaseRef.current;
+          const speech = speechAudioSync.getCurrentSpeechState();
 
-          // Natural Multi-Harmonic Speech Envelope (Ah, Oh, Ee, Fricatives, Closures)
-          const primaryVowel = Math.sin(pPhase) * 0.5 + 0.5;
-          const secondaryCadence = Math.sin(pPhase * 1.8 + 0.7) * 0.35 + 0.35;
-          const tertiaryPunctuation = Math.max(0, Math.sin(pPhase * 0.65 - 0.4));
-          
-          // Syllabic opening amplitude with occasional natural pause/closure
-          const rawOpening = Math.max(0, (primaryVowel * 0.6 + secondaryCadence * 0.4) * tertiaryPunctuation);
-          const targetOpening = rawOpening * 16.0; // Max mouth opening in pixels
-          const targetWidthScale = 1.0 + (Math.sin(pPhase * 0.9) * 0.08); // Lip spread / rounding
+          if (speech.isSpeaking && !speech.isPaused && speech.speechActivity > 0.05) {
+            // Target mouth parameters from actual audio speech analysis
+            const targetOpening = speech.mouthOpening;
+            const targetWidthScale = speech.mouthWidthScale;
+            const targetJaw = speech.jawOffset;
 
-          // Smooth muscular spring interpolation
-          mouthOpenRef.current += (targetOpening - mouthOpenRef.current) * Math.min(delta * 22, 1);
-          mouthWidthScaleRef.current += (targetWidthScale - mouthWidthScaleRef.current) * Math.min(delta * 16, 1);
-          jawOffsetRef.current = mouthOpenRef.current * 0.32; // Jaw drops proportionally
+            // Fast, organic muscular spring interpolation
+            mouthOpenRef.current += (targetOpening - mouthOpenRef.current) * Math.min(delta * 24, 1);
+            mouthWidthScaleRef.current += (targetWidthScale - mouthWidthScaleRef.current) * Math.min(delta * 18, 1);
+            jawOffsetRef.current += (targetJaw - jawOffsetRef.current) * Math.min(delta * 20, 1);
+          } else {
+            // Speech paused (comma, period, or inter-word silence) -> mouth closes smoothly
+            mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 26, 1);
+            mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 20, 1);
+            jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 22, 1);
+          }
         } else {
-          // Smooth return to resting closed lips when speech ends
-          mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 18, 1);
-          mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 15, 1);
-          jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 15, 1);
+          // Speech ended -> instant return to neutral closed mouth
+          mouthOpenRef.current += (0 - mouthOpenRef.current) * Math.min(delta * 28, 1);
+          mouthWidthScaleRef.current += (1 - mouthWidthScaleRef.current) * Math.min(delta * 20, 1);
+          jawOffsetRef.current += (0 - jawOffsetRef.current) * Math.min(delta * 24, 1);
         }
 
         // 3. Natural Irregular Blinking Logic
@@ -269,64 +270,66 @@ export function HumanAvatar({
           nextGazeTimeRef.current = now + 2000 + Math.random() * 2500;
         }
 
-        // --- 5. RENDER MOUTH & JAW ARTICULATION ---
+        // --- 5. RENDER NATURAL MOUTH & JAW ARTICULATION ---
         const openVal = mouthOpenRef.current;
-        if (openVal > 0.8) {
+        // Only render opening when speech is active (preserves 100% photographic portrait in silence)
+        if (openVal > 0.6) {
           const m = landmarks.mouth;
           const wScale = mouthWidthScaleRef.current;
           const halfW = (m.w * wScale) / 2;
           const mX = m.x;
-          const mY = m.y + jawOffsetRef.current * 0.3;
+          const mY = m.y + jawOffsetRef.current * 0.25;
           const openH = openVal;
 
           // A. Subtle Lower Jaw & Chin Displacement
-          if (jawOffsetRef.current > 0.5) {
+          if (jawOffsetRef.current > 0.4) {
             ctx.save();
             ctx.beginPath();
-            ctx.ellipse(mX, mY + 38, 38, 22, 0, 0, Math.PI * 2);
+            ctx.ellipse(mX, mY + 36, 36, 20, 0, 0, Math.PI * 2);
             ctx.fillStyle = landmarks.skinTone;
-            ctx.globalAlpha = Math.min(jawOffsetRef.current * 0.04, 0.15);
-            ctx.filter = "blur(4px)";
+            ctx.globalAlpha = Math.min(jawOffsetRef.current * 0.035, 0.12);
+            ctx.filter = "blur(5px)";
             ctx.fill();
             ctx.restore();
           }
 
-          // B. Oral Cavity Depth (Dark inner mouth)
+          // B. Anatomical Oral Cavity Depth (Dark interior mouth with soft feathering)
           ctx.save();
           ctx.beginPath();
           ctx.moveTo(mX - halfW, mY);
-          ctx.bezierCurveTo(mX - halfW * 0.5, mY - openH * 0.3, mX + halfW * 0.5, mY - openH * 0.3, mX + halfW, mY);
-          ctx.bezierCurveTo(mX + halfW * 0.5, mY + openH, mX - halfW * 0.5, mY + openH, mX - halfW, mY);
-          ctx.fillStyle = landmarks.lipInner;
+          ctx.bezierCurveTo(mX - halfW * 0.5, mY - openH * 0.25, mX + halfW * 0.5, mY - openH * 0.25, mX + halfW, mY);
+          ctx.bezierCurveTo(mX + halfW * 0.5, mY + openH * 0.95, mX - halfW * 0.5, mY + openH * 0.95, mX - halfW, mY);
+          
+          const mouthGrad = ctx.createLinearGradient(mX, mY - openH * 0.3, mX, mY + openH);
+          mouthGrad.addColorStop(0, "rgba(22, 8, 8, 0.98)");
+          mouthGrad.addColorStop(1, landmarks.lipInner);
+          ctx.fillStyle = mouthGrad;
           ctx.fill();
 
-          // C. Upper Teeth Row (Visible during speech vowels & consonants)
-          if (openH > 3.0) {
-            const teethH = Math.min(openH * 0.45, 4.5);
-            const teethW = halfW * 0.72;
+          // C. Upper Teeth Row (Visible during open vowels & consonants with natural translucency)
+          if (openH > 2.8) {
+            const teethH = Math.min(openH * 0.38, 3.8);
+            const teethW = halfW * 0.68;
+            ctx.save();
             ctx.beginPath();
-            ctx.rect(mX - teethW, mY - openH * 0.15, teethW * 2, teethH);
-            ctx.fillStyle = landmarks.teethColor;
-            ctx.globalAlpha = 0.92;
+            ctx.rect(mX - teethW, mY - openH * 0.12, teethW * 2, teethH);
+            const teethGrad = ctx.createLinearGradient(mX, mY - openH * 0.12, mX, mY + teethH);
+            teethGrad.addColorStop(0, landmarks.teethColor);
+            teethGrad.addColorStop(0.85, "rgba(240, 230, 222, 0.92)");
+            teethGrad.addColorStop(1, "rgba(200, 185, 175, 0.6)");
+            ctx.fillStyle = teethGrad;
             ctx.fill();
-            ctx.globalAlpha = 1.0;
+            ctx.restore();
           }
 
-          // D. Upper Lip Contour
+          // D. Seamless Feathered Lip Shading (Blends oral opening into photographic lips)
           ctx.beginPath();
-          ctx.moveTo(mX - halfW * 1.05, mY);
-          ctx.bezierCurveTo(mX - halfW * 0.4, mY - 3.2, mX + halfW * 0.4, mY - 3.2, mX + halfW * 1.05, mY);
-          ctx.bezierCurveTo(mX + halfW * 0.4, mY - openH * 0.25, mX - halfW * 0.4, mY - openH * 0.25, mX - halfW * 1.05, mY);
-          ctx.fillStyle = landmarks.lipColor;
-          ctx.fill();
-
-          // E. Lower Lip Contour
-          ctx.beginPath();
-          ctx.moveTo(mX - halfW * 1.05, mY);
-          ctx.bezierCurveTo(mX - halfW * 0.5, mY + openH * 0.8, mX + halfW * 0.5, mY + openH * 0.8, mX + halfW * 1.05, mY);
-          ctx.bezierCurveTo(mX + halfW * 0.5, mY + openH + 3.5, mX - halfW * 0.5, mY + openH + 3.5, mX - halfW * 1.05, mY);
-          ctx.fillStyle = landmarks.lipColor;
-          ctx.fill();
+          ctx.moveTo(mX - halfW * 1.02, mY);
+          ctx.bezierCurveTo(mX - halfW * 0.4, mY - openH * 0.18, mX + halfW * 0.4, mY - openH * 0.18, mX + halfW * 1.02, mY);
+          ctx.bezierCurveTo(mX + halfW * 0.4, mY + openH * 0.75, mX - halfW * 0.4, mY + openH * 0.75, mX - halfW * 1.02, mY);
+          ctx.strokeStyle = landmarks.lipColor;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
 
           ctx.restore();
         }
@@ -341,7 +344,7 @@ export function HumanAvatar({
             const eyeH = eye.h * bPhase * 1.1;
 
             ctx.save();
-            // Upper Eyelid descent
+            // Upper Eyelid descent with soft skin gradient
             ctx.beginPath();
             ctx.ellipse(eyeX, eyeY - 2 + eyeH * 0.5, eye.w * 0.52, eyeH * 0.65, 0, 0, Math.PI * 2);
             ctx.fillStyle = landmarks.skinTone;
