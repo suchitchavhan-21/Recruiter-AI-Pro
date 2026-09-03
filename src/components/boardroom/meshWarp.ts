@@ -3,12 +3,11 @@ import { FaceGeometry, FACIAL_REGION_INDICES } from "./faceLandmarks";
 /**
  * 2D Local Mesh Deformation Engine (MediaPipe Face Mesh Topology)
  *
- * Performs authentic photographic triangular mesh warping:
- * - Uses real detector landmark indices
- * - Warps local triangles for mouth, jaw, chin, cheeks, eyes, and eyelids
- * - Every pixel rendered comes directly from the original photograph
- * - Deformation falls off smoothly toward surrounding skin
- * - Oral depth is rendered within inner lip boundaries without cartoon overlays
+ * Calibrated for maximum perceptual realism:
+ * - 70% photographic stability / 20% facial articulation / 10% subtle micro-motion
+ * - Subpixel dilation on triangle rasterization prevents visible mesh boundaries
+ * - Natural ambient oral depth shadow without stark artificial black patches
+ * - Persona-specific calibration scales for Sarah, David, and Marcus
  */
 
 export interface Point2D {
@@ -49,7 +48,6 @@ export function buildFacialMeshTriangles(geom: FaceGeometry): Triangle[] {
   }
 
   // 2. Upper Lip to Nose & Philtrum
-  // Nose base: 98, 97, 2, 326, 327, 1
   addTri(61, 185, 98, "mouth");
   addTri(185, 40, 98, "mouth");
   addTri(40, 39, 97, "mouth");
@@ -65,7 +63,6 @@ export function buildFacialMeshTriangles(geom: FaceGeometry): Triangle[] {
   addTri(2, 1, 326, "mouth");
 
   // 3. Lower Lip to Chin & Jaw (Mandibular Hinge)
-  // Chin: 152, Jaw: 148, 176, 149, 150, 377, 400, 378, 379
   addTri(61, 146, 172, "jaw");
   addTri(146, 91, 136, "jaw");
   addTri(91, 181, 150, "jaw");
@@ -89,12 +86,10 @@ export function buildFacialMeshTriangles(geom: FaceGeometry): Triangle[] {
   addTri(291, 365, 425, "cheek");
 
   // 5. Left Eye & Eyelid
-  // Contour: 33, 160, 158, 133, 153, 144
   addTri(33, 160, 144, "eyeLeft");
   addTri(160, 158, 153, "eyeLeft");
   addTri(160, 153, 144, "eyeLeft");
   addTri(158, 133, 153, "eyeLeft");
-  // Eyebrow upper fold: 70, 63, 105, 66
   addTri(70, 63, 160, "eyeLeft");
   addTri(70, 160, 33, "eyeLeft");
   addTri(63, 105, 158, "eyeLeft");
@@ -103,12 +98,10 @@ export function buildFacialMeshTriangles(geom: FaceGeometry): Triangle[] {
   addTri(105, 133, 158, "eyeLeft");
 
   // 6. Right Eye & Eyelid
-  // Contour: 362, 385, 387, 263, 373, 380
   addTri(362, 385, 380, "eyeRight");
   addTri(385, 387, 373, "eyeRight");
   addTri(385, 373, 380, "eyeRight");
   addTri(387, 263, 373, "eyeRight");
-  // Eyebrow upper fold: 300, 293, 334, 296
   addTri(300, 293, 385, "eyeRight");
   addTri(300, 385, 362, "eyeRight");
   addTri(293, 334, 387, "eyeRight");
@@ -130,18 +123,27 @@ export function computeDeformedLandmarks(
   blinkPhaseLeft: number,  // 0 to 1
   blinkPhaseRight: number, // 0 to 1
   gazeX: number,           // -1.5 to +1.5px
-  gazeY: number            // -1.5 to +1.5px
+  gazeY: number,           // -1.5 to +1.5px
+  personaId: number = 0    // 0: Sarah, 1: David, 2: Marcus
 ): Point2D[] {
   const result: Point2D[] = baseLandmarks.map(p => ({ x: p.x, y: p.y }));
 
-  // 1. Mouth & Speech Deformation
-  if (mouthOpen > 0.2) {
-    const lipLift = Math.min(mouthOpen * 0.15, 1.4);
-    const jawDrop = mouthOpen * 0.52;
-    const mouthW = Math.abs(baseLandmarks[291].x - baseLandmarks[61].x);
-    const cornerShiftX = (widthScale - 1.0) * mouthW * 0.45;
+  // Persona-specific calibration scale
+  // Sarah (id=0): delicate articulation for 14px resting mouth
+  // David (id=1): balanced architectural articulation
+  // Marcus (id=2): clear authoritative articulation
+  const personaScale = personaId === 0 ? 0.75 : personaId === 1 ? 0.90 : 0.95;
+  const maxOpen = personaId === 0 ? 3.8 : 5.2;
+  const effMouthOpen = Math.min(mouthOpen * personaScale, maxOpen);
 
-    // Upper lip (elevates slightly)
+  // 1. Mouth & Speech Deformation
+  if (effMouthOpen > 0.2) {
+    const lipLift = Math.min(effMouthOpen * 0.12, 0.9);
+    const jawDrop = effMouthOpen * 0.42;
+    const mouthW = Math.abs(baseLandmarks[291].x - baseLandmarks[61].x);
+    const cornerShiftX = (widthScale - 1.0) * mouthW * 0.22;
+
+    // Upper lip (elevates subtly)
     FACIAL_REGION_INDICES.upperLip.forEach(idx => {
       if (result[idx]) result[idx].y -= lipLift;
     });
@@ -151,42 +153,41 @@ export function computeDeformedLandmarks(
       if (result[idx]) result[idx].y += jawDrop;
     });
 
-    // Mouth corners (horizontal stretch/round)
+    // Mouth corners (subtle width modulation without tearing cheeks)
     if (result[61]) {
       result[61].x -= cornerShiftX;
-      result[61].y += mouthOpen * 0.08;
+      result[61].y += effMouthOpen * 0.05;
     }
     if (result[78]) {
-      result[78].x -= cornerShiftX * 0.8;
+      result[78].x -= cornerShiftX * 0.7;
     }
     if (result[291]) {
       result[291].x += cornerShiftX;
-      result[291].y += mouthOpen * 0.08;
+      result[291].y += effMouthOpen * 0.05;
     }
     if (result[308]) {
-      result[308].x += cornerShiftX * 0.8;
+      result[308].x += cornerShiftX * 0.7;
     }
 
-    // Chin & Mandible Hinge
+    // Chin & Mandible Hinge: Chin moves subtly downward, cheeks deform minimally
     // Point 152 is Chin apex
     if (result[152]) {
-      result[152].y += jawOffset * 0.95 + jawDrop * 0.6;
+      result[152].y += jawOffset * 0.40 + jawDrop * 0.32;
     }
     [148, 176, 149, 150, 377, 400, 378].forEach((idx, i) => {
       if (result[idx]) {
         const falloff = Math.cos((i / 7) * Math.PI * 0.4);
-        result[idx].y += (jawOffset * 0.85 + jawDrop * 0.5) * falloff;
+        result[idx].y += (jawOffset * 0.30 + jawDrop * 0.22) * falloff;
       }
     });
 
-    // Cheeks follow subtly
+    // Cheeks follow minimally (prevents stretching surrounding skin)
     [205, 425].forEach(idx => {
-      if (result[idx]) result[idx].y += jawOffset * 0.15;
+      if (result[idx]) result[idx].y += jawOffset * 0.06;
     });
   }
 
   // 2. Eye Blinking (Upper eyelid landmarks descend toward lower eyelid)
-  // Left eye: upper [159, 158, 157, 160], lower [145, 153, 154]
   if (blinkPhaseLeft > 0.02) {
     const upperLeft = [159, 158, 157, 160];
     const lowerLeftY = (baseLandmarks[145].y + baseLandmarks[153].y) * 0.5;
@@ -198,7 +199,6 @@ export function computeDeformedLandmarks(
     });
   }
 
-  // Right eye: upper [386, 387, 388, 385], lower [374, 373, 380]
   if (blinkPhaseRight > 0.02) {
     const upperRight = [386, 387, 388, 385];
     const lowerRightY = (baseLandmarks[374].y + baseLandmarks[373].y) * 0.5;
@@ -210,15 +210,17 @@ export function computeDeformedLandmarks(
     });
   }
 
-  // 3. Gaze micro-displacement on irises
-  if (Math.abs(gazeX) > 0.05 || Math.abs(gazeY) > 0.05) {
+  // 3. Gaze micro-displacement: Extremely subtle, locked inside iris
+  const effGazeX = Math.max(-0.4, Math.min(0.4, gazeX * 0.25));
+  const effGazeY = Math.max(-0.3, Math.min(0.3, gazeY * 0.20));
+  if (Math.abs(effGazeX) > 0.02 || Math.abs(effGazeY) > 0.02) {
     if (result[468]) {
-      result[468].x += gazeX * 0.6;
-      result[468].y += gazeY * 0.4;
+      result[468].x += effGazeX;
+      result[468].y += effGazeY;
     }
     if (result[473]) {
-      result[473].x += gazeX * 0.6;
-      result[473].y += gazeY * 0.4;
+      result[473].x += effGazeX;
+      result[473].y += effGazeY;
     }
   }
 
@@ -226,7 +228,8 @@ export function computeDeformedLandmarks(
 }
 
 /**
- * Draws an affine-warped texture triangle from source image to destination canvas
+ * Draws an affine-warped texture triangle from source image to destination canvas.
+ * Subpixel expansion outward from centroid prevents visible mesh seams on canvas.
  */
 export function drawWarpedTriangle(
   ctx: CanvasRenderingContext2D,
@@ -240,9 +243,22 @@ export function drawWarpedTriangle(
 ) {
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(d0.x, d0.y);
-  ctx.lineTo(d1.x, d1.y);
-  ctx.lineTo(d2.x, d2.y);
+
+  // Subpixel dilation by 0.45px outward from centroid eliminates 2D canvas boundary cracking
+  const cx = (d0.x + d1.x + d2.x) / 3;
+  const cy = (d0.y + d1.y + d2.y) / 3;
+  const pad = 0.45;
+
+  const dx0 = d0.x + (d0.x > cx ? pad : -pad);
+  const dy0 = d0.y + (d0.y > cy ? pad : -pad);
+  const dx1 = d1.x + (d1.x > cx ? pad : -pad);
+  const dy1 = d1.y + (d1.y > cy ? pad : -pad);
+  const dx2 = d2.x + (d2.x > cx ? pad : -pad);
+  const dy2 = d2.y + (d2.y > cy ? pad : -pad);
+
+  ctx.moveTo(dx0, dy0);
+  ctx.lineTo(dx1, dy1);
+  ctx.lineTo(dx2, dy2);
   ctx.closePath();
   ctx.clip();
 
@@ -280,7 +296,7 @@ export function renderLocalMeshWarp(
   // 1. Natural subtle inner oral depth (soft ambient shadow, no harsh black hole)
   if (mouthOpen > 0.8 && oralCavityPath) {
     ctx.save();
-    const shadowAlpha = Math.min((mouthOpen - 0.8) * 0.05, 0.35);
+    const shadowAlpha = Math.min((mouthOpen - 0.8) * 0.05, 0.32);
     ctx.fillStyle = `rgba(24, 10, 10, ${shadowAlpha})`;
     ctx.fill(oralCavityPath);
     ctx.restore();

@@ -320,7 +320,8 @@ export function HumanAvatar({
               blinkLeft,
               blinkRight,
               eyeGazeXRef.current,
-              eyeGazeYRef.current
+              eyeGazeYRef.current,
+              id
             );
 
             renderLocalMeshWarp(
@@ -429,7 +430,8 @@ export function HumanAvatar({
               bPhase,
               bPhase,
               eyeGazeXRef.current,
-              eyeGazeYRef.current
+              eyeGazeYRef.current,
+              id
             );
             ctx.fillStyle = "#f43f5e";
             for (const idx of [...geom.regions.mouthOuter, ...geom.regions.mouthInner]) {
