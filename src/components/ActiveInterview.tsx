@@ -552,13 +552,13 @@ export default function ActiveInterview({
             {/* Panelists Video Grid Layout */}
             <div className={`grid gap-3.5 flex-1 relative z-10 ${
               currentPanel.length === 1 
-                ? "grid-cols-1 max-w-md mx-auto w-full" 
+                ? "grid-cols-1 max-w-lg mx-auto w-full" 
                 : currentPanel.length === 2 
                   ? "grid-cols-1 sm:grid-cols-2" 
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             }`}>
               {currentPanel.map((panelist) => (
-                <div key={panelist.id} className="h-64 sm:h-72 md:h-80 w-full">
+                <div key={panelist.id} className="h-72 sm:h-80 md:h-96 w-full">
                   <HumanAvatar 
                     id={panelist.id}
                     name={panelist.name}
