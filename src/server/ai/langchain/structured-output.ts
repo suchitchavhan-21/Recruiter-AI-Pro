@@ -52,7 +52,9 @@ export const InterviewEvaluationSchema = z.object({
   behavioralScore: z.number().min(0).max(100).default(75),
   communicationScore: z.number().min(0).max(100).default(75),
   overallRating: z.string().default("Hire"),
+  overallFeedback: z.string().default("Consistent technical depth and structured communication."),
   strengths: z.array(z.string()).default([]),
+  improvements: z.array(z.string()).default([]),
   areasForImprovement: z.array(z.string()).default([]),
   detailedFeedback: z.string().default("")
 });

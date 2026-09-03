@@ -198,7 +198,9 @@ Provide a comprehensive scorecard JSON object with:
 - "behavioralScore": number between 0 and 100
 - "communicationScore": number between 0 and 100
 - "overallRating": string badge ("Exceptional" | "Strong Hire" | "Hire" | "Needs Improvement")
+- "overallFeedback": string summary of performance
 - "strengths": array of strings
+- "improvements": array of strings
 - "areasForImprovement": array of strings
 - "detailedFeedback": string`
   ]

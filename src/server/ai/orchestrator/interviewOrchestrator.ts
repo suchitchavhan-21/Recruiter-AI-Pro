@@ -371,25 +371,21 @@ export class InterviewOrchestrator {
 
     // LangChain Multi-Agent Execution:
     // Execute the selected specialist agent (Sarah Jenkins, David Chen, or Marcus Brody)
-    try {
-      const { executeInterviewerAgent } = await import("../langchain/agents");
-      const agentResult = await executeInterviewerAgent(nextPersona.role, {
-        userId: params.userId,
-        targetRole: state.targetRole,
-        company: state.company,
-        difficulty: state.difficulty,
-        turnNumber: nextTurnIndex,
-        previousQuestion: state.history[activeTurnIndex]?.questionText || "",
-        previousAnswer: params.candidateAnswer,
-        targetCompetency: nextCompetency,
-        candidateMemory: state.candidateMemorySnapshot
-      });
+    const { executeInterviewerAgent } = await import("../langchain/agents");
+    const agentResult = await executeInterviewerAgent(nextPersona.role, {
+      userId: params.userId,
+      targetRole: state.targetRole,
+      company: state.company,
+      difficulty: state.difficulty,
+      turnNumber: nextTurnIndex,
+      previousQuestion: state.history[activeTurnIndex]?.questionText || "",
+      previousAnswer: params.candidateAnswer,
+      targetCompetency: nextCompetency,
+      candidateMemory: state.candidateMemorySnapshot
+    });
 
-      if (agentResult && agentResult.nextQuestion) {
-        nextQuestionText = agentResult.nextQuestion;
-      }
-    } catch (agentErr) {
-      // Deterministic fallback preserved
+    if (agentResult && agentResult.nextQuestion) {
+      nextQuestionText = agentResult.nextQuestion;
     }
 
     const newTurn: InterviewTurn = {
