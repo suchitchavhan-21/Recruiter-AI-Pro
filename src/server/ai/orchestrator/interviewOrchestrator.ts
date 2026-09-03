@@ -369,6 +369,29 @@ export class InterviewOrchestrator {
       nextQuestionText = `${contextHook}Tell me about a time you had to resolve a technical or priority disagreement with a cross-functional partner (e.g. Product or Design). How did you reach consensus?`;
     }
 
+    // LangChain Multi-Agent Execution:
+    // Execute the selected specialist agent (Sarah Jenkins, David Chen, or Marcus Brody)
+    try {
+      const { executeInterviewerAgent } = await import("../langchain/agents");
+      const agentResult = await executeInterviewerAgent(nextPersona.role, {
+        userId: params.userId,
+        targetRole: state.targetRole,
+        company: state.company,
+        difficulty: state.difficulty,
+        turnNumber: nextTurnIndex,
+        previousQuestion: state.history[activeTurnIndex]?.questionText || "",
+        previousAnswer: params.candidateAnswer,
+        targetCompetency: nextCompetency,
+        candidateMemory: state.candidateMemorySnapshot
+      });
+
+      if (agentResult && agentResult.nextQuestion) {
+        nextQuestionText = agentResult.nextQuestion;
+      }
+    } catch (agentErr) {
+      // Deterministic fallback preserved
+    }
+
     const newTurn: InterviewTurn = {
       turnIndex: nextTurnIndex,
       questionId: nextTurnIndex,

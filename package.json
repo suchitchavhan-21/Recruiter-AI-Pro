@@ -15,6 +15,7 @@
     "test:e2e": "tsx scripts/test-end-to-end.ts",
     "test:browser": "tsx scripts/test-browser-e2e.ts",
     "test:db-persistence": "tsx scripts/verify-real-database-persistence.ts",
+    "test:langchain": "tsx scripts/test-langchain-orchestration.ts",
     "verify:production": "tsx scripts/verify-production-environment.ts",
     "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts"
   },
@@ -22,6 +23,8 @@
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-pgvector": "^0.0.9",
     "@google/genai": "^2.4.0",
+    "@langchain/core": "^1.2.9",
+    "@langchain/google-genai": "^2.3.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/multer": "^2.2.0",
     "@vitejs/plugin-react": "^5.0.4",

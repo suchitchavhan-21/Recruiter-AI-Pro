@@ -27,11 +27,12 @@ An enterprise-grade, high-performance Technical Recruiter and Interview Practice
                    ▼                                     ▼
 ┌──────────────────────────────────────┐     ┌──────────────────────────────────────┐
 │        AI Orchestration Layer        │     │       Data Persistence Layer         │
-│  - Gemini LLM (@google/genai)        │     │  - Dual-Mode Repository Engine       │
-│  - Embeddings (gemini-embedding-2)   │     │  - PostgreSQL Pool (Shared)          │
-│  - Section-Aware RAG Pipeline        │     │  - pgvector Store (768-dim, Cosine)  │
-│  - Bounded Adaptive Interview Engine │     │  - Strict Tenant Isolation           │
-│  - Zero-Fabrication Evaluation       │     │  - Dev Transactional JSON Fallback   │
+│  - LLM: Google Gemini                │     │  - Dual-Mode Repository Engine       │
+│  - LLM Framework: LangChain          │     │  - PostgreSQL Pool (Shared)          │
+│  - Embeddings (gemini-embedding-2)   │     │  - pgvector Store (768-dim, Cosine)  │
+│  - LangChain RAG + BaseRetriever     │     │  - Strict Tenant Isolation           │
+│  - LangChain Role-Specialized Agents │     │  - Dev Transactional JSON Fallback   │
+│  - Zero-Fabrication Evaluation       │     │                                      │
 └──────────────────────────────────────┘     └──────────────────────────────────────┘
 ```
 
@@ -46,7 +47,10 @@ An enterprise-grade, high-performance Technical Recruiter and Interview Practice
 *   **Data Persistence**: Dual-mode storage architecture:
     *   **Production**: PostgreSQL with `pgvector` extension for ACID transactional state and 768-dimensional vector similarity search.
     *   **Development / Preview**: Thread-safe transactional JSON store with in-memory cosine vector store when `DATABASE_URL` is absent.
-*   **AI Engine**: Server-side Google Gemini SDK (`@google/genai`) with automatic model fallback across candidate tiers (`gemini-3.7-flash`, `gemini-flash-latest`, `gemini-3.1-flash-lite`).
+*   **LLM Provider**: Google Gemini (`gemini-2.5-flash`, `gemini-3.7-flash`, `gemini-flash-latest`).
+*   **LLM Framework**: **LangChain** (`@langchain/core`, `@langchain/google-genai`) for runnable chains, prompt templates, structured output Zod validation, and multi-agent interview orchestration.
+*   **RAG Pipeline**: LangChain `BaseRetriever` backed by PostgreSQL + `pgvector` with strict tenant scoping.
+*   **Multi-Agent Orchestration**: LangChain role-specialized interview agents (**Sarah Jenkins**, **David Chen**, **Marcus Brody**).
 *   **Embedding Model**: Modern `gemini-embedding-2` producing normalized 768-dimension vectors with strict runtime dimension validation.
 
 ---

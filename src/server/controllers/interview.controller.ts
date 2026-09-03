@@ -138,13 +138,24 @@ export async function evaluateInterviewHandler(req: AuthenticatedRequest, res: R
   }));
 
   try {
-    const evaluation = await evaluateInterviewSession({
-      role: targetRole,
-      company: targetCompany,
-      difficulty: difficulty || "Senior",
-      interviewerCount: count,
-      qaPairs: normalizedQAPairs
-    });
+    let evaluation: any;
+    try {
+      const { runInterviewEvaluationChain } = await import("../ai/langchain/chains");
+      evaluation = await runInterviewEvaluationChain({
+        role: targetRole,
+        company: targetCompany,
+        difficulty: difficulty || "Senior",
+        qaPairs: normalizedQAPairs
+      });
+    } catch (lcErr) {
+      evaluation = await evaluateInterviewSession({
+        role: targetRole,
+        company: targetCompany,
+        difficulty: difficulty || "Senior",
+        interviewerCount: count,
+        qaPairs: normalizedQAPairs
+      });
+    }
 
     // Authoritative Interview Record Persistence
     if (req.user?.userId) {
@@ -227,14 +238,27 @@ export async function evaluateStarHandler(req: AuthenticatedRequest, res: Respon
   const { role, company, situation, task, action, result } = req.body;
 
   try {
-    const evaluation = await evaluateSTARStory({
-      role,
-      company,
-      situation,
-      task,
-      action,
-      result
-    });
+    let evaluation: any;
+    try {
+      const { runStarEvaluationChain } = await import("../ai/langchain/chains");
+      evaluation = await runStarEvaluationChain({
+        role,
+        company,
+        situation,
+        task,
+        action,
+        result
+      });
+    } catch (lcErr) {
+      evaluation = await evaluateSTARStory({
+        role,
+        company,
+        situation,
+        task,
+        action,
+        result
+      });
+    }
 
     return res.status(200).json(evaluation);
   } catch (err: any) {
