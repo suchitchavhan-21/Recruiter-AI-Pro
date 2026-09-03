@@ -277,10 +277,11 @@ export function renderLocalMeshWarp(
   oralCavityPath?: Path2D,
   mouthOpen: number = 0
 ) {
-  // 1. Oral cavity depth shadow rendered between parting lips
-  if (mouthOpen > 0.4 && oralCavityPath) {
+  // 1. Natural subtle inner oral depth (soft ambient shadow, no harsh black hole)
+  if (mouthOpen > 0.8 && oralCavityPath) {
     ctx.save();
-    ctx.fillStyle = "rgba(14, 5, 5, 0.94)";
+    const shadowAlpha = Math.min((mouthOpen - 0.8) * 0.05, 0.35);
+    ctx.fillStyle = `rgba(24, 10, 10, ${shadowAlpha})`;
     ctx.fill(oralCavityPath);
     ctx.restore();
   }
