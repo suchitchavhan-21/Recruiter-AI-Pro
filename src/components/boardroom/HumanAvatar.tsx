@@ -61,15 +61,15 @@ export function HumanAvatar({
     }
   }, []);
 
-  // Persona configurations tuned specifically for authentic Sarah, David, and Marcus photographic portraits
+  // Persona configurations tuned specifically for authentic Sarah, David, and Marcus portraits
   const personaConfigs: Record<number, PersonaConfig> = {
     0: { // Sarah Jenkins — VP of People & Culture
       avatarUrl: "/assets/sarah.png",
       accentColor: "#818cf8",
-      ambientGlow: "rgba(99, 102, 241, 0.20)",
+      ambientGlow: "rgba(99, 102, 241, 0.22)",
       objectPosition: "50% 16%",
       scale: 1.10,
-      naturalTilt: 0.2,
+      naturalTilt: 0.15,
       expressionText: {
         speaking: "Presenting Behavioral Assessment",
         thinking: "Evaluating Behavioral Competencies",
@@ -80,10 +80,10 @@ export function HumanAvatar({
     1: { // David Chen — Principal Systems Architect
       avatarUrl: "/assets/david.png",
       accentColor: "#60a5fa",
-      ambientGlow: "rgba(59, 130, 246, 0.20)",
+      ambientGlow: "rgba(59, 130, 246, 0.22)",
       objectPosition: "50% 14%",
       scale: 1.10,
-      naturalTilt: -0.2,
+      naturalTilt: -0.15,
       expressionText: {
         speaking: "Exploring Technical Architecture",
         thinking: "Evaluating Systems Scalability",
@@ -94,7 +94,7 @@ export function HumanAvatar({
     2: { // Marcus Brody — Head of Engineering
       avatarUrl: "/assets/marcus.png",
       accentColor: "#34d399",
-      ambientGlow: "rgba(16, 185, 129, 0.20)",
+      ambientGlow: "rgba(16, 185, 129, 0.22)",
       objectPosition: "50% 16%",
       scale: 1.10,
       naturalTilt: 0.1,
@@ -109,7 +109,7 @@ export function HumanAvatar({
 
   const persona = personaConfigs[id] || personaConfigs[0];
 
-  // Attentive listening micro-presence (subtle, non-distracting)
+  // Attentive listening micro-presence (subtle, non-distracting executive acknowledgment)
   useEffect(() => {
     if (!candidateIsSpeaking || reducedMotion) {
       setHeadNod(0);
@@ -118,23 +118,23 @@ export function HumanAvatar({
     }
 
     nodTimerRef.current = setInterval(() => {
-      if (Math.random() < 0.4) {
-        setHeadNod(0.5);
-        setTimeout(() => setHeadNod(0), 350);
+      if (Math.random() < 0.35) {
+        setHeadNod(0.4);
+        setTimeout(() => setHeadNod(0), 400);
       }
-    }, 5500);
+    }, 6000);
 
     return () => {
       if (nodTimerRef.current) clearInterval(nodTimerRef.current);
     };
   }, [candidateIsSpeaking, reducedMotion]);
 
-  // Gentle panel turn angle for multi-interviewer boardroom layout
+  // Gentle panel turn angle for multi-interviewer boardroom stage
   const getPanelTurnAngle = () => {
     if (isActive || interviewerCount <= 1 || reducedMotion) return 0;
-    if (id === 0) return 1.5; // Sarah subtle focus toward center
-    if (id === 2) return -1.5; // Marcus subtle focus toward center
-    if (id === 1) return activeSpeakerIdx === 0 ? -1.2 : 1.2;
+    if (id === 0) return 1.2; // Sarah subtle focus toward center
+    if (id === 2) return -1.2; // Marcus subtle focus toward center
+    if (id === 1) return activeSpeakerIdx === 0 ? -1.0 : 1.0;
     return 0;
   };
 
@@ -143,13 +143,24 @@ export function HumanAvatar({
   // Head posture shifts
   let finalHeadTilt = persona.naturalTilt;
   if (isThinking) {
-    finalHeadTilt = id === 0 ? -0.6 : 0.6;
+    finalHeadTilt = id === 0 ? -0.5 : 0.5;
   } else if (candidateIsSpeaking) {
-    finalHeadTilt = persona.naturalTilt + 0.2;
+    finalHeadTilt = persona.naturalTilt + 0.15;
   }
 
-  const headTranslateY = isThinking ? 0.3 : headNod;
-  const headTranslateX = panelTurnY * 0.1;
+  const headTranslateY = isThinking ? 0.25 : headNod;
+  const headTranslateX = panelTurnY * 0.08;
+
+  // Determine active 2.5D animation class based on conversational state
+  const getAvatarAnimationClass = () => {
+    if (reducedMotion) return "";
+    if (isActive && isSpeaking) return "animate-avatar-speaking";
+    if (isActive && isThinking) return "animate-avatar-thinking";
+    if (candidateIsSpeaking) return "animate-avatar-listening";
+    return "animate-avatar-idle";
+  };
+
+  const avatarAnimationClass = getAvatarAnimationClass();
 
   // Live status badge information
   const getStatusBadge = () => {
@@ -194,41 +205,41 @@ export function HumanAvatar({
       id={`avatar-container-${id}`}
       className={`relative h-full w-full rounded-2xl overflow-hidden bg-[#06080e] select-none transition-all duration-500 ease-out ${
         isActive && isSpeaking
-          ? "border border-indigo-400/50 shadow-2xl shadow-indigo-950/70 ring-2 ring-indigo-500/40 scale-[1.01] -translate-y-0.5 z-10"
+          ? "border border-indigo-400/50 shadow-2xl shadow-indigo-950/80 ring-2 ring-indigo-500/40 scale-[1.012] -translate-y-0.5 z-10"
           : isActive && isThinking
-            ? "border border-amber-400/40 shadow-2xl shadow-amber-950/50 ring-2 ring-amber-500/30 scale-[1.005] z-10"
+            ? "border border-amber-400/40 shadow-2xl shadow-amber-950/50 ring-2 ring-amber-500/30 scale-[1.006] z-10"
             : candidateIsSpeaking
               ? "border border-emerald-500/30 ring-1 ring-emerald-500/20 opacity-95"
               : "border border-white/10 opacity-90 hover:opacity-100 hover:border-white/20"
       }`}
     >
-      {/* 1. LAYER 1: Deep Charcoal Studio Backdrop with Soft Depth Light */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-[#0a0c16] via-[#060810] to-[#020306]">
-        {/* Soft persona-tinted back-lighting for depth separation */}
+      {/* 1. LAYER 1: 2.5D Volumetric Studio Backdrop & Reactive Ambient Glow */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-[#0a0d18] via-[#060810] to-[#020306]">
+        {/* Dynamic persona-tinted volumetric back-lighting with speech bloom */}
         <div 
-          className="absolute inset-0 opacity-25 filter blur-3xl scale-125 transition-opacity duration-1000"
+          className={`absolute inset-0 filter blur-3xl scale-125 transition-opacity duration-1000 ${
+            isActive && isSpeaking && !reducedMotion ? "animate-ambient-speaking opacity-35" : "opacity-25"
+          }`}
           style={{ 
             background: `radial-gradient(circle at 50% 30%, ${persona.accentColor} 0%, transparent 68%)` 
           }}
         />
         
-        {/* Subtle camera studio vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_55%,_rgba(2,4,8,0.65)_100%)] pointer-events-none" />
+        {/* Subtle camera studio optical vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_55%,_rgba(2,4,8,0.70)_100%)] pointer-events-none" />
       </div>
 
-      {/* 2. LAYER 2: Pure Photographic Portrait Stage (Hero Visual) */}
+      {/* 2. LAYER 2: 2.5D Pure Photographic Portrait Stage (Hero Subject Presence) */}
       <div className="relative w-full h-full flex items-center justify-center z-10 overflow-hidden">
         
-        {/* Head Rig & Breathing Layer */}
+        {/* Head Rig with 2.5D Respiration, Micro-Parallax & Speaking Cadence */}
         <div 
-          className={`w-full h-full relative transition-transform duration-500 ease-out ${
-            !reducedMotion ? "animate-avatar-breathe" : ""
-          }`}
+          className={`w-full h-full relative transition-transform duration-500 ease-out ${avatarAnimationClass}`}
           style={{
             transform: `translate3d(${headTranslateX}px, ${headTranslateY}px, 0) rotate(${finalHeadTilt}deg) rotateY(${panelTurnY}deg)`,
           }}
         >
-          {/* Base Executive Video Portrait Image */}
+          {/* Authentic High-Resolution Portrait Image */}
           {!hasImageError ? (
             <img 
               src={persona.avatarUrl}
@@ -240,9 +251,9 @@ export function HumanAvatar({
                 objectPosition: persona.objectPosition,
                 transform: `scale(${persona.scale})`,
                 filter: isThinking 
-                  ? "brightness(0.97) contrast(1.03) saturate(0.98)" 
+                  ? "brightness(0.97) contrast(1.035) saturate(0.98)" 
                   : isActive && isSpeaking 
-                    ? "brightness(1.03) contrast(1.02) saturate(1.02)" 
+                    ? "brightness(1.03) contrast(1.025) saturate(1.02)" 
                     : isActive 
                       ? "brightness(1.01) contrast(1.01)" 
                       : "brightness(0.90) contrast(0.98)"
@@ -266,18 +277,23 @@ export function HumanAvatar({
           )}
         </div>
 
-        {/* Soft edge rim light when active */}
+        {/* 3. LAYER 3: Reactive Studio Rim Light & Lens Bloom */}
         {isActive && (
           <div 
-            className="absolute inset-0 rounded-2xl pointer-events-none transition-all duration-500"
+            className={`absolute inset-0 rounded-2xl pointer-events-none transition-all duration-500 ${
+              isSpeaking && !reducedMotion ? "animate-rim-speaking" : ""
+            }`}
             style={{
-              boxShadow: `inset 0 0 24px ${persona.ambientGlow}`
+              boxShadow: `inset 0 0 26px ${persona.ambientGlow}`
             }}
           />
         )}
+
+        {/* Subtle camera lens glass sheen */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.035] via-transparent to-transparent pointer-events-none rounded-2xl" />
       </div>
 
-      {/* 3. LAYER 3: Clean Video Call UI & Metadata */}
+      {/* 4. LAYER 4: Clean Video Call UI & Grounded Metadata */}
       
       {/* Top Left: Live Status Pill */}
       <div className="absolute top-3 left-3 z-20 pointer-events-none">
