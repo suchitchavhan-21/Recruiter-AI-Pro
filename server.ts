@@ -42,16 +42,14 @@ async function startServer() {
     }
   }
 
-  // 3. Initialize default database seeding if empty (DEVELOPMENT ONLY or explicit RUN_DB_SEED=true)
+  // 3. Initialize default database seeding if empty (DEVELOPMENT ONLY)
+  // Production application startup must NEVER execute database seeding under any environment variable.
   if (!isProd) {
     try {
       await runDatabaseSeed({ force: false });
     } catch (seedErr) {
       console.warn("[INIT] Development auto-seed check:", seedErr);
     }
-  } else if (process.env.RUN_DB_SEED === "true") {
-    console.log("🌱 [STARTUP] Explicit RUN_DB_SEED=true enabled in production. Executing seed...");
-    await runDatabaseSeed({ force: false });
   }
 
   const app = createExpressApp();
