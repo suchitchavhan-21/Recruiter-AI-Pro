@@ -456,20 +456,89 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<UserSes
   return db.sessions.find(s => s.refreshTokenHash === tokenHash && s.isActive && s.expiresAt > now) || null;
 }
 
-export async function revokeSessionById(id: string): Promise<void> {
+/**
+ * Atomically consumes an active refresh token session and records a new rotated session.
+ * Enforces strict single-use semantics: concurrent requests presenting the same token
+ * will result in exactly ONE successful rotation; all competing requests fail immediately.
+ */
+export async function rotateSessionAtomically(
+  oldTokenHash: string,
+  newSession: UserSession
+): Promise<{ success: boolean; oldSession?: { id: string; userId: string } }> {
   const now = new Date().toISOString();
   if (isPostgresActive()) {
-    await queryPostgres("UPDATE sessions SET is_active = FALSE, logout_time = $1 WHERE id = $2;", [now, id]);
-    return;
+    // 1. Atomically invalidate the active session in a single statement
+    const updateRes = await queryPostgres(
+      `UPDATE sessions 
+       SET is_active = FALSE, logout_time = $1 
+       WHERE refresh_token_hash = $2 AND is_active = TRUE AND expires_at > $1
+       RETURNING id, user_id;`,
+      [now, oldTokenHash]
+    );
+
+    if ((updateRes.rowCount ?? 0) === 0 || updateRes.rows.length === 0) {
+      return { success: false };
+    }
+
+    const consumed = updateRes.rows[0];
+
+    // 2. Insert the fresh rotated session
+    await insertSession(newSession);
+
+    return {
+      success: true,
+      oldSession: {
+        id: consumed.id,
+        userId: consumed.user_id
+      }
+    };
   }
 
   const db = loadDatabase();
-  const session = db.sessions.find(s => s.id === id);
-  if (session) {
+  const idx = db.sessions.findIndex(
+    s => s.refreshTokenHash === oldTokenHash && s.isActive && s.expiresAt > now
+  );
+  if (idx === -1) {
+    return { success: false };
+  }
+
+  const old = db.sessions[idx];
+  old.isActive = false;
+  old.logoutTime = now;
+  db.sessions.push(newSession);
+  await persistDatabaseAsync();
+
+  return {
+    success: true,
+    oldSession: {
+      id: old.id,
+      userId: old.userId
+    }
+  };
+}
+
+export async function revokeSessionById(id: string, userId?: string): Promise<boolean> {
+  const now = new Date().toISOString();
+  if (isPostgresActive()) {
+    let sql = "UPDATE sessions SET is_active = FALSE, logout_time = $1 WHERE id = $2";
+    const params: any[] = [now, id];
+    if (userId) {
+      sql += " AND user_id = $3";
+      params.push(userId);
+    }
+    const res = await queryPostgres(sql + ";", params);
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  const db = loadDatabase();
+  const session = db.sessions.find(s => s.id === id && (!userId || s.userId === userId));
+  if (session && session.isActive) {
     session.isActive = false;
     session.logoutTime = now;
     await persistDatabaseAsync();
+    return true;
   }
+  return false;
 }
 
 export async function revokeAllUserSessions(userId: string): Promise<void> {
@@ -671,6 +740,49 @@ export async function updateInterviewById(id: string, updates: Partial<Interview
   const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
   await insertInterview(updated);
   return updated;
+}
+
+/**
+ * Optimistically and atomically advances interview turn in PostgreSQL.
+ * Guarantees cross-instance correctness in multi-container Cloud Run deployments.
+ */
+export async function updateInterviewTurnAtomically(
+  sessionId: string,
+  expectedTurn: number,
+  updatedState: any
+): Promise<{ success: boolean; currentState?: any }> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres(
+      `UPDATE interviews
+       SET session_state = $1, updated_at = NOW()
+       WHERE id = $2 
+         AND (
+           (session_state->>'currentTurn')::int = $3
+           OR session_state->>'currentTurn' IS NULL
+         )
+       RETURNING session_state;`,
+      [JSON.stringify(updatedState), sessionId, expectedTurn]
+    );
+
+    if (res.rows.length === 0) {
+      // Concurrency conflict: another Cloud Run instance already advanced this turn
+      const fresh = await findInterviewById(sessionId);
+      return {
+        success: false,
+        currentState: fresh?.sessionState
+      };
+    }
+
+    return { success: true };
+  }
+
+  const db = loadDatabase();
+  const existing = db.interviews.find(i => i.id === sessionId);
+  if (!existing) return { success: false };
+  existing.sessionState = updatedState;
+  existing.updatedAt = new Date().toISOString();
+  await persistDatabaseAsync();
+  return { success: true };
 }
 
 export async function listInterviewsByUserId(userId: string): Promise<InterviewSessionRecord[]> {
@@ -970,6 +1082,10 @@ export async function deleteSTARStoryById(id: string, userId: string): Promise<b
 }
 
 export async function resetDatabaseState(preserveAdminId?: string): Promise<void> {
+  if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+    throw new Error("[SECURITY FATAL] resetDatabaseState is strictly prohibited in production environments.");
+  }
+
   if (isPostgresActive()) {
     if (preserveAdminId) {
       await queryPostgres("DELETE FROM users WHERE id != $1;", [preserveAdminId]);

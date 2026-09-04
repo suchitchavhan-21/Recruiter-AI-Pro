@@ -13,3 +13,11 @@ coverage/
 .idea/
 data/postgres_data/
 data/pgdata_*/
+data/recruiter_ai_prod.json
+data/local_database.json
+data/*.json
+data/*.json.*
+data/*.tmp.*
+*.tmp.*
+local_database.json
+*.local.json

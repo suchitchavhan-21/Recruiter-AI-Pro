@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ENV } from "../config/env";
+import { isPostgresActive, queryPostgres } from "../db/postgres";
 
 interface RateLimitRecord {
   timestamps: number[];
@@ -24,19 +25,69 @@ export interface RateLimitOptions {
   windowMs: number;
   max: number;
   message: string;
+  keyPrefix?: string;
 }
 
 export function createRateLimiter(options: RateLimitOptions) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const forwarded = req.headers["x-forwarded-for"];
-    const ip = (typeof forwarded === "string" ? forwarded.split(",")[0] : req.socket.remoteAddress) || "unknown_ip";
-
+    const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown_ip";
+    const prefix = options.keyPrefix || "rl";
+    const key = `${prefix}:${ip}`;
     const now = Date.now();
-    let record = rateLimitStore.get(ip);
 
+    // 1. Shared PostgreSQL rate limiter for multi-instance Cloud Run deployment
+    if (isPostgresActive()) {
+      try {
+        const resetAt = now + options.windowMs;
+        const resDb = await queryPostgres(
+          `INSERT INTO rate_limits (key, count, reset_at)
+           VALUES ($1, 1, $2)
+           ON CONFLICT (key) DO UPDATE
+           SET count = CASE WHEN rate_limits.reset_at < $3 THEN 1 ELSE rate_limits.count + 1 END,
+               reset_at = CASE WHEN rate_limits.reset_at < $3 THEN $2 ELSE rate_limits.reset_at END
+           RETURNING count, reset_at;`,
+          [key, resetAt, now]
+        );
+
+        if (resDb.rows.length > 0) {
+          const currentCount = parseInt(resDb.rows[0].count, 10);
+          const currentResetAt = Number(resDb.rows[0].reset_at);
+
+          if (currentCount > options.max) {
+            const retryAfterSeconds = Math.max(1, Math.ceil((currentResetAt - now) / 1000));
+            res.setHeader("Retry-After", retryAfterSeconds);
+            res.setHeader("X-RateLimit-Limit", options.max);
+            res.setHeader("X-RateLimit-Remaining", 0);
+            res.setHeader("X-RateLimit-Reset", Math.ceil(currentResetAt / 1000));
+
+            return res.status(429).json({
+              success: false,
+              error: {
+                code: "RATE_LIMIT_EXCEEDED",
+                message: options.message,
+                retryAfter: retryAfterSeconds,
+                resetTime: new Date(currentResetAt).toISOString()
+              }
+            });
+          }
+
+          const remaining = Math.max(0, options.max - currentCount);
+          res.setHeader("X-RateLimit-Limit", options.max);
+          res.setHeader("X-RateLimit-Remaining", remaining);
+          res.setHeader("X-RateLimit-Reset", Math.ceil(currentResetAt / 1000));
+          return next();
+        }
+      } catch {
+        // Safe fallback to in-memory store if DB query encounters transient error
+      }
+    }
+
+    // 2. In-memory fallback for local dev / non-DB operation
+    let record = rateLimitStore.get(key);
     if (!record) {
       record = { timestamps: [] };
-      rateLimitStore.set(ip, record);
+      rateLimitStore.set(key, record);
     }
 
     record.timestamps = record.timestamps.filter(t => now - t < options.windowMs);
@@ -96,3 +147,74 @@ export function applySecurityHeaders(req: Request, res: Response, next: NextFunc
 
   next();
 }
+
+export function applyCorsMiddleware(req: Request, res: Response, next: NextFunction) {
+  const origin = req.headers.origin;
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+
+  const configuredExtra = (process.env.CORS_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const allowedOrigins = [
+    ENV.APP_URL,
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    ...configuredExtra
+  ].filter(Boolean);
+
+  if (origin) {
+    const isLocalDev = !isProd && (origin.includes("localhost") || origin.includes("127.0.0.1"));
+    const isGoogleCloudRun = origin.endsWith(".run.app") || origin.includes("run.app");
+    const isGoogleAIStudio = origin.endsWith(".google.com") || origin.endsWith(".googleusercontent.com");
+    const isSameHost = Boolean(req.headers.host && origin.includes(req.headers.host));
+
+    const isAllowed = allowedOrigins.includes(origin) || isLocalDev || isGoogleCloudRun || isGoogleAIStudio || isSameHost;
+
+    if (isAllowed) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Refresh-Token");
+    } else if (isProd && req.method === "OPTIONS") {
+      return res.status(403).json({ error: "CORS_FORBIDDEN", message: "Origin not allowed by CORS policy." });
+    }
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+}
+
+export const authLimiter = createRateLimiter({
+  windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
+  max: ENV.RATE_LIMIT_MAX_AUTH || 30,
+  keyPrefix: "auth",
+  message: "Too many authentication attempts. Please wait before trying again."
+});
+
+export const aiLimiter = createRateLimiter({
+  windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
+  max: ENV.RATE_LIMIT_MAX_AI || 50,
+  keyPrefix: "ai",
+  message: "AI request quota exceeded. Please slow down your requests."
+});
+
+export const ttsLimiter = createRateLimiter({
+  windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
+  max: 60,
+  keyPrefix: "tts",
+  message: "Speech synthesis rate limit exceeded. Please wait a moment."
+});
+
+export const generalLimiter = createRateLimiter({
+  windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
+  max: ENV.RATE_LIMIT_MAX_GENERAL || 300,
+  keyPrefix: "gen",
+  message: "Request rate limit exceeded."
+});

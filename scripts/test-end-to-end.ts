@@ -320,6 +320,13 @@ async function runEndToEndTests() {
     const historyRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/interviews`, { headers: authHeadersA });
     assert(historyRes.status === 200 && Array.isArray(historyRes.data?.interviews) && historyRes.data.interviews.length > 0, "Journey H: GET /api/interviews retrieves persisted session history");
 
+    // Deterministic Hiring Decision Boundary Assertions (Phase 15)
+    const { calculateHiringDecision } = await import("../src/server/services/gemini.service");
+    assert(calculateHiringDecision(85) === "Strong Hire", "Phase 15: Boundary score 85 evaluates strictly to 'Strong Hire'");
+    assert(calculateHiringDecision(84.99) === "Lean Hire", "Phase 15: Boundary score 84.99 evaluates strictly to 'Lean Hire'");
+    assert(calculateHiringDecision(70) === "Lean Hire", "Phase 15: Boundary score 70 evaluates strictly to 'Lean Hire'");
+    assert(calculateHiringDecision(69.99) === "No Hire", "Phase 15: Boundary score 69.99 evaluates strictly to 'No Hire'");
+
     // 9. Journey J: Analytics Dashboard
     const dashRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/dashboard`, { headers: authHeadersA });
     assert(dashRes.status === 200 && dashRes.data?.stats?.totalInterviews >= 1, "Journey J: GET /api/dashboard returns authoritative aggregated metrics");

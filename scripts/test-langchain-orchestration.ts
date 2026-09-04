@@ -20,6 +20,8 @@ import {
 } from "../src/server/ai/langchain/structured-output";
 import { queryPostgres, isPgVectorAvailable, initPostgresSchema } from "../src/server/db/postgres";
 import { generateUUID } from "../src/server/db/repository";
+import { validateInterviewEvidenceGrounding, InterviewTranscriptTurn } from "../src/server/services/gemini.service";
+import { InterviewOrchestrator } from "../src/server/ai/orchestrator/interviewOrchestrator";
 
 let passCount = 0;
 let failCount = 0;
@@ -218,6 +220,71 @@ async function runLangChainSuite() {
     console.log("\n[TEST 10] LangChain Codebase Integrity & Security Scan...");
     const secretsInCode = JSON.stringify(diag).includes("AIzaSy") || JSON.stringify(diag).includes("postgres://");
     check(!secretsInCode, "No sensitive keys or database credentials exposed in LangChain metadata");
+
+    // -------------------------------------------------------------------------
+    // TEST 11: Programmatic Evidence Grounding Verification
+    // -------------------------------------------------------------------------
+    console.log("\n[TEST 11] Programmatic Evidence Grounding Verification...");
+    const qaPairs: InterviewTranscriptTurn[] = [
+      {
+        turnIndex: 0,
+        interviewer: "Sarah Jenkins",
+        question: "Can you describe how you managed PostgreSQL connection pooling under high load?",
+        answer: "We implemented PgBouncer with transaction pooling mode, which reduced our idle backend connection count from 1200 down to 85 and cut p99 latency to 14ms."
+      }
+    ];
+
+    const groundedClaims = [
+      {
+        claim: "Candidate successfully scaled PostgreSQL connections using PgBouncer.",
+        quote: "We implemented PgBouncer with transaction pooling mode, which reduced our idle backend connection count from 1200 down to 85",
+        competency: "Architecture"
+      }
+    ];
+    const groundingRes = validateInterviewEvidenceGrounding(qaPairs, groundedClaims);
+    check((groundingRes.verifiedClaimsCount === 1 || groundingRes.groundedClaims === 1) && groundingRes.groundingRatio === 1.0, "Verified authentic candidate quote grounded: true");
+
+    const hallucinatedClaims = [
+      {
+        claim: "Candidate claimed 10 years deploying Kubernetes across 5 cloud regions.",
+        quote: "We deployed 500 multi-region Kubernetes clusters across 5 clouds",
+        competency: "DevOps"
+      }
+    ];
+    const ungroundedRes = validateInterviewEvidenceGrounding(qaPairs, hallucinatedClaims);
+    check((ungroundedRes.verifiedClaimsCount === 0 || ungroundedRes.groundedClaims === 0) && (ungroundedRes.items?.[0]?.grounded === false || ungroundedRes.groundedItems?.[0]?.grounded === false), "Flagged fabricated quote with grounded: false");
+
+    // -------------------------------------------------------------------------
+    // TEST 12: Interview Concurrency & Turn Deduplication
+    // -------------------------------------------------------------------------
+    console.log("\n[TEST 12] Interview Concurrency & Turn Deduplication Serialization...");
+    const concurrencyUser = `concurrent_user_${Date.now()}`;
+    const session = await InterviewOrchestrator.startSession({
+      userId: concurrencyUser,
+      targetRole: "Senior Backend Engineer",
+      company: "Distributed Systems Inc",
+      difficulty: "Senior",
+      interviewerCount: 2
+    });
+    check(Boolean(session.sessionId), "Adaptive interview session initialized for concurrency test");
+
+    // Fire 2 concurrent turn submissions
+    const [t1, t2] = await Promise.all([
+      InterviewOrchestrator.submitAnswerAndProgress({
+        userId: concurrencyUser,
+        sessionId: session.sessionId,
+        candidateAnswer: "We used Redis pub/sub and Raft for cluster synchronization."
+      }),
+      InterviewOrchestrator.submitAnswerAndProgress({
+        userId: concurrencyUser,
+        sessionId: session.sessionId,
+        candidateAnswer: "We used Redis pub/sub and Raft for cluster synchronization."
+      })
+    ]);
+    check(Boolean(t1 && t2), "Concurrent turn submissions resolved gracefully without unhandled race conditions");
+
+    const sessionState = await InterviewOrchestrator.loadOrRestoreState(session.sessionId);
+    check(sessionState?.history.length === 2, `Turns advanced cleanly to exactly 2 without duplicate turn rows (got ${sessionState?.history.length})`);
 
     console.log("\n================================================================================");
     console.log(`LANGCHAIN SUITE: ${passCount + failCount} TOTAL | ${passCount} PASSED | ${failCount} FAILED`);

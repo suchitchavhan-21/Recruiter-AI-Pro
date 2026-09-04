@@ -67,6 +67,12 @@ export async function uploadAndScanResumeHandler(req: AuthenticatedRequest, res:
     mimeType = req.body.fileType || "application/pdf";
     try {
       const buffer = Buffer.from(req.body.base64Data, "base64");
+      if (buffer.length > ENV.MAX_FILE_SIZE_BYTES) {
+        return res.status(400).json({
+          success: false,
+          error: { code: "FILE_TOO_LARGE", message: `Decoded file size (${buffer.length} bytes) exceeds maximum allowed limit of ${ENV.MAX_FILE_SIZE_BYTES} bytes.` }
+        });
+      }
       fileSize = buffer.length;
       const extracted = await extractDocumentText(buffer, mimeType, fileName);
       resumeText = extracted.text;
@@ -207,7 +213,13 @@ export async function deleteResumeHandler(req: AuthenticatedRequest, res: Respon
   }
 
   const id = req.params.id;
-  await deleteResumeById(id, req.user.userId);
+  const deleted = await deleteResumeById(id, req.user.userId);
+  if (!deleted) {
+    return res.status(404).json({
+      success: false,
+      error: { code: "RESUME_NOT_FOUND", message: "Resume not found or access denied." }
+    });
+  }
 
   // Clean up associated RAG vector chunks
   try {

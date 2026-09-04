@@ -30,6 +30,9 @@ export const ENV = {
   DATABASE_URL: process.env.DATABASE_URL || "",
   
   // AI & Embeddings Model
+  GEMINI_PRIMARY_MODEL: process.env.GEMINI_PRIMARY_MODEL || "gemini-2.5-flash",
+  GEMINI_FALLBACK_MODEL: process.env.GEMINI_FALLBACK_MODEL || "gemini-flash-latest",
+  GEMINI_LIGHT_MODEL: process.env.GEMINI_LIGHT_MODEL || "gemini-flash-lite-latest",
   EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || "gemini-embedding-2",
   EMBEDDING_DIMENSION: 768,
   
@@ -82,9 +85,11 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
 
     const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
     if (!dbUrl) {
-      errors.push("Mandatory DATABASE_URL is missing in production. PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
+      errors.push("Mandatory DATABASE_URL is missing in production. External PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
     } else if (dbUrl.includes("embedded") || dbUrl.includes("postgres_data")) {
       errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
+    } else if (!dbUrl.startsWith("postgres://") && !dbUrl.startsWith("postgresql://")) {
+      errors.push("DATABASE_URL must be a valid PostgreSQL connection string starting with 'postgres://' or 'postgresql://'.");
     }
   }
 

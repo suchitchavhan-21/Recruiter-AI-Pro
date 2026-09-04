@@ -14,6 +14,7 @@ import {
   findSessionByTokenHash, 
   revokeSessionById, 
   revokeAllUserSessions,
+  rotateSessionAtomically,
   hashToken, 
   generateUUID, 
   insertActivity 
@@ -206,8 +207,8 @@ export async function loginHandler(req: Request, res: Response) {
     });
   }
 
-  // Elevate to admin role if authorized
-  if (adminKey && ENV.ADMIN_PASSCODE && adminKey.trim() === ENV.ADMIN_PASSCODE.trim() && user.role !== "admin") {
+  // Elevate to admin role if authorized (DEVELOPMENT ONLY; prohibited in production)
+  if (process.env.NODE_ENV !== "production" && adminKey && ENV.ADMIN_PASSCODE && adminKey.trim() === ENV.ADMIN_PASSCODE.trim() && user.role !== "admin") {
     await updateUserById(user.id, { role: "admin" });
     user.role = "admin";
   }
@@ -315,15 +316,6 @@ export async function refreshTokenHandler(req: Request, res: Response) {
     });
   }
 
-  const tokenHash = hashToken(refreshToken);
-  const session = await findSessionByTokenHash(tokenHash);
-  if (!session) {
-    return res.status(401).json({
-      success: false,
-      error: { code: "SESSION_REVOKED", message: "Session is inactive or revoked." }
-    });
-  }
-
   const user = await findUserById(payload.userId);
   if (!user || user.accountStatus !== "active") {
     return res.status(403).json({
@@ -340,9 +332,6 @@ export async function refreshTokenHandler(req: Request, res: Response) {
   });
   const newRefreshToken = signRefreshToken({ userId: user.id });
 
-  // Revoke old session and issue new session record
-  await revokeSessionById(session.id);
-
   const clientInfo = parseClientAgent(req);
   const rotatedSession: UserSession = {
     id: generateUUID(),
@@ -358,11 +347,22 @@ export async function refreshTokenHandler(req: Request, res: Response) {
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   };
 
-  await insertSession(rotatedSession);
+  // Atomically invalidate old session and persist new rotated session
+  const tokenHash = hashToken(refreshToken);
+  const rotateResult = await rotateSessionAtomically(tokenHash, rotatedSession);
+
+  if (!rotateResult.success) {
+    return res.status(401).json({
+      success: false,
+      error: { code: "SESSION_REVOKED", message: "Session is inactive or refresh token has already been consumed." }
+    });
+  }
+
   setAuthCookies(res, newAccessToken, newRefreshToken);
 
   return res.status(200).json({
     success: true,
+    message: "Tokens successfully refreshed.",
     accessToken: newAccessToken,
     refreshToken: newRefreshToken,
     user: {
@@ -373,6 +373,7 @@ export async function refreshTokenHandler(req: Request, res: Response) {
     }
   });
 }
+
 
 // 5. VERIFY EMAIL
 export async function verifyEmailHandler(req: Request, res: Response) {

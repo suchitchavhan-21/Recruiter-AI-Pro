@@ -1,5 +1,6 @@
 import { Response } from "express";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { 
   listAllUsers, 
   findUserById, 
@@ -7,6 +8,7 @@ import {
   deleteUserById, 
   listAllActivities, 
   resetDatabaseState, 
+  revokeAllUserSessions,
   insertAuditLog, 
   insertActivity 
 } from "../db/repository";
@@ -35,9 +37,19 @@ export async function adminListUsersHandler(req: AuthenticatedRequest, res: Resp
 }
 
 // 2. TOGGLE USER STATUS (DEACTIVATE / ACTIVATE)
+const adminStatusSchema = z.enum(["active", "inactive", "blocked"]);
+
 export async function adminToggleUserStatusHandler(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-  const { status } = req.body; // "active" | "inactive" | "blocked"
+
+  const parseResult = adminStatusSchema.safeParse(req.body?.status);
+  if (!parseResult.success) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "INVALID_STATUS", message: "Status must be 'active', 'inactive', or 'blocked'." }
+    });
+  }
+  const status = parseResult.data;
 
   const user = await findUserById(id);
   if (!user) {
@@ -52,14 +64,19 @@ export async function adminToggleUserStatusHandler(req: AuthenticatedRequest, re
     });
   }
 
-  const updated = await updateUserById(id, { accountStatus: status || "inactive" });
+  const updated = await updateUserById(id, { accountStatus: status });
+
+  // If user is deactivated or blocked, revoke all active sessions immediately
+  if (status !== "active") {
+    await revokeAllUserSessions(id);
+  }
 
   await insertAuditLog({
     adminUserId: req.user!.userId,
     adminEmail: req.user!.email,
     action: "USER_STATUS_CHANGE",
     targetUserId: id,
-    details: `Changed account status of ${user.email} to ${status || "inactive"}.`,
+    details: `Changed account status of ${user.email} to ${status}.`,
     ipAddress: req.ip || "127.0.0.1"
   });
 
@@ -90,20 +107,24 @@ export async function adminResetUserPasswordHandler(req: AuthenticatedRequest, r
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await updateUserById(id, { passwordHash });
 
+  // Invalidate all active sessions for security upon admin password reset
+  await revokeAllUserSessions(id);
+
   await insertAuditLog({
     adminUserId: req.user!.userId,
     adminEmail: req.user!.email,
     action: "ADMIN_RESET_PASSWORD",
     targetUserId: id,
-    details: `Admin reset password for ${user.email}.`,
+    details: `Admin reset password for ${user.email}. All existing sessions revoked.`,
     ipAddress: req.ip || "127.0.0.1"
   });
 
   return res.status(200).json({
     success: true,
-    message: `Password reset successfully for ${user.email}.`
+    message: `Password reset successfully for ${user.email}. All prior sessions revoked.`
   });
 }
+
 
 // 4. ADMIN DELETE USER
 export async function adminDeleteUserHandler(req: AuthenticatedRequest, res: Response) {
@@ -148,8 +169,15 @@ export async function adminListActivitiesHandler(req: AuthenticatedRequest, res:
   });
 }
 
-// 6. RESET DEMO DATABASE
+// 6. RESET DEMO DATABASE (DEVELOPMENT ONLY)
 export async function adminResetDatabaseHandler(req: AuthenticatedRequest, res: Response) {
+  if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+    return res.status(403).json({
+      success: false,
+      error: { code: "FORBIDDEN_IN_PRODUCTION", message: "Database reset is strictly prohibited in production mode." }
+    });
+  }
+
   await resetDatabaseState(req.user?.userId);
 
   await insertAuditLog({
@@ -166,8 +194,15 @@ export async function adminResetDatabaseHandler(req: AuthenticatedRequest, res: 
   });
 }
 
-// 7. VERIFY ADMIN PASSCODE
+// 7. VERIFY ADMIN PASSCODE (DEVELOPMENT ONLY)
 export async function verifyAdminPasscodeHandler(req: AuthenticatedRequest, res: Response) {
+  if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+    return res.status(403).json({
+      success: false,
+      error: { code: "FORBIDDEN_IN_PRODUCTION", message: "Administrative elevation via passcode is prohibited in production." }
+    });
+  }
+
   const { passcode } = req.body;
   if (!passcode || !ENV.ADMIN_PASSCODE) {
     return res.status(400).json({ success: false, error: { code: "PASSCODE_REQUIRED", message: "Passcode required." } });
@@ -182,3 +217,4 @@ export async function verifyAdminPasscodeHandler(req: AuthenticatedRequest, res:
 
   return res.status(403).json({ success: false, error: { code: "INVALID_PASSCODE", message: "Invalid administrator passcode." } });
 }
+

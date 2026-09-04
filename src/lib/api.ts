@@ -1,29 +1,63 @@
-// Enterprise API Fetch Utility with HttpOnly Cookie credentials and Bearer Token redundancy
+let activeRefreshPromise: Promise<string | null> | null = null;
+let inMemoryAccessToken: string | null = null;
+
+export function setInMemoryAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+
+export function getInMemoryAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
+
+async function executeTokenRefresh(): Promise<string | null> {
+  try {
+    const refreshResponse = await window.fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    });
+
+    if (refreshResponse.ok) {
+      const refreshData = await refreshResponse.json();
+      if (refreshData && refreshData.accessToken) {
+        inMemoryAccessToken = refreshData.accessToken;
+        return refreshData.accessToken as string;
+      }
+    }
+  } catch (err) {
+    console.error("Auto token refresh failed:", err);
+  }
+  return null;
+}
+
+/**
+ * Enterprise API Fetch Utility with secure HttpOnly Cookie credentials
+ * Pure cookie-based authentication flow. Tokens are NEVER stored in localStorage.
+ */
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = typeof input === "string" ? input : (input instanceof URL ? input.toString() : input.url);
   const options: RequestInit = { ...init };
 
-  // 1. Ensure credentials: 'include' for secure cookie transfer across frames
-  if (!options.credentials) {
-    options.credentials = "include";
-  }
+  // 1. Ensure credentials: 'include' for secure HttpOnly cookie authentication across all requests
+  options.credentials = "include";
 
-  // 2. Inject Bearer token if it exists in local storage and the request is to a relative API endpoint
+  // 2. Inject in-memory Bearer token only if present and not already set
   if (url.startsWith("/api/") || url.includes(window.location.origin + "/api/")) {
-    const token = localStorage.getItem("access_token");
-    if (token) {
+    if (inMemoryAccessToken) {
       const headers = new Headers(options.headers || {});
       if (!headers.has("Authorization")) {
-        headers.set("Authorization", `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${inMemoryAccessToken}`);
       }
       options.headers = headers;
     }
   }
 
-  // 3. Execute the actual fetch request
+  // 3. Execute the fetch request
   const response = await window.fetch(input, options);
 
-  // 4. Transparent token refresh interception on 401 Unauthorized
+  // 4. Transparent token refresh interception on 401 Unauthorized (Single-flight mutex)
   if (
     response.status === 401 &&
     (url.startsWith("/api/") || url.includes(window.location.origin + "/api/")) &&
@@ -34,77 +68,55 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     !url.includes("/api/auth/refresh") &&
     !url.includes("/api/refresh-token")
   ) {
-    const refreshToken = localStorage.getItem("refresh_token");
-    if (refreshToken) {
-      try {
-        const refreshResponse = await window.fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Refresh-Token": refreshToken,
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
+    if (!activeRefreshPromise) {
+      activeRefreshPromise = executeTokenRefresh().finally(() => {
+        activeRefreshPromise = null;
+      });
+    }
 
-        if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
-          if (refreshData && refreshData.accessToken) {
-            localStorage.setItem("access_token", refreshData.accessToken);
-            if (refreshData.refreshToken) {
-              localStorage.setItem("refresh_token", refreshData.refreshToken);
-            }
+    const newAccessToken = await activeRefreshPromise;
+    if (newAccessToken) {
+      // Re-execute request with refreshed cookie credentials & in-memory token
+      const retryInit = { ...options };
+      const retryHeaders = new Headers(retryInit.headers || {});
+      retryHeaders.set("Authorization", `Bearer ${newAccessToken}`);
+      retryInit.headers = retryHeaders;
 
-            // Re-sign request and retry
-            const retryInit = { ...options };
-            const retryHeaders = new Headers(retryInit.headers || {});
-            retryHeaders.set("Authorization", `Bearer ${refreshData.accessToken}`);
-            retryInit.headers = retryHeaders;
-
-            return window.fetch(input, retryInit);
-          }
-        }
-      } catch (err) {
-        console.error("Auto token refresh failed:", err);
-      }
+      return window.fetch(input, retryInit);
     }
   }
 
-  // 5. Post-fetch processing: capture tokens or clear on logout
+  // 5. Post-fetch processing: capture in-memory access token on login/register/refresh
   if (
     url.includes("/login") || 
     url.includes("/register") || 
-    url.includes("/refresh") || 
-    url.includes("/verify-email")
+    url.includes("/refresh")
   ) {
     try {
       const clone = response.clone();
       const data = await clone.json();
       if (data && data.accessToken) {
-        localStorage.setItem("access_token", data.accessToken);
-      }
-      if (data && data.refreshToken) {
-        localStorage.setItem("refresh_token", data.refreshToken);
+        inMemoryAccessToken = data.accessToken;
       }
     } catch {
-      // Ignore JSON parsing errors
+      // Non-JSON response
     }
   }
 
-  // Handle logout
+  // Handle logout: clear in-memory token
   if (url.includes("/logout")) {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    inMemoryAccessToken = null;
   }
 
-  // Clear token if server responds with 401 Unauthorized (and refresh failed/was not possible)
+  // Clear in-memory token if 401 Unauthorized persisted
   if (
     response.status === 401 && 
     (url.startsWith("/api/") || url.includes(window.location.origin + "/api/")) && 
     !url.includes("/login")
   ) {
-    localStorage.removeItem("access_token");
+    inMemoryAccessToken = null;
   }
 
   return response;
 }
+

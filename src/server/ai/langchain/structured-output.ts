@@ -19,7 +19,7 @@ export const AtsEvaluationSchema = z.object({
     requirement: z.string(),
     matched: z.boolean(),
     evidence: z.string().default(""),
-    confidence: z.number().default(0.85)
+    confidence: z.number().min(0).max(1)
   })).default([]),
   missingRequirements: z.array(z.string()).default([]),
   strengths: z.array(z.string()).default([]),
@@ -48,11 +48,11 @@ export type InterviewerTurnOutput = z.infer<typeof InterviewerTurnSchema>;
  */
 export const InterviewEvaluationSchema = z.object({
   score: z.number().min(0).max(100),
-  technicalScore: z.number().min(0).max(100).default(75),
-  behavioralScore: z.number().min(0).max(100).default(75),
-  communicationScore: z.number().min(0).max(100).default(75),
-  overallRating: z.string().default("Hire"),
-  overallFeedback: z.string().default("Consistent technical depth and structured communication."),
+  technicalScore: z.number().min(0).max(100),
+  behavioralScore: z.number().min(0).max(100),
+  communicationScore: z.number().min(0).max(100),
+  overallRating: z.string(),
+  overallFeedback: z.string(),
   strengths: z.array(z.string()).default([]),
   improvements: z.array(z.string()).default([]),
   areasForImprovement: z.array(z.string()).default([]),

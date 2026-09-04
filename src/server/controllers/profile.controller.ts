@@ -172,11 +172,19 @@ export async function getSessionsHandler(req: AuthenticatedRequest, res: Respons
 }
 
 export async function revokeSessionHandler(req: AuthenticatedRequest, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
+
   const sessionId = req.params.id;
   if (!sessionId) {
     return res.status(400).json({ success: false, error: { code: "INVALID_ID", message: "Session ID is required." } });
   }
 
-  await revokeSessionById(sessionId);
+  const revoked = await revokeSessionById(sessionId, req.user.userId);
+  if (!revoked) {
+    return res.status(404).json({ success: false, error: { code: "SESSION_NOT_FOUND", message: "Session not found or already revoked." } });
+  }
+
   return res.status(200).json({ success: true, message: "Session revoked." });
 }

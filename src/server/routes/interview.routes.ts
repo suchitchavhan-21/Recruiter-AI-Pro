@@ -47,13 +47,14 @@ interviewRouter.post("/adaptive/turn", aiLimiter, validateBody(processTurnSchema
 interviewRouter.get("/adaptive/state/:sessionId", getAdaptiveInterviewStateHandler);
 interviewRouter.get("/adaptive/session/:sessionId", getAdaptiveInterviewStateHandler);
 
-interviewRouter.get("/", listInterviewsHandler);
-interviewRouter.get("/history", listInterviewsHandler);
-interviewRouter.get("/history/:id", getInterviewByIdHandler);
-interviewRouter.get("/:id", getInterviewByIdHandler);
-
+// Static collection routes must precede parameterized /:id route to prevent route shadowing
 interviewRouter.get("/candidate-memory", getCandidateMemoryHandler);
 interviewRouter.get("/star-stories", listStarStoriesHandler);
 interviewRouter.post("/star-stories", validateBody(saveStarSchema), saveStarStoryHandler);
 interviewRouter.delete("/star-stories/:id", deleteStarStoryHandler);
+
+interviewRouter.get("/", listInterviewsHandler);
+interviewRouter.get("/history", listInterviewsHandler);
+interviewRouter.get("/history/:id", getInterviewByIdHandler);
+interviewRouter.get("/:id", getInterviewByIdHandler);
 

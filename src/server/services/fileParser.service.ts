@@ -6,13 +6,14 @@ async function parsePdfBuffer(buffer: Buffer): Promise<string> {
     const pdfParseModule: any = await import("pdf-parse");
     const pdfParse = pdfParseModule.default || pdfParseModule;
     const data = await pdfParse(buffer);
-    return data?.text || "";
-  } catch (err) {
-    console.error("[FILE PARSE] PDF parsing error:", err);
-    // Fallback extraction from raw strings if binary parsing fails
-    const rawStr = buffer.toString("utf-8");
-    const cleanMatches = rawStr.match(/[A-Za-z0-9\s.,;:'"()\-–—/@]{4,}/g);
-    return cleanMatches ? cleanMatches.join(" ").substring(0, 15000) : "Failed to extract clean text from PDF binary.";
+    const text = (data?.text || "").trim();
+    if (!text) {
+      throw new Error("EMPTY_TEXT: PDF parsed successfully but contains no selectable text layer (e.g. scanned image).");
+    }
+    return text;
+  } catch (err: any) {
+    console.error("[FILE PARSE] PDF parsing error:", err?.message || err);
+    throw new Error(`PARSING_FAILED: Malformed or unreadable PDF document (${err?.message || "unrecognized structure"}).`);
   }
 }
 
@@ -38,19 +39,52 @@ export async function extractDocumentText(
   mimeType: string,
   fileName: string
 ): Promise<ExtractedDocument> {
+  if (!buffer || buffer.length === 0) {
+    throw new Error("EMPTY_FILE: Document file contains zero bytes.");
+  }
+
+  // Reject legacy binary .doc format explicitly
+  if (fileName.toLowerCase().endsWith(".doc") && !fileName.toLowerCase().endsWith(".docx")) {
+    throw new Error("UNSUPPORTED_FORMAT: Legacy binary Microsoft Word (.doc) format is not supported. Please convert and upload a modern .docx or .pdf file.");
+  }
+
+  // Security Check: Reject binary executables (Windows PE / ELF / Mach-O / Scripts)
+  if (buffer.length >= 2 && buffer[0] === 0x4D && buffer[1] === 0x5A) { // 'MZ'
+    throw new Error("MALICIOUS_FILE: Executable binary files are strictly prohibited.");
+  }
+  if (buffer.length >= 4 && buffer[0] === 0x7F && buffer[1] === 0x45 && buffer[2] === 0x4C && buffer[3] === 0x46) { // 'ELF'
+    throw new Error("MALICIOUS_FILE: Executable binary files are strictly prohibited.");
+  }
+
   let extractedText = "";
 
-  if (mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
+  const isPdfClaimed = mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+  const isDocxClaimed = mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    fileName.toLowerCase().endsWith(".docx");
+
+  if (isPdfClaimed) {
+    // Verify PDF header magic bytes '%PDF' within the first 1024 bytes
+    const headerPrefix = buffer.subarray(0, Math.min(buffer.length, 1024)).toString("ascii");
+    if (!headerPrefix.includes("%PDF")) {
+      throw new Error("INVALID_PDF: File claims to be PDF but lacks valid '%PDF' header magic signature.");
+    }
     extractedText = await parsePdfBuffer(buffer);
-  } else if (
-    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    mimeType === "application/msword" ||
-    fileName.toLowerCase().endsWith(".docx") ||
-    fileName.toLowerCase().endsWith(".doc")
-  ) {
+  } else if (isDocxClaimed) {
+    // Verify ZIP container magic bytes 'PK\x03\x04'
+    if (buffer.length >= 4 && !(buffer[0] === 0x50 && buffer[1] === 0x4B && (buffer[2] === 0x03 || buffer[2] === 0x05))) {
+      throw new Error("INVALID_DOCX: File claims to be Word Document but lacks valid ZIP magic signature.");
+    }
     extractedText = await parseDocxBuffer(buffer);
   } else {
-    // Treat as plain text
+    // Plain text validation: ensure buffer does not contain high ratios of null bytes (binary disguised as text)
+    let nullBytes = 0;
+    const sampleLength = Math.min(buffer.length, 512);
+    for (let i = 0; i < sampleLength; i++) {
+      if (buffer[i] === 0) nullBytes++;
+    }
+    if (nullBytes > sampleLength * 0.1) {
+      throw new Error("UNSUPPORTED_BINARY: File contains binary data not recognized as PDF, DOCX, or text.");
+    }
     extractedText = buffer.toString("utf-8");
   }
 

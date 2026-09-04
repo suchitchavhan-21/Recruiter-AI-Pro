@@ -1,4 +1,4 @@
-import { generateUUID, findInterviewById, insertInterview, updateInterviewById } from "../../db/repository";
+import { generateUUID, findInterviewById, insertInterview, updateInterviewById, updateInterviewTurnAtomically } from "../../db/repository";
 import { InterviewSessionRecord } from "../../db/schema";
 import { evaluateInterviewSession, InterviewEvaluationResult } from "../../services/gemini.service";
 import { retrieveCandidateEvidence } from "../agents/tools";
@@ -40,8 +40,58 @@ export interface AdaptiveInterviewState {
   updatedAt: string;
 }
 
-// In-memory cache for fast turn processing; backed by authoritative database persistence
-const stateCache = new Map<string, AdaptiveInterviewState>();
+interface CacheEntry {
+  state: AdaptiveInterviewState;
+  updatedAtMs: number;
+}
+
+class BoundedStateCache {
+  private cache = new Map<string, CacheEntry>();
+  private readonly maxEntries: number;
+  private readonly ttlMs: number;
+
+  constructor(maxEntries = 100, ttlMinutes = 30) {
+    this.maxEntries = maxEntries;
+    this.ttlMs = ttlMinutes * 60 * 1000;
+  }
+
+  get(sessionId: string): AdaptiveInterviewState | null {
+    const entry = this.cache.get(sessionId);
+    if (!entry) return null;
+    if (Date.now() - entry.updatedAtMs > this.ttlMs) {
+      this.cache.delete(sessionId);
+      return null;
+    }
+    // Refresh LRU position
+    this.cache.delete(sessionId);
+    this.cache.set(sessionId, entry);
+    return entry.state;
+  }
+
+  set(sessionId: string, state: AdaptiveInterviewState): void {
+    if (this.cache.has(sessionId)) {
+      this.cache.delete(sessionId);
+    } else if (this.cache.size >= this.maxEntries) {
+      // Evict oldest entry
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+    this.cache.set(sessionId, { state, updatedAtMs: Date.now() });
+  }
+
+  delete(sessionId: string): void {
+    this.cache.delete(sessionId);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// In-memory bounded LRU/TTL cache for fast turn processing; backed by authoritative database persistence
+const stateCache = new BoundedStateCache(100, 30);
 
 export const INTERVIEWER_PERSONAS = {
   HR: {
@@ -66,6 +116,8 @@ export const INTERVIEWER_PERSONAS = {
     rubric: "Evaluate business impact, pragmatic trade-offs between speed and perfection, and delivery ownership."
   }
 };
+
+const inFlightSessionLocks = new Map<string, Promise<any>>();
 
 export class InterviewOrchestrator {
   /**
@@ -165,8 +217,9 @@ export class InterviewOrchestrator {
    * Loads session from memory cache, or recovers state from the database.
    */
   static async loadOrRestoreState(sessionId: string): Promise<AdaptiveInterviewState | null> {
-    if (stateCache.has(sessionId)) {
-      return stateCache.get(sessionId)!;
+    const cached = stateCache.get(sessionId);
+    if (cached) {
+      return cached;
     }
 
     const record = await findInterviewById(sessionId);
@@ -217,14 +270,40 @@ export class InterviewOrchestrator {
   }
 
   /**
-   * Processes a candidate turn, evaluates answer quality, decides adaptive next step, and persists state.
+   * Processes a candidate turn with serialization and concurrency protection to prevent duplicate turn advancement.
    */
   static async submitAnswerAndProgress(params: {
     sessionId: string;
     userId: string;
     candidateAnswer: string;
+    turnIndex?: number;
     timeTaken?: string;
   }): Promise<{ state: AdaptiveInterviewState; isCompleted: boolean; nextTurn?: InterviewTurn }> {
+    const prevLock = inFlightSessionLocks.get(params.sessionId) || Promise.resolve();
+    let releaseLock: () => void = () => {};
+    const currentLock = new Promise<void>((resolve) => { releaseLock = resolve; });
+    inFlightSessionLocks.set(params.sessionId, currentLock);
+
+    try {
+      await prevLock;
+      return await this.executeSubmitAnswer(params);
+    } finally {
+      releaseLock();
+      if (inFlightSessionLocks.get(params.sessionId) === currentLock) {
+        inFlightSessionLocks.delete(params.sessionId);
+      }
+    }
+  }
+
+  private static async executeSubmitAnswer(params: {
+    sessionId: string;
+    userId: string;
+    candidateAnswer: string;
+    turnIndex?: number;
+    timeTaken?: string;
+  }): Promise<{ state: AdaptiveInterviewState; isCompleted: boolean; nextTurn?: InterviewTurn }> {
+    // Evict cached copy to load authoritative state from database
+    stateCache.delete(params.sessionId);
     const state = await this.loadOrRestoreState(params.sessionId);
     if (!state) {
       throw new Error(`[ORCHESTRATOR ERROR] Interview session ${params.sessionId} not found.`);
@@ -238,8 +317,31 @@ export class InterviewOrchestrator {
       return { state, isCompleted: true };
     }
 
-    // 1. Record candidate answer for the current active turn
+    // Concurrency Protection:
+    // Case A: Client specifies turnIndex and the session has already advanced past it
+    if (params.turnIndex !== undefined && state.currentTurn > params.turnIndex) {
+      const nextTurn = state.history[params.turnIndex] || state.history[state.history.length - 1];
+      return { state, isCompleted: false, nextTurn };
+    }
+
+    // Case B: Duplicate submission detection (identical answer submitted concurrently for the turn that just advanced)
+    const prevTurn = state.history[state.currentTurn - 2];
+    if (prevTurn && prevTurn.candidateAnswer === params.candidateAnswer) {
+      const nextTurn = state.history[state.currentTurn - 1];
+      return { state, isCompleted: false, nextTurn };
+    }
+
+    // Case C: Current active turn was already answered and next turn is already prepared
     const activeTurnIndex = state.currentTurn - 1;
+    if (
+      state.history[activeTurnIndex]?.candidateAnswer &&
+      state.history.length > state.currentTurn
+    ) {
+      const nextTurn = state.history[state.currentTurn];
+      return { state, isCompleted: false, nextTurn };
+    }
+
+    // 1. Record candidate answer for the current active turn
     if (state.history[activeTurnIndex]) {
       state.history[activeTurnIndex].candidateAnswer = params.candidateAnswer;
     }
@@ -405,14 +507,21 @@ export class InterviewOrchestrator {
     if (!state.competenciesCovered.includes(nextCompetency)) {
       state.competenciesCovered.push(nextCompetency);
     }
-    state.updatedAt = new Date().toISOString();
+    // Atomically persist state update in PostgreSQL (cross-container concurrency safe)
+    const previousTurnNumber = nextTurnIndex - 1;
+    const saveResult = await updateInterviewTurnAtomically(state.sessionId, previousTurnNumber, state);
+    if (!saveResult.success && saveResult.currentState) {
+      const refreshedState = saveResult.currentState;
+      stateCache.set(refreshedState.sessionId, refreshedState);
+      const existingNextTurn = refreshedState.history[refreshedState.currentTurn - 1] || refreshedState.history[refreshedState.history.length - 1];
+      return {
+        state: refreshedState,
+        isCompleted: refreshedState.status === "COMPLETED",
+        nextTurn: existingNextTurn
+      };
+    }
 
-    // Cache and persist state update
     stateCache.set(state.sessionId, state);
-    await updateInterviewById(state.sessionId, {
-      sessionState: state,
-      updatedAt: state.updatedAt
-    });
 
     return {
       state,

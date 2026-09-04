@@ -103,12 +103,15 @@ GEMINI_API_KEY=your_gemini_api_key_here
 # PostgreSQL & pgvector (Required in Production)
 DATABASE_URL=postgres://user:password@localhost:5432/recruiter_ai_pro
 
-# Security Secrets (Required in Production)
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_REFRESH_SECRET=your_super_secret_refresh_key_here
+# Security Secrets (Required in Production; min 16 characters)
+JWT_SECRET=your_super_secret_jwt_key_here_minimum_16_chars
+JWT_REFRESH_SECRET=your_super_secret_refresh_key_here_minimum_16_chars
 ADMIN_PASSCODE=ADMINSECRET2026
 
-# Embedding Model (Defaults to gemini-embedding-2)
+# Model Configuration
+GEMINI_PRIMARY_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODEL=gemini-flash-latest
+GEMINI_LIGHT_MODEL=gemini-flash-lite-latest
 EMBEDDING_MODEL=gemini-embedding-2
 ```
 
@@ -121,17 +124,72 @@ Accessible at: `http://localhost:3000`
 
 ### 3. Production Build & Execution
 ```bash
-# Verify TypeScript types
+# Verify TypeScript types (tsc --noEmit)
 npm run lint
 
-# Build production bundle
+# Build production bundle (client + bundled CommonJS server)
 npm run build
 
-# Start production server
+# Start production server (node dist/server.cjs)
 npm run start
 ```
 
-### 4. Run Automated Test Suite
+### 4. Realistic Avatar & Google Cloud Voice Architecture
+*   **Speech Synthesis (TTS)**:
+    *   **Provider**: `GoogleCloudTTSProvider` using official Google Cloud Text-to-Speech REST API (`https://texttospeech.googleapis.com/v1/text:synthesize`) with high-fidelity Neural2 persona voices:
+        *   Sarah Jenkins -> `en-US-Neural2-F` (en-US female)
+        *   David Chen -> `en-US-Neural2-D` (en-US male)
+        *   Marcus Brody -> `en-GB-Neural2-B` (en-GB male)
+    *   **Offline / Test Mode**: `MockTTSProvider` generates standard-compliant MPEG Layer 3 audio frames offline without external network dependency.
+    *   **Security & Privacy**: `Cache-Control: private, no-cache, no-store` prevents caching sensitive interview questions.
+    *   **Input Limits**: Maximum 1,000 characters per request, bounded by `AbortSignal.timeout(8000)` and rate-limited to 60 req/min.
+*   **Realistic Avatar Engine**:
+    *   **Face Tracking**: Browser-local `@mediapipe/tasks-vision` Face Landmarker extracting 468 facial landmarks.
+    *   **Facial Deformation**: Dense Delaunay triangulation mesh deformation rendered on HTML5 canvas.
+    *   **Audio-Driven Animation**: Live audio analysis via Web Audio API `AnalyserNode` acoustic energy and spectral centroid drives real-time canvas mesh dynamics (not pre-rendered phoneme/viseme timing lookup).
+
+### 5. Ethical Decision Support & Grounding Rubrics
+*   **AI-Assisted Hiring Decision Support**: This system is designed solely to support and augment human recruiting decisions. All AI scores and interview feedback are evidence-grounded recommendations; human hiring managers retain full decision-making responsibility.
+*   **Programmatic Evidence Grounding**: Evaluation claims are programmatically validated against verbatim transcript turns to verify quotes and compute grounding ratios, strictly penalizing ungrounded claims.
+
+### 6. Automated Verification & Test Suites
 ```bash
-npx tsx scripts/verify-production-suite.ts
+# Verify TypeScript types (tsc --noEmit)
+npm run lint
+
+# Build production bundle (client + bundled CommonJS server)
+npm run build
+
+# Multi-Tenant Boundary & Security Isolation Test (15 checks)
+npm run test:security
+
+# Real Browser End-to-End Automation via Microsoft Edge (22 checks)
+npm run test:browser
+
+# Full Candidate Lifecycle End-to-End Suite with Hiring Thresholds (31 checks)
+npm run test:e2e
+
+# Deterministic ATS Scoring & Jobs Persistence Suite (33 checks)
+npm run test-jobs-and-ats
+
+# Database & Cross-Process Persistence Verification (14 checks)
+npm run test:db-persistence
+
+# LangChain Orchestration, Evidence Grounding & Concurrency Suite (25 checks)
+npm run test:langchain
+
+# Empirical RAG Retrieval Quality Benchmark Suite (Recall@K, MRR)
+npm run test:rag
+
+# Feature-Freeze Integrity & Lock Regression Suite (14 checks)
+npm run test:feature-freeze
+
+# Deterministic Persona Voice & TTS Privacy Suite (12 checks)
+npm run test:voice
+
+# Production Fail-Fast & Startup Process Safety Audit (7 checks)
+npm run verify-production-fail-fast
+
+# Comprehensive Production Verification (35 checks, PostgreSQL, pgvector, multi-tenant, process restart)
+npm run verify:production
 ```

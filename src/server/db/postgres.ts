@@ -33,6 +33,13 @@ export async function isPgVectorAvailable(): Promise<boolean> {
 }
 
 /**
+ * Returns whether PostgreSQL is active or configured.
+ */
+export function isPostgresActive(): boolean {
+  return Boolean(pool || pgliteDb || process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL);
+}
+
+/**
  * Initializes PostgreSQL database connection (either via TCP Pool or embedded PGlite with pgvector).
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
@@ -83,7 +90,7 @@ async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance:
 
   // 2. In non-production environments only: fallback to embedded PGlite
   if (isProd) {
-    throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL database is required. Embedded database fallback is prohibited.");
+    throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL database is required. Embedded database fallback is strictly prohibited.");
   }
 
   if (!pgliteDb) {
@@ -342,8 +349,41 @@ export async function initPostgresSchema(): Promise<boolean> {
       // Ignored if vector_chunks was just created
     }
 
+    // 12. Shared Rate Limits Table for Multi-Instance Cloud Run Deployments
+    await queryPostgres(`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key VARCHAR(255) PRIMARY KEY,
+        count INT NOT NULL DEFAULT 1,
+        reset_at BIGINT NOT NULL
+      );
+    `);
+
+    // 13. Indexes for Vector Search Performance (HNSW) & Multi-Tenant Isolation
+    if (pgVectorAvailable) {
+      try {
+        await queryPostgres(`
+          CREATE INDEX IF NOT EXISTS idx_vector_chunks_hnsw 
+          ON vector_chunks USING hnsw (embedding vector_cosine_ops);
+        `);
+        console.log("✅ [POSTGRES] HNSW vector index active on vector_chunks(embedding vector_cosine_ops).");
+      } catch (idxErr: any) {
+        console.warn("[POSTGRES NOTE] HNSW index creation notice:", idxErr.message);
+      }
+    }
+
+    try {
+      await queryPostgres(`
+        CREATE INDEX IF NOT EXISTS idx_vector_chunks_user_domain 
+        ON vector_chunks (user_id, knowledge_domain);
+        CREATE INDEX IF NOT EXISTS idx_vector_chunks_doc 
+        ON vector_chunks (document_id);
+      `);
+    } catch (idxErr: any) {
+      console.warn("[POSTGRES NOTE] Multi-tenant index creation notice:", idxErr.message);
+    }
+
     isInitialized = true;
-    console.log("✅ [POSTGRES] All 8 relational tables and vector_chunks initialized successfully.");
+    console.log("✅ [POSTGRES] All 8 relational tables, vector_chunks, and HNSW indexes initialized successfully.");
     return true;
   } catch (err: any) {
     console.error("[POSTGRES INIT ERROR]:", err.message);

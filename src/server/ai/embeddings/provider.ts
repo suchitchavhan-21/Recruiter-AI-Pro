@@ -49,21 +49,14 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
         throw new Error(`[EMBEDDING ERROR] Model ${model} returned empty embedding values.`);
       }
 
-      // Runtime Dimension Validation & Normalization
-      let finalEmbedding = values;
+      // Strict Runtime Dimension Validation: vectors must NEVER be truncated or padded
       if (values.length !== EXPECTED_DIMENSION) {
-        if (values.length > EXPECTED_DIMENSION) {
-          // Truncate to expected dimension and re-normalize
-          finalEmbedding = values.slice(0, EXPECTED_DIMENSION);
-        } else {
-          // Pad with zeros to expected dimension
-          finalEmbedding = [...values, ...new Array(EXPECTED_DIMENSION - values.length).fill(0)];
-        }
+        throw new Error(`[EMBEDDING ERROR] Model '${model}' produced ${values.length} dimensions, but schema expects ${EXPECTED_DIMENSION}. Vector alteration (truncation or padding) is strictly prohibited.`);
       }
 
       return {
-        embedding: finalEmbedding,
-        dimension: finalEmbedding.length,
+        embedding: values,
+        dimension: values.length,
         model
       };
     } catch (err: any) {
@@ -72,6 +65,11 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
       // Try fallback model
       continue;
     }
+  }
+
+  // In production mode, fake hash embeddings are strictly prohibited
+  if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+    throw new Error(`[EMBEDDING FATAL] Gemini embedding generation failed in production: ${lastError?.message || "All models exhausted"}. Synthetic fallbacks are strictly prohibited in production.`);
   }
 
   console.warn("[EMBEDDING FALLBACK] Gemini embedding generation failed, using deterministic pseudo-semantic hash embedding for dev offline resilience.");

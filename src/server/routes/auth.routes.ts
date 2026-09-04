@@ -30,7 +30,7 @@ export const authRouter = Router();
 authRouter.post("/register", authLimiter, validateBody(registerSchema), registerHandler);
 authRouter.post("/login", authLimiter, validateBody(loginSchema), loginHandler);
 authRouter.post("/logout", requireAuth, logoutHandler);
-authRouter.post("/refresh", refreshTokenHandler);
+authRouter.post("/refresh", authLimiter, refreshTokenHandler);
 authRouter.get("/verify-email", verifyEmailHandler);
 authRouter.post("/forgot-password", authLimiter, validateBody(forgotPasswordSchema), forgotPasswordHandler);
 authRouter.post("/reset-password", authLimiter, validateBody(resetPasswordSchema), resetPasswordHandler);

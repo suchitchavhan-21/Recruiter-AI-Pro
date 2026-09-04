@@ -11,6 +11,11 @@ export interface PersonaVoiceConfig {
   personaId: number;
   personaName: string;
   voiceId: string;
+  googleVoice: {
+    languageCode: string;
+    name: string;
+    ssmlGender: "FEMALE" | "MALE";
+  };
   gender: "female" | "male";
   locale: string;
 }
@@ -20,6 +25,11 @@ export const PERSONA_VOICE_MAP: Record<number, PersonaVoiceConfig> = {
     personaId: 0,
     personaName: "Sarah Jenkins",
     voiceId: "Salli",
+    googleVoice: {
+      languageCode: "en-US",
+      name: "en-US-Neural2-F",
+      ssmlGender: "FEMALE"
+    },
     gender: "female",
     locale: "en-US"
   },
@@ -27,6 +37,11 @@ export const PERSONA_VOICE_MAP: Record<number, PersonaVoiceConfig> = {
     personaId: 1,
     personaName: "David Chen",
     voiceId: "Matthew",
+    googleVoice: {
+      languageCode: "en-US",
+      name: "en-US-Neural2-D",
+      ssmlGender: "MALE"
+    },
     gender: "male",
     locale: "en-US"
   },
@@ -34,6 +49,11 @@ export const PERSONA_VOICE_MAP: Record<number, PersonaVoiceConfig> = {
     personaId: 2,
     personaName: "Marcus Brody",
     voiceId: "Brian",
+    googleVoice: {
+      languageCode: "en-GB",
+      name: "en-GB-Neural2-B",
+      ssmlGender: "MALE"
+    },
     gender: "male",
     locale: "en-GB"
   }

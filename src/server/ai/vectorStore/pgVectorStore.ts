@@ -97,21 +97,10 @@ export class PgVectorStore implements IVectorStore {
         LIMIT ${topK};
       `;
     } else {
-      // Fallback array-based similarity query
-      sql = `
-        SELECT 
-          id as "chunkId",
-          document_id as "documentId",
-          user_id as "userId",
-          section,
-          content,
-          knowledge_domain as "knowledgeDomain",
-          metadata,
-          0.85 as similarity
-        FROM vector_chunks
-        WHERE ${scopeClause} ${sectionClause}
-        LIMIT ${topK};
-      `;
+      // Safe degraded mode: When pgvector extension is not installed in database, return empty results
+      // NEVER fabricate synthetic similarity scores (e.g. 0.85).
+      console.warn("[VECTOR STORE NOTICE] pgvector extension is not installed; vector search safely degraded to 0 results.");
+      return [];
     }
 
     const res = await queryPostgres(sql, params);

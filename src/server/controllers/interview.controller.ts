@@ -138,13 +138,25 @@ export async function evaluateInterviewHandler(req: AuthenticatedRequest, res: R
   }));
 
   try {
-    const { runInterviewEvaluationChain } = await import("../ai/langchain/chains");
-    const evaluation = await runInterviewEvaluationChain({
-      role: targetRole,
-      company: targetCompany,
-      difficulty: difficulty || "Senior",
-      qaPairs: normalizedQAPairs
-    });
+    let evaluation: any;
+    try {
+      const { runInterviewEvaluationChain } = await import("../ai/langchain/chains");
+      evaluation = await runInterviewEvaluationChain({
+        role: targetRole,
+        company: targetCompany,
+        difficulty: difficulty || "Senior",
+        qaPairs: normalizedQAPairs
+      });
+    } catch (lcErr: any) {
+      console.warn("[INTERVIEW EVALUATION] LangChain chain unavailable, utilizing core AI evaluator:", lcErr?.message);
+      evaluation = await evaluateInterviewSession({
+        role: targetRole,
+        company: targetCompany,
+        difficulty: difficulty || "Senior",
+        interviewerCount: count,
+        qaPairs: normalizedQAPairs
+      });
+    }
 
     // Authoritative Interview Record Persistence
     if (req.user?.userId) {
@@ -215,9 +227,12 @@ export async function generateDraftAnswerHandler(req: AuthenticatedRequest, res:
     });
   } catch (err: any) {
     console.warn("[AI WARN] generateDraftAnswerHandler encountered error:", err?.message || err);
-    return res.status(200).json({
-      success: true,
-      draftAnswer: `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.\n\n**Action & Technical Execution:** I designed a decoupled worker pipeline utilizing distributed caching with deterministic key hashing and idempotent state transitions to prevent race conditions.\n\n**Impact & Evaluation:** This structural pattern eliminated contention bottlenecks, sustained consistent latency under peak load, and ensured verifiable data consistency across replicas.`
+    return res.status(503).json({
+      success: false,
+      error: {
+        code: "AI_PROVIDER_UNAVAILABLE",
+        message: "AI model generation is currently unavailable. Please retry shortly."
+      }
     });
   }
 }
@@ -227,15 +242,28 @@ export async function evaluateStarHandler(req: AuthenticatedRequest, res: Respon
   const { role, company, situation, task, action, result } = req.body;
 
   try {
-    const { runStarEvaluationChain } = await import("../ai/langchain/chains");
-    const evaluation = await runStarEvaluationChain({
-      role,
-      company,
-      situation,
-      task,
-      action,
-      result
-    });
+    let evaluation: any;
+    try {
+      const { runStarEvaluationChain } = await import("../ai/langchain/chains");
+      evaluation = await runStarEvaluationChain({
+        role,
+        company,
+        situation,
+        task,
+        action,
+        result
+      });
+    } catch (lcErr: any) {
+      console.warn("[STAR EVALUATION] LangChain chain unavailable, utilizing core AI evaluator:", lcErr?.message);
+      evaluation = await evaluateSTARStory({
+        role,
+        company,
+        situation,
+        task,
+        action,
+        result
+      });
+    }
 
     return res.status(200).json(evaluation);
   } catch (err: any) {
@@ -332,7 +360,13 @@ export async function deleteStarStoryHandler(req: AuthenticatedRequest, res: Res
   }
 
   const id = req.params.id;
-  await deleteSTARStoryById(id, req.user.userId);
+  const deleted = await deleteSTARStoryById(id, req.user.userId);
+  if (!deleted) {
+    return res.status(404).json({
+      success: false,
+      error: { code: "STORY_NOT_FOUND", message: "STAR story not found or access denied." }
+    });
+  }
 
   return res.status(200).json({
     success: true,
@@ -413,6 +447,12 @@ export async function processAdaptiveTurnHandler(req: AuthenticatedRequest, res:
     });
   } catch (err: any) {
     console.error("[ORCHESTRATOR ERROR] processAdaptiveTurnHandler failed:", err);
+    if (err.message?.includes("Unauthorized") || err.message?.includes("not found")) {
+      return res.status(404).json({
+        success: false,
+        error: { code: "SESSION_NOT_FOUND", message: "Interview session state not found or access denied." }
+      });
+    }
     return res.status(500).json({
       success: false,
       error: { code: "TURN_PROCESSING_FAILED", message: err.message || "Failed to process interview turn." }

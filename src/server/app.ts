@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import { applySecurityHeaders } from "./middleware/security";
+import { applySecurityHeaders, applyCorsMiddleware, ttsLimiter } from "./middleware/security";
+import { getTTSProvider } from "./voice/ttsProvider";
 import { centralErrorHandler } from "./middleware/errorHandler";
 import { authRouter } from "./routes/auth.routes";
 import { profileRouter } from "./routes/profile.routes";
@@ -84,16 +85,28 @@ import {
 export function createExpressApp(): express.Application {
   const app = express();
 
-  // Basic Body Parsers & Cookie Parser
-  app.use(express.json({ limit: "20mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+  // Cloud Run executes behind Google Cloud load balancers and reverse proxies
+  app.set("trust proxy", true);
+
+  // Basic Body Parsers (1mb default; file uploads handled by dedicated route-level multer) & Cookie Parser
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "1mb" }));
   app.use(cookieParser());
 
   // Security Headers Middleware
   app.use(applySecurityHeaders);
+  app.use(applyCorsMiddleware);
 
-  // Comprehensive Health Check Endpoint
-  app.get("/api/health", async (req, res) => {
+  // Minimal Liveness Probe
+  app.get("/api/health", (_req, res) => {
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Comprehensive Readiness Probe
+  app.get("/api/ready", async (_req, res) => {
     const dbHealth = await checkPostgresHealth();
     let vectorStoreMode = "dev_vector_memory";
     try {
@@ -103,8 +116,10 @@ export function createExpressApp(): express.Application {
       vectorStoreMode = "error";
     }
 
-    res.status(200).json({
-      status: "ok",
+    const isReady = dbHealth.ready || process.env.NODE_ENV !== "production";
+
+    res.status(isReady ? 200 : 503).json({
+      status: isReady ? "ready" : "degraded",
       timestamp: new Date().toISOString(),
       service: "Recruiter AI Pro Engine",
       environment: process.env.NODE_ENV || ENV.NODE_ENV || "development",
@@ -122,15 +137,23 @@ export function createExpressApp(): express.Application {
 
   // ----------------------------------------------------
   // PRIMARY MODULAR ROUTERS
+  // Canonical REST routes with documented backward-compatible aliases
   // ----------------------------------------------------
   app.use("/api/auth", authRouter);
   app.use("/api/profile", profileRouter);
+
+  // Interviews: /api/interviews is canonical; /api/interview is alias for legacy frontend callers
   app.use("/api/interviews", interviewRouter);
   app.use("/api/interview", interviewRouter);
+
+  // Resumes: /api/resumes is canonical; /api/resume is alias for legacy frontend callers
   app.use("/api/resumes", resumeRouter);
   app.use("/api/resume", resumeRouter);
-  app.use("/api/applications", jobsRouter);
+
+  // Jobs: /api/jobs is canonical; /api/applications is alias for legacy frontend callers
   app.use("/api/jobs", jobsRouter);
+  app.use("/api/applications", jobsRouter);
+
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/admin", adminRouter);
 
@@ -141,11 +164,17 @@ export function createExpressApp(): express.Application {
   // - David Chen (persona=1): Matthew (Male, US Technical Architect)
   // - Marcus Brody (persona=2): Brian (Male, UK Engineering Leadership)
   // ----------------------------------------------------
-  app.get("/api/tts", async (req, res) => {
+  app.get("/api/tts", ttsLimiter, async (req, res) => {
     try {
       const text = String(req.query.text || "").trim();
       if (!text) {
         return res.status(400).json({ error: "Text parameter is required" });
+      }
+      if (text.length > 1000) {
+        return res.status(400).json({ 
+          error: "OVERSIZED_TEXT", 
+          message: "Text exceeds maximum allowed length of 1000 characters" 
+        });
       }
 
       // 1. Authoritative Persona Resolution
@@ -167,65 +196,23 @@ export function createExpressApp(): express.Application {
       const selectedVoice = personaConfig.voiceId;
       const personaShortName = personaConfig.personaName.split(" ")[0]; // "Sarah" | "David" | "Marcus"
 
-      // 3. Robust Synthesis with Limited Retries for the SAME voice (Attempt 1 & Attempt 2)
-      let audioBuffer: Buffer | null = null;
-      let lastError: Error | null = null;
-
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const params = new URLSearchParams();
-          params.append("msg", text);
-          params.append("lang", selectedVoice);
-          params.append("source", "ttsmp3");
-
-          const pollyResp = await fetch("https://ttsmp3.com/makemp3_new.php", {
-            method: "POST",
-            body: params,
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-            }
-          });
-
-          if (!pollyResp.ok) {
-            throw new Error(`TTS upstream returned status ${pollyResp.status}`);
-          }
-
-          const pollyJson: any = await pollyResp.json();
-          if (!pollyJson?.URL || pollyJson.Speaker !== selectedVoice) {
-            throw new Error(`TTS upstream voice mismatch or missing URL (expected: ${selectedVoice}, got: ${pollyJson?.Speaker})`);
-          }
-
-          const audioStream = await fetch(pollyJson.URL);
-          if (!audioStream.ok) {
-            throw new Error(`Failed to download audio file: ${audioStream.status}`);
-          }
-
-          const audioBytes = await audioStream.arrayBuffer();
-          audioBuffer = Buffer.from(audioBytes);
-          break; // Success
-        } catch (err: any) {
-          lastError = err;
-          console.warn(`[TTS RETRY NOTICE]: Attempt ${attempt} for voice '${selectedVoice}' failed:`, err?.message);
-          if (attempt === 1) {
-            await new Promise(r => setTimeout(r, 400));
-          }
-        }
-      }
-
-      // 4. If all retries for the SAME voice failed, return 503 TTS_UNAVAILABLE
-      // NO fallback to generic Google Translate! Never substitute another gender or voice!
-      if (!audioBuffer || audioBuffer.length === 0) {
-        console.error(`[TTS UNAVAILABLE]: Persona '${personaConfig.personaName}' voice '${selectedVoice}' failed:`, lastError?.message);
+      // 3. Robust Synthesis via Active TTS Provider
+      let audioBuffer: Buffer;
+      try {
+        const ttsProvider = getTTSProvider();
+        audioBuffer = await ttsProvider.synthesizeSpeech(text, selectedVoice);
+      } catch (synthErr: any) {
+        console.error(`[TTS UNAVAILABLE]: Persona '${personaConfig.personaName}' voice '${selectedVoice}' failed:`, synthErr?.message);
         return res.status(503).json({
           error: "TTS_UNAVAILABLE",
           message: `Speech synthesis currently unavailable for ${personaConfig.personaName} (voice: ${selectedVoice})`
         });
       }
 
-      // 5. Response with Authoritative Headers
+      // 4. Response with Authoritative Headers (private, no-cache to avoid leaking sensitive candidate interview Q/A)
       res.setHeader("Content-Type", "audio/mpeg");
       res.setHeader("Content-Length", audioBuffer.byteLength);
-      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Cache-Control", "private, no-cache, no-store");
       res.setHeader("Access-Control-Expose-Headers", "X-TTS-Voice, X-TTS-Persona");
       res.setHeader("X-TTS-Voice", selectedVoice);
       res.setHeader("X-TTS-Persona", personaShortName);

@@ -168,8 +168,48 @@ async function runDeterministicVoiceTests() {
       allPassed = false;
     }
 
-    // --- TEST 8: BROWSER PLAYBACK & AUDIO DYNAMICS ACCEPTANCE ---
-    console.log("--- TEST 8: BROWSER PLAYBACK & AUDIO ACOUSTIC DYNAMICS ---");
+    // --- TEST 9: STRICT PRIVACY HEADERS (Cache-Control: private, no-store) ---
+    console.log("--- TEST 9: STRICT TTS PRIVACY HEADERS AUDIT ---");
+    const res9 = await fetch(`http://localhost:${port}/api/tts?text=Privacy+audit+check&persona=0`);
+    const cacheHeader = res9.headers.get("Cache-Control") || "";
+    console.log(`  Cache-Control: "${cacheHeader}"`);
+    if (
+      cacheHeader.includes("private") && 
+      cacheHeader.includes("no-store") && 
+      !cacheHeader.includes("public")
+    ) {
+      console.log("  ✓ PASS: TTS audio strictly returns private, no-store headers (zero public proxy caching)\n");
+    } else {
+      console.log("  ✗ FAIL: Insecure caching header detected on TTS audio stream\n");
+      allPassed = false;
+    }
+
+    // --- TEST 10: OVERSIZED TEXT INPUT REJECTION ---
+    console.log("--- TEST 10: OVERSIZED TEXT INPUT REJECTION (>1000 chars) ---");
+    const oversizedText = "A".repeat(1050);
+    const res10 = await fetch(`http://localhost:${port}/api/tts?text=${encodeURIComponent(oversizedText)}&persona=0`);
+    const json10: any = await res10.json();
+    console.log(`  Status: HTTP ${res10.status} | Error: "${json10.error}"`);
+    if (res10.status === 400 && json10.error === "OVERSIZED_TEXT") {
+      console.log("  ✓ PASS: Oversized text input strictly rejected with HTTP 400 OVERSIZED_TEXT\n");
+    } else {
+      console.log("  ✗ FAIL: Oversized text was not rejected\n");
+      allPassed = false;
+    }
+
+    // --- TEST 11: EMPTY TEXT INPUT REJECTION ---
+    console.log("--- TEST 11: EMPTY TEXT INPUT REJECTION ---");
+    const res11 = await fetch(`http://localhost:${port}/api/tts?text=&persona=0`);
+    console.log(`  Status: HTTP ${res11.status}`);
+    if (res11.status === 400) {
+      console.log("  ✓ PASS: Empty text input strictly rejected with HTTP 400\n");
+    } else {
+      console.log("  ✗ FAIL: Empty text was not rejected with HTTP 400\n");
+      allPassed = false;
+    }
+
+    // --- TEST 12: BROWSER PLAYBACK & AUDIO DYNAMICS ACCEPTANCE ---
+    console.log("--- TEST 12: BROWSER PLAYBACK & AUDIO ACOUSTIC DYNAMICS ---");
     const browser = await puppeteer.launch({
       executablePath: edgePath,
       headless: "new",

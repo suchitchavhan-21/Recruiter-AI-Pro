@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { ENV } from "../config/env";
 import { findUserById } from "../db/repository";
 
@@ -40,7 +41,7 @@ export function signAccessToken(payload: { userId: string; email: string; role: 
 }
 
 export function signRefreshToken(payload: { userId: string }): string {
-  return jwt.sign(payload, getJwtRefreshSecret(), { expiresIn: "7d" });
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, getJwtRefreshSecret(), { expiresIn: "7d" });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload | null {
@@ -60,32 +61,35 @@ export function verifyRefreshToken(token: string): { userId: string } | null {
 }
 
 export function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-  // In modern browsers and iframe sandboxes, SameSite=None and Secure=true are needed for cookies to function reliably
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  // In Cloud Run HTTPS and Google AI Studio iframe deployments, SameSite=None and Secure=true are mandatory.
+  // In non-SSL local HTTP development, SameSite=Lax and Secure=false allow localhost cookie persistence.
   res.cookie("access_token", accessToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     maxAge: 15 * 60 * 1000 // 15 mins
   });
 
   res.cookie("refresh_token", refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 }
 
 export function clearAuthCookies(res: Response) {
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
   res.clearCookie("access_token", {
     httpOnly: true,
-    secure: true,
-    sameSite: "none"
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax"
   });
   res.clearCookie("refresh_token", {
     httpOnly: true,
-    secure: true,
-    sameSite: "none"
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax"
   });
 }
 

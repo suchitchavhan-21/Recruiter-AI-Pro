@@ -23,9 +23,10 @@ export function getGeminiClient(): GoogleGenAI {
 
 // Candidate models to rotate through on 503/429/high-demand spikes
 const CANDIDATE_MODELS = [
-  "gemini-3.7-flash",
-  "gemini-flash-latest",
-  "gemini-3.1-flash-lite"
+  ENV.GEMINI_PRIMARY_MODEL || "gemini-2.5-flash",
+  ENV.GEMINI_FALLBACK_MODEL || "gemini-flash-latest",
+  ENV.GEMINI_LIGHT_MODEL || "gemini-flash-lite-latest",
+  "gemini-2.5-pro"
 ];
 
 // Execute Gemini call with automatic fallback across supported model tiers and strict timeout
@@ -39,13 +40,17 @@ async function executeWithModelFallback<T>(
 
   for (let i = 0; i < CANDIDATE_MODELS.length; i++) {
     const model = CANDIDATE_MODELS[i];
+    let timer: NodeJS.Timeout | null = null;
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model '${model}'`)), timeoutMs)
-      );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model '${model}'`)), timeoutMs);
+      });
 
-      return await Promise.race([caller(client, model), timeoutPromise]);
+      const res = await Promise.race([caller(client, model), timeoutPromise]);
+      if (timer) clearTimeout(timer);
+      return res;
     } catch (err: any) {
+      if (timer) clearTimeout(timer);
       lastError = err;
       const status = err?.status || err?.code || (err?.message?.includes("503") ? 503 : 0);
       const isTransient = status === 503 || status === 429 || err?.message?.includes("high demand") || err?.message?.includes("UNAVAILABLE") || err?.message?.includes("Timeout");
@@ -94,6 +99,14 @@ function extractAndParseJSON<T>(rawText: string, fallback: T): T {
     console.warn("[GEMINI JSON ERROR] Could not repair or parse JSON output from model, using fallback structure.");
     return fallback;
   }
+}
+
+// Deterministic application-level hiring decision threshold calculator
+export function calculateHiringDecision(score: number): "Strong Hire" | "Lean Hire" | "No Hire" {
+  const boundedScore = Math.max(0, Math.min(100, score));
+  if (boundedScore >= 85) return "Strong Hire";
+  if (boundedScore >= 70) return "Lean Hire";
+  return "No Hire";
 }
 
 // ----------------------------------------------------
@@ -214,7 +227,24 @@ ${params.jd.substring(0, 15000)}
 
 // ----------------------------------------------------
 // 2. INTERVIEW EVALUATION & SCORING RUBRIC
-// ----------------------------------------------------
+export interface GroundedEvidenceItem {
+  claim: string;
+  evidenceQuote: string;
+  sourceTurnIndex: number;
+  grounded: boolean;
+  confidence: number;
+}
+
+export interface InterviewEvidenceGrounding {
+  overallGrounded: boolean;
+  groundingRatio: number;
+  verifiedClaimsCount: number;
+  unsupportedClaimsCount: number;
+  items: GroundedEvidenceItem[];
+  groundedClaims?: number;
+  totalClaims?: number;
+  groundedItems?: GroundedEvidenceItem[];
+}
 
 export interface InterviewEvaluationResult {
   overallRating: "Strong Hire" | "Lean Hire" | "No Hire";
@@ -226,6 +256,7 @@ export interface InterviewEvaluationResult {
   idealAnswers?: string[];
   hiringRecommendation?: string;
   practicePlan?: string[];
+  evidenceGrounding?: InterviewEvidenceGrounding;
   questionBreakdown: Array<{
     questionText: string;
     critique: string;
@@ -237,6 +268,82 @@ export interface InterviewEvaluationResult {
     hr?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
     technical?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
     hiringManager?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
+  };
+}
+
+/**
+ * Programmatically validates that evaluation claims and quotes are grounded in actual interview transcript answers.
+ * Rejects unsupported hallucinations or fabricated quotes.
+ */
+export function validateInterviewEvidenceGrounding(
+  qaPairs: Array<{ questionText?: string; answerText?: string; question?: string; answer?: string }>,
+  claims: Array<{ claim: string; evidenceQuote?: string; quote?: string; sourceTurnIndex?: number }>
+): InterviewEvidenceGrounding {
+  const normalizedTranscript = qaPairs
+    .map(qa => (qa.answerText || qa.answer || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim())
+    .join(" ");
+  const items: GroundedEvidenceItem[] = [];
+
+  let verifiedCount = 0;
+
+  for (const c of claims) {
+    const rawQuote = (c.evidenceQuote || c.quote || "").trim();
+    const cleanQuote = rawQuote.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+    
+    let isGrounded = false;
+    let confidence = 0.0;
+
+    if (cleanQuote.length >= 8 && normalizedTranscript.includes(cleanQuote)) {
+      isGrounded = true;
+      confidence = 1.0;
+    } else if (cleanQuote.length >= 8) {
+      // Substantial keyword presence test: at least 70% of words in quote must appear in candidate transcript
+      const words = cleanQuote.split(" ").filter(w => w.length > 3);
+      if (words.length > 0) {
+        const matches = words.filter(w => normalizedTranscript.includes(w)).length;
+        const ratio = matches / words.length;
+        if (ratio >= 0.70) {
+          isGrounded = true;
+          confidence = Math.round(ratio * 100) / 100;
+        }
+      }
+    } else if (c.claim) {
+      // Claim evaluation without explicit quote: match key terms against transcript
+      const claimWords = c.claim.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(w => w.length > 4);
+      if (claimWords.length > 0) {
+        const matches = claimWords.filter(w => normalizedTranscript.includes(w)).length;
+        if (matches >= 2) {
+          isGrounded = true;
+          confidence = 0.75;
+        }
+      }
+    }
+
+    if (isGrounded) {
+      verifiedCount++;
+    }
+
+    items.push({
+      claim: c.claim,
+      evidenceQuote: rawQuote,
+      sourceTurnIndex: c.sourceTurnIndex || 1,
+      grounded: isGrounded,
+      confidence
+    });
+  }
+
+  const total = Math.max(1, claims.length);
+  const ratio = Math.round((verifiedCount / total) * 100) / 100;
+
+  return {
+    overallGrounded: ratio >= 0.50,
+    groundingRatio: ratio,
+    verifiedClaimsCount: verifiedCount,
+    unsupportedClaimsCount: claims.length - verifiedCount,
+    groundedClaims: verifiedCount,
+    totalClaims: claims.length,
+    items,
+    groundedItems: items
   };
 }
 
@@ -374,8 +481,7 @@ Return ONLY valid JSON matching this schema:
     const avgQScore = Math.round(sumQScores / Math.max(1, questionBreakdown.length));
     
     const finalScore = Math.max(0, Math.min(100, avgQScore));
-    const finalRating: "Strong Hire" | "Lean Hire" | "No Hire" = 
-      finalScore >= 85 ? "Strong Hire" : finalScore >= 70 ? "Lean Hire" : "No Hire";
+    const finalRating = calculateHiringDecision(finalScore);
 
     // Calibrate panel feedback scores
     const technicalQuestions = questionBreakdown.filter((_, idx) => params.qaPairs[idx]?.type === "technical");
@@ -409,18 +515,23 @@ Return ONLY valid JSON matching this schema:
       }
     };
 
+    const finalStrengths = parsed?.strengths?.length ? parsed.strengths : (answeredCount > 0 ? ["Clear articulation of key concepts", "Structured response approach"] : []);
+    const claimsToValidate = finalStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
+    const evidenceGrounding = validateInterviewEvidenceGrounding(params.qaPairs, claimsToValidate);
+
     return {
       overallRating: finalRating,
       score: finalScore,
       overallFeedback: parsed?.overallFeedback || (answeredCount === 0 
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
         : `Candidate completed ${answeredCount} of ${totalQuestions} questions with an overall assessment score of ${finalScore}%.`),
-      strengths: parsed?.strengths?.length ? parsed.strengths : (answeredCount > 0 ? ["Clear articulation of key concepts", "Structured response approach"] : []),
+      strengths: finalStrengths,
       improvements: parsed?.improvements?.length ? parsed.improvements : ["Elaborate on edge case trade-offs", "Quantify business and latency impact metrics"],
       mistakesMade: parsed?.mistakesMade || (answeredCount === 0 ? ["Questions skipped without response"] : ["Could provide more concrete numbers earlier in the response"]),
       idealAnswers: parsed?.idealAnswers || ["Include explicit architectural diagrams and metric before/after benchmarks."],
       hiringRecommendation: parsed?.hiringRecommendation || (finalScore >= 85 ? `Strongly recommend hire for ${params.role}.` : finalScore >= 70 ? `Recommend lean hire with follow-up on system design.` : `Recommend further preparation before re-interviewing.`),
       practicePlan: parsed?.practicePlan || ["Practice STAR structured whiteboarding", "Refine behavioral elevator pitch"],
+      evidenceGrounding,
       questionBreakdown,
       panelFeedback
     };
@@ -455,18 +566,23 @@ Return ONLY valid JSON matching this schema:
     const techScore = techQ.length > 0 ? Math.round(techQ.reduce((a, b) => a + b.score, 0) / techQ.length) : calculatedScore;
     const behavScore = behavQ.length > 0 ? Math.round(behavQ.reduce((a, b) => a + b.score, 0) / behavQ.length) : calculatedScore;
 
+    const fallbackStrengths = answeredCount > 0 ? ["Structured response approach", "Good architecture concepts cited", "Logical trade-off reasoning"] : [];
+    const fallbackClaims = fallbackStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
+    const fallbackGrounding = validateInterviewEvidenceGrounding(params.qaPairs, fallbackClaims);
+
     return {
       overallRating: calculatedRating,
       score: calculatedScore,
       overallFeedback: answeredCount === 0
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
         : `The candidate completed ${answeredCount} of ${totalQuestions} questions with a calibrated score of ${calculatedScore}%.`,
-      strengths: answeredCount > 0 ? ["Structured response approach", "Good architecture concepts cited", "Logical trade-off reasoning"] : [],
+      strengths: fallbackStrengths,
       improvements: ["Elaborate further on concrete edge case scenarios", "Provide more depth on distributed resilience patterns and metrics"],
       mistakesMade: answeredCount === 0 ? ["All questions skipped."] : ["Could quantify throughput metrics earlier in the transcript."],
       idealAnswers: ["Highlight multi-region active-active replication with distributed caching and p99 metrics."],
       hiringRecommendation: calculatedScore >= 85 ? `Recommend hire for ${params.role || "Software Engineering"} role.` : calculatedScore >= 70 ? `Recommend lean hire with system design follow-up.` : `Recommend further practice before candidate interview.`,
       practicePlan: ["Practice whiteboarding high-concurrency systems", "Refine STAR behavioral elevator pitch"],
+      evidenceGrounding: fallbackGrounding,
       questionBreakdown: fallbackBreakdown,
       panelFeedback: {
         hr: { score: behavScore, feedback: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", strengths: answeredCount > 0 ? ["Clear communication"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper teamwork examples"] },
@@ -509,8 +625,14 @@ Provide a high-impact, direct 3-paragraph answer with clear context, specific ar
       });
     });
 
-    return response.text || `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.\n\n**Action & Technical Execution:** I designed a decoupled worker pipeline utilizing distributed caching with deterministic key hashing and idempotent state transitions to prevent race conditions.\n\n**Impact & Evaluation:** This structural pattern eliminated contention bottlenecks, sustained consistent latency under peak load, and ensured verifiable data consistency across replicas.`;
+    if (response.text && response.text.trim()) {
+      return response.text.trim();
+    }
+    throw new Error("Empty model output received from AI provider.");
   } catch (err: any) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini draft answer generation failed: ${err?.message || "Service unavailable"}`);
+    }
     console.warn("[GEMINI WARN] generateDraftAnswer utilizing high-fidelity fallback:", err?.message || err);
     return `**Situation & Context:** In high-throughput systems for a ${targetRole} tier at ${targetCompany}, technical execution begins by establishing observability baselines and identifying bottleneck components.
 

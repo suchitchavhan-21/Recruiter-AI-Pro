@@ -5,7 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { createExpressApp } from "./src/server/app";
 import { ENV, validateEnvironment } from "./src/server/config/env";
 import { runDatabaseSeed } from "./src/server/db/seed";
-import { initPostgresSchema } from "./src/server/db/postgres";
+import { initPostgresSchema, getPostgresPool } from "./src/server/db/postgres";
 
 const PORT = ENV.PORT || 3000;
 
@@ -42,11 +42,16 @@ async function startServer() {
     }
   }
 
-  // 3. Initialize default database seeding if empty
-  try {
+  // 3. Initialize default database seeding if empty (DEVELOPMENT ONLY or explicit RUN_DB_SEED=true)
+  if (!isProd) {
+    try {
+      await runDatabaseSeed({ force: false });
+    } catch (seedErr) {
+      console.warn("[INIT] Development auto-seed check:", seedErr);
+    }
+  } else if (process.env.RUN_DB_SEED === "true") {
+    console.log("🌱 [STARTUP] Explicit RUN_DB_SEED=true enabled in production. Executing seed...");
     await runDatabaseSeed({ force: false });
-  } catch (seedErr) {
-    console.warn("[INIT] Database auto-seed check:", seedErr);
   }
 
   const app = createExpressApp();
@@ -108,9 +113,42 @@ async function startServer() {
     });
   }
 
-  app.listen(port, "0.0.0.0", () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     console.log(`✅ Recruiter AI Pro Server is actively running on http://0.0.0.0:${port}`);
   });
+
+  // Cloud Run Graceful Shutdown Handling (SIGTERM & SIGINT)
+  let isShuttingDown = false;
+  const gracefulShutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`\n🛑 [SHUTDOWN] Received ${signal}. Initiating Cloud Run graceful shutdown sequence...`);
+
+    server.close(async () => {
+      console.log("🔒 [SHUTDOWN] HTTP server closed. Drained inflight connections.");
+      try {
+        const pool = getPostgresPool();
+        if (pool) {
+          console.log("🐘 [SHUTDOWN] Closing PostgreSQL connection pool...");
+          await pool.end();
+          console.log("✅ [SHUTDOWN] PostgreSQL pool cleanly closed.");
+        }
+      } catch (poolErr) {
+        console.error("⚠️ [SHUTDOWN] Error closing database pool:", poolErr);
+      }
+      console.log("👋 [SHUTDOWN] Graceful shutdown complete. Exiting.");
+      process.exit(0);
+    });
+
+    // Cloud Run provides a 10s grace period before forceful SIGKILL
+    setTimeout(() => {
+      console.error("⚠️ [SHUTDOWN] Graceful shutdown timeout reached. Forcing immediate termination.");
+      process.exit(1);
+    }, 9500).unref();
+  };
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
 startServer().catch((err) => {
