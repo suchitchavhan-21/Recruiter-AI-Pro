@@ -69,6 +69,7 @@ export function LoginForm({
           required
           autoComplete="email"
           placeholder="you@example.com"
+          helperText="Enter your registered email address (e.g. candidate@example.com), not your user ID."
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={Mail}

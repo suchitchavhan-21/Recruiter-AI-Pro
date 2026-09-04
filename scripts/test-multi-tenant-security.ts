@@ -37,6 +37,7 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
     const req = http.request(reqOptions, (res) => {
       let data = "";
       res.on("data", chunk => { data += chunk; });
+      res.on("error", reject);
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
@@ -81,6 +82,16 @@ async function startServer(port: number): Promise<ChildProcess> {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     shell: true
+  });
+
+  proc.stdout?.on("data", d => {
+    if (process.env.DEBUG) console.log(`[SERVER STDOUT] ${d}`);
+  });
+  proc.stderr?.on("data", d => {
+    console.error(`[SERVER STDERR] ${d}`);
+  });
+  proc.on("exit", code => {
+    console.warn(`[SERVER EXIT] Process exited with code ${code}`);
   });
 
   for (let i = 0; i < 40; i++) {

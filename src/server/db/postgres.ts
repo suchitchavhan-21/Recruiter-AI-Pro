@@ -34,9 +34,16 @@ export async function isPgVectorAvailable(): Promise<boolean> {
 
 /**
  * Returns whether PostgreSQL is active or configured.
+ * In development, PostgreSQL/PGlite at data/postgres_data is always the canonical authoritative store.
+ * In production, requires external PostgreSQL TCP pool or valid connection string.
  */
 export function isPostgresActive(): boolean {
-  return Boolean(pool || pgliteDb || process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL);
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  if (isProd) {
+    const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
+    return Boolean(pool || (dbUrl && !dbUrl.includes("embedded")));
+  }
+  return true;
 }
 
 /**
@@ -125,13 +132,14 @@ export async function queryPostgres(sql: string, params?: any[]): Promise<QueryR
     const client = await (db.instance as Pool).connect();
     try {
       const res = await client.query(sql, params);
-      return { rows: res.rows, rowCount: res.rowCount || res.rows.length };
+      return { rows: res.rows, rowCount: res.rowCount ?? res.rows.length };
     } finally {
       client.release();
     }
   } else {
     const res = await (db.instance as PGlite).query(sql, params);
-    return { rows: res.rows, rowCount: res.rows.length };
+    const count = (res as any).affectedRows ?? (res as any).rowCount ?? res.rows.length;
+    return { rows: res.rows, rowCount: count };
   }
 }
 
@@ -384,6 +392,9 @@ export async function initPostgresSchema(): Promise<boolean> {
 
     isInitialized = true;
     console.log("✅ [POSTGRES] All 8 relational tables, vector_chunks, and HNSW indexes initialized successfully.");
+
+    // In development mode, safely sync existing JSON data into PGlite without data loss or overwriting
+    await syncJsonStoreToPostgresDev();
     return true;
   } catch (err: any) {
     console.error("[POSTGRES INIT ERROR]:", err.message);
@@ -392,12 +403,162 @@ export async function initPostgresSchema(): Promise<boolean> {
 }
 
 /**
+ * Safely copies development records from data/recruiter_ai_prod.json into PostgreSQL/PGlite
+ * using ON CONFLICT DO NOTHING so no existing records are overwritten.
+ */
+export async function syncJsonStoreToPostgresDev(): Promise<{ users: number; resumes: number; applications: number; starStories: number; interviews: number }> {
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  const stats = { users: 0, resumes: 0, applications: 0, starStories: 0, interviews: 0 };
+  if (isProd) return stats;
+
+  const jsonPath = path.join(process.cwd(), "data", "recruiter_ai_prod.json");
+  if (!fs.existsSync(jsonPath)) return stats;
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+
+    if (Array.isArray(raw.users)) {
+      for (const u of raw.users) {
+        if (!u.id || !u.email) continue;
+        const res = await queryPostgres(`
+          INSERT INTO users (
+            id, full_name, email, phone_number, password_hash, profile_photo,
+            role, provider, email_verified, verification_token, reset_password_token,
+            reset_password_expires, last_login, account_status, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+          ON CONFLICT (id) DO NOTHING;
+        `, [
+          u.id, u.fullName || "User", u.email, u.phoneNumber || null, u.passwordHash,
+          u.profilePhoto || null, u.role || "candidate", u.provider || "local",
+          u.emailVerified ?? false, u.verificationToken || null, u.resetPasswordToken || null,
+          u.resetPasswordExpires || null, u.lastLogin || null, u.accountStatus || "active",
+          u.createdAt || new Date().toISOString(), u.updatedAt || new Date().toISOString()
+        ]);
+        if (res.rowCount && res.rowCount > 0) stats.users++;
+      }
+    }
+
+    if (Array.isArray(raw.resumes)) {
+      for (const r of raw.resumes) {
+        if (!r.id || !r.userId) continue;
+        try {
+          const res = await queryPostgres(`
+            INSERT INTO resumes (
+              id, user_id, resume_name, file_size, file_mime_type, ats_score,
+              match_score, target_role, parsed_content, analysis, suggestions, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            ON CONFLICT (id) DO NOTHING;
+          `, [
+            r.id, r.userId, r.resumeName || "Resume.pdf", r.fileSize || 0,
+            r.fileMimeType || "application/pdf", r.atsScore || 0, r.matchScore || null,
+            r.targetRole || null, r.parsedContent || null,
+            JSON.stringify(r.analysis || {}), JSON.stringify(r.suggestions || []),
+            r.createdAt || new Date().toISOString(), r.updatedAt || new Date().toISOString()
+          ]);
+          if (res.rowCount && res.rowCount > 0) stats.resumes++;
+        } catch {}
+      }
+    }
+
+    if (Array.isArray(raw.applications)) {
+      for (const a of raw.applications) {
+        if (!a.id || !a.userId) continue;
+        try {
+          const res = await queryPostgres(`
+            INSERT INTO applications (
+              id, user_id, company, role, role_category, applicant_name,
+              applicant_email, status, cover_letter, match_score, notes, interview_date, applied_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (id) DO NOTHING;
+          `, [
+            a.id, a.userId, a.company || "Company", a.role || a.position || "Engineer",
+            a.roleCategory || "Engineering", a.applicantName || "Candidate", a.applicantEmail || "",
+            a.status || "Submitted", a.coverLetter || "", a.matchScore || 0, a.notes || "",
+            a.interviewDate || null, a.appliedAt || new Date().toISOString(), a.updatedAt || new Date().toISOString()
+          ]);
+          if (res.rowCount && res.rowCount > 0) stats.applications++;
+        } catch {}
+      }
+    }
+
+    if (Array.isArray(raw.starStories)) {
+      for (const s of raw.starStories) {
+        if (!s.id || !s.userId) continue;
+        try {
+          const res = await queryPostgres(`
+            INSERT INTO star_stories (
+              id, user_id, role, company, situation, task, action, result, expert_story, title, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ON CONFLICT (id) DO NOTHING;
+          `, [
+            s.id, s.userId, s.role || "Software Engineer", s.company || "Company",
+            s.situation || "", s.task || "", s.action || "", s.result || "",
+            s.expertStory || s.expert_story || "", s.title || "Story",
+            s.createdAt || new Date().toISOString(), s.updatedAt || new Date().toISOString()
+          ]);
+          if (res.rowCount && res.rowCount > 0) stats.starStories++;
+        } catch {}
+      }
+    }
+
+    if (Array.isArray(raw.interviews)) {
+      for (const i of raw.interviews) {
+        if (!i.id || !i.userId) continue;
+        try {
+          const res = await queryPostgres(`
+            INSERT INTO interviews (
+              id, user_id, company, role, difficulty, interviewer_count, persona,
+              state, score, time_taken, questions, answers, evaluation, session_state, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ON CONFLICT (id) DO NOTHING;
+          `, [
+            i.id, i.userId, i.company || "Mock Interview", i.role || "Software Engineer",
+            i.difficulty || "Mid-Level", i.interviewerCount || 1, i.persona || "mentor",
+            i.state || "COMPLETED", i.score || 0, i.timeTaken || null,
+            JSON.stringify(i.questions || []),
+            JSON.stringify(i.answers || []), JSON.stringify(i.evaluation || {}),
+            JSON.stringify(i.sessionState || i.sessionData || {}),
+            i.createdAt || new Date().toISOString(),
+            i.updatedAt || new Date().toISOString()
+          ]);
+          if (res.rowCount && res.rowCount > 0) stats.interviews++;
+        } catch {}
+      }
+    }
+
+    if (Array.isArray(raw.candidateMemories)) {
+      for (const m of raw.candidateMemories) {
+        if (!m.userId) continue;
+        try {
+          await queryPostgres(`
+            INSERT INTO candidate_memories (
+              user_id, profile, updated_at
+            ) VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO NOTHING;
+          `, [
+            m.userId, JSON.stringify(m.profile || {}), m.updatedAt || new Date().toISOString()
+          ]);
+        } catch {}
+      }
+    }
+
+    if (stats.users > 0 || stats.resumes > 0 || stats.applications > 0 || stats.starStories > 0 || stats.interviews > 0) {
+      console.log(`📦 [POSTGRES-DEV MIGRATION] Safely synced development records from JSON to PGlite: users=${stats.users}, resumes=${stats.resumes}, applications=${stats.applications}, starStories=${stats.starStories}, interviews=${stats.interviews}`);
+    }
+  } catch (syncErr: any) {
+    console.warn("[POSTGRES-DEV MIGRATION NOTE]:", syncErr?.message);
+  }
+  return stats;
+}
+
+/**
  * Diagnostics and health check probe
  */
 export async function checkPostgresHealth(): Promise<{ ready: boolean; pgvector: boolean; database: string; engine?: string; error?: string }> {
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
   const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
-  if (!dbUrl) {
-    return { ready: false, pgvector: false, database: "file_json", engine: "none", error: "DATABASE_URL is not configured" };
+  if (isProd && !dbUrl) {
+    return { ready: false, pgvector: false, database: "disconnected", engine: "none", error: "DATABASE_URL is not configured in production" };
   }
 
   try {
@@ -406,10 +567,10 @@ export async function checkPostgresHealth(): Promise<{ ready: boolean; pgvector:
       ready: res.rows.length > 0,
       pgvector: pgVectorAvailable,
       database: "postgresql",
-      engine: pool ? "external_managed_postgres" : "embedded_postgres"
+      engine: pool ? "external_managed_postgres" : "embedded_pglite"
     };
   } catch (err: any) {
-    return { ready: false, pgvector: false, database: "error", error: err.message };
+    return { ready: false, pgvector: false, database: isProd ? "disconnected" : "error", error: err.message };
   }
 }
 

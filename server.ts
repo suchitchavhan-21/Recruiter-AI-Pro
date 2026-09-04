@@ -34,11 +34,12 @@ async function startServer() {
       process.exit(1);
     }
     console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
-  } else if (ENV.DATABASE_URL) {
+  } else {
+    // In development mode, initialize the canonical PostgreSQL/PGlite database schema and sync any legacy JSON records
     try {
       await initPostgresSchema();
     } catch (pgErr) {
-      console.warn("[INIT] PostgreSQL initialization note:", pgErr);
+      console.warn("[INIT] Development PostgreSQL/PGlite initialization note:", pgErr);
     }
   }
 

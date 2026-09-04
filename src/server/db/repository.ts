@@ -15,18 +15,13 @@ import {
   DatabaseState 
 } from "./schema";
 import { ENV } from "../config/env";
-import { queryPostgres } from "./postgres";
+import { queryPostgres, isPostgresActive } from "./postgres";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "recruiter_ai_prod.json");
 
 let dbCache: DatabaseState | null = null;
 let writeQueue: Promise<void> = Promise.resolve();
-
-function isPostgresActive(): boolean {
-  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
-  return !!dbUrl;
-}
 
 export function generateUUID(): string {
   return crypto.randomUUID ? crypto.randomUUID() : "id-" + crypto.randomBytes(16).toString("hex");
