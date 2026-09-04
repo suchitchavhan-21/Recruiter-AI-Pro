@@ -81,6 +81,65 @@ export const StarEvaluationSchema = z.object({
 });
 export type StarEvaluationOutput = z.infer<typeof StarEvaluationSchema>;
 
+function tryParseJson(str: string): any {
+  if (!str) return null;
+  try {
+    return JSON.parse(str.trim());
+  } catch {}
+
+  // Strip markdown code fences if present inside
+  const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    try {
+      return JSON.parse(fenceMatch[1].trim());
+    } catch {}
+  }
+
+  // Extract from first { to last }
+  const firstBrace = str.indexOf("{");
+  const lastBrace = str.lastIndexOf("}");
+  const candidate = (firstBrace !== -1 && lastBrace > firstBrace)
+    ? str.substring(firstBrace, lastBrace + 1)
+    : str;
+
+  try {
+    return JSON.parse(candidate);
+  } catch {}
+
+  // Clean trailing commas
+  try {
+    const noTrailing = candidate.replace(/,(\s*[}\]])/g, "$1");
+    return JSON.parse(noTrailing);
+  } catch {}
+
+  // Character scan: escape literal unescaped newlines/tabs inside string values
+  try {
+    let inString = false;
+    let escaped = false;
+    let sanitized = "";
+    for (let i = 0; i < candidate.length; i++) {
+      const c = candidate[i];
+      if (c === '"' && !escaped) {
+        inString = !inString;
+        sanitized += c;
+      } else if (inString && c === "\n") {
+        sanitized += "\\n";
+      } else if (inString && c === "\r") {
+        sanitized += "\\r";
+      } else if (inString && c === "\t") {
+        sanitized += "\\t";
+      } else {
+        sanitized += c;
+      }
+      escaped = (c === "\\" && !escaped);
+    }
+    const noTrailing = sanitized.replace(/,(\s*[}\]])/g, "$1");
+    return JSON.parse(noTrailing);
+  } catch {}
+
+  return null;
+}
+
 /**
  * Parses and validates LLM raw response text against a strict Zod schema.
  * Rejects invalid output cleanly without silently fabricating values.
@@ -94,34 +153,10 @@ export function parseAndValidateJson<T>(
     throw new Error(`[LANGCHAIN STRUCTURED OUTPUT ERROR] Empty output received for schema '${schemaName}'.`);
   }
 
-  let parsedJson: any = null;
-
-  // 1. Try direct JSON parse
-  try {
-    parsedJson = JSON.parse(rawText.trim());
-  } catch {
-    // 2. Try regex extraction of markdown code fences: ```json ... ```
-    const match = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-    if (match && match[1]) {
-      try {
-        parsedJson = JSON.parse(match[1].trim());
-      } catch {}
-    }
-
-    // 3. Try finding outer braces: { ... }
-    if (!parsedJson) {
-      const firstBrace = rawText.indexOf("{");
-      const lastBrace = rawText.lastIndexOf("}");
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        try {
-          parsedJson = JSON.parse(rawText.substring(firstBrace, lastBrace + 1));
-        } catch {}
-      }
-    }
-  }
+  const parsedJson = tryParseJson(rawText);
 
   if (!parsedJson) {
-    throw new Error(`[LANGCHAIN STRUCTURED OUTPUT ERROR] Failed to parse valid JSON from model output for schema '${schemaName}'. Raw preview: ${rawText.substring(0, 120)}`);
+    throw new Error(`[LANGCHAIN STRUCTURED OUTPUT ERROR] Failed to parse valid JSON from model output for schema '${schemaName}' (length: ${rawText.length}). Raw content: ${rawText.length > 500 ? rawText.substring(0, 500) + '...' : rawText}`);
   }
 
   const validationResult = schema.safeParse(parsedJson);
