@@ -209,6 +209,9 @@ ${params.jd.substring(0, 15000)}
 
     return parsed;
   } catch (err: any) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini job description analysis failed: ${err?.message || "Service unavailable"}. Synthetic fallbacks are prohibited in production.`);
+    }
     console.warn("[GEMINI WARN] analyzeJobDescription utilizing high-fidelity fallback:", err?.message || err);
     return {
       difficulty: "Senior",
@@ -536,6 +539,9 @@ Return ONLY valid JSON matching this schema:
       panelFeedback
     };
   } catch (err: any) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini interview evaluation failed: ${err?.message || "Service unavailable"}. Synthetic scorecard fallbacks are prohibited in production.`);
+    }
     console.warn("[GEMINI WARN] evaluateInterviewSession utilizing high-fidelity fallback:", err?.message || err);
     
     // Dynamic calculation from candidate's actual input
@@ -706,6 +712,9 @@ Return ONLY valid JSON matching this schema:
       expertModelStory: `**Situation**: Facing 400ms latency spikes during peak checkout traffic.\n**Task**: Lead the latency remediation taskforce to maintain <100ms p99 SLA.\n**Action**: Implemented Redis cache locking and query batching with connection pooling.\n**Result**: Reduced p99 latency by 68% and achieved 100% uptime with zero transaction drop.`
     });
   } catch (err: any) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini STAR evaluation failed: ${err?.message || "Service unavailable"}. Synthetic story fallbacks are prohibited in production.`);
+    }
     console.warn("[GEMINI WARN] evaluateSTARStory utilizing high-fidelity fallback:", err?.message || err);
     return {
       overallRating: "90/100 - Strong Hire",
@@ -841,6 +850,9 @@ ${params.resumeText.substring(0, 25000)}
     parsed.atsMatch = Math.max(0, Math.min(100, Math.round(parsed.atsMatch || 85)));
     return parsed;
   } catch (err: any) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini resume scan failed: ${err?.message || "Service unavailable"}. Synthetic resume fallbacks are prohibited in production.`);
+    }
     console.warn("[GEMINI WARN] scanResumeContent utilizing high-fidelity fallback:", err?.message || err);
     return {
       atsScore: 84,

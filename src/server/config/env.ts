@@ -68,8 +68,13 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
   const errors: string[] = [];
   const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
 
-  if (!ENV.GEMINI_API_KEY) {
-    warnings.push("GEMINI_API_KEY is not configured. Live Gemini generation will use structured fallback responses.");
+  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim() || ENV.GEMINI_API_KEY?.trim());
+  if (!hasGeminiKey) {
+    if (isProd) {
+      warnings.push("READINESS_FAILURE: GEMINI_API_KEY is not configured in production. Live Gemini API credentials are required; synthetic/fake AI fallbacks are strictly prohibited. AI features will return HTTP 503 AI_PROVIDER_UNAVAILABLE.");
+    } else {
+      warnings.push("GEMINI_API_KEY is not configured. Live AI endpoints will return HTTP 503 AI_PROVIDER_UNAVAILABLE until valid credentials are provided.");
+    }
   }
 
   if (isProd) {

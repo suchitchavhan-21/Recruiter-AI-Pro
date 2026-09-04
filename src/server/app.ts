@@ -105,8 +105,9 @@ export function createExpressApp(): express.Application {
     });
   });
 
-  // Comprehensive Readiness Probe
-  app.get("/api/ready", async (_req, res) => {
+  // Comprehensive Readiness Probe (/api/readiness and /api/ready alias)
+  const handleReadiness = async (_req: express.Request, res: express.Response) => {
+    const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
     const dbHealth = await checkPostgresHealth();
     let vectorStoreMode = "dev_vector_memory";
     try {
@@ -116,7 +117,18 @@ export function createExpressApp(): express.Application {
       vectorStoreMode = "error";
     }
 
-    const isReady = dbHealth.ready || process.env.NODE_ENV !== "production";
+    const geminiKey = process.env.GEMINI_API_KEY?.trim() || ENV.GEMINI_API_KEY?.trim();
+    const isGeminiConfigured = Boolean(geminiKey && geminiKey.length > 0);
+
+    const readinessFailures: string[] = [];
+    if (!dbHealth.ready) {
+      readinessFailures.push("PostgreSQL database is disconnected or unhealthy.");
+    }
+    if (isProd && !isGeminiConfigured) {
+      readinessFailures.push("GEMINI_API_KEY is not configured in production environment.");
+    }
+
+    const isReady = readinessFailures.length === 0;
 
     res.status(isReady ? 200 : 503).json({
       status: isReady ? "ready" : "degraded",
@@ -124,16 +136,22 @@ export function createExpressApp(): express.Application {
       service: "Recruiter AI Pro Engine",
       environment: process.env.NODE_ENV || ENV.NODE_ENV || "development",
       persistence: {
-        database: dbHealth.ready ? "postgresql" : "file_json",
+        database: dbHealth.ready ? "postgresql" : (isProd ? "disconnected" : "embedded_pglite"),
         pgvector: dbHealth.pgvector,
         vectorStore: vectorStoreMode
       },
       ai: {
-        geminiConfigured: !!ENV.GEMINI_API_KEY,
-        embeddingModel: getActiveEmbeddingModel()
-      }
+        geminiConfigured: isGeminiConfigured,
+        geminiStatus: isGeminiConfigured ? "ready" : (isProd ? "missing_credentials" : "not_configured"),
+        embeddingModel: getActiveEmbeddingModel(),
+        fallbackAllowed: false
+      },
+      readinessFailures: readinessFailures.length > 0 ? readinessFailures : undefined
     });
-  });
+  };
+
+  app.get("/api/readiness", handleReadiness);
+  app.get("/api/ready", handleReadiness);
 
   // ----------------------------------------------------
   // PRIMARY MODULAR ROUTERS
