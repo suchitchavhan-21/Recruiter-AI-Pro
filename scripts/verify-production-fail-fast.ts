@@ -77,9 +77,11 @@ function testServerProcess(
     const cleanEnv: Record<string, string> = {
       ...process.env as Record<string, string>,
       PORT: String(port),
-      STRICT_FAIL_FAST: "true",
       ...envVars
     };
+    if (!("STRICT_FAIL_FAST" in envVars)) {
+      delete cleanEnv.STRICT_FAIL_FAST;
+    }
 
     const proc = spawn(cmd, args, {
       env: cleanEnv,
@@ -248,7 +250,7 @@ async function runFailFastTests() {
     // -------------------------------------------------------------
     // Test 7: Production with embedded DB EVEN IF ALLOW_EMBEDDED_POSTGRES=true -> MUST STILL FAIL
     // -------------------------------------------------------------
-    console.log("\n[STAGE 7/7 START] Testing that escape hatch ALLOW_EMBEDDED_POSTGRES=true is completely removed...");
+    console.log("\n[STAGE 7/8 START] Testing that escape hatch ALLOW_EMBEDDED_POSTGRES=true is completely removed...");
     const t7 = Date.now();
     const proc7 = await testServerProcess({
       NODE_ENV: "production",
@@ -262,7 +264,26 @@ async function runFailFastTests() {
       "Production strictly rejects embedded database even if ALLOW_EMBEDDED_POSTGRES=true is provided (zero escape hatches)",
       `Exit code: ${proc7.exitCode}`
     );
-    console.log(`[STAGE 7/7 DONE in ${Date.now() - t7}ms]`);
+    console.log(`[STAGE 7/8 DONE in ${Date.now() - t7}ms]`);
+
+    // -------------------------------------------------------------
+    // Test 8: Production with STRICT_FAIL_FAST="false" -> MUST STILL FAIL (intrinsic to NODE_ENV=production)
+    // -------------------------------------------------------------
+    console.log("\n[STAGE 8/8 START] Testing that fail-fast is intrinsic to NODE_ENV=production even if STRICT_FAIL_FAST=false...");
+    const t8 = Date.now();
+    const proc8 = await testServerProcess({
+      NODE_ENV: "production",
+      STRICT_FAIL_FAST: "false",
+      JWT_SECRET: "",
+      JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
+      DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db"
+    }, 3098, 5000);
+    check(
+      proc8.exitCode === 1 && (proc8.output.includes("JWT_SECRET") || proc8.output.includes("CONFIG FATAL")),
+      "Missing JWT_SECRET strictly halts production even if STRICT_FAIL_FAST=false (intrinsic safety)",
+      `Exit code: ${proc8.exitCode}`
+    );
+    console.log(`[STAGE 8/8 DONE in ${Date.now() - t8}ms]`);
 
   } finally {
     process.env = originalEnv;

@@ -18,7 +18,7 @@
     "test:langchain": "tsx scripts/test-langchain-orchestration.ts",
     "test:security": "tsx scripts/test-multi-tenant-security.ts",
     "test:voice": "tsx scripts/test-deterministic-voice-pipeline.ts",
-    "test:rag": "tsx scripts/test-rag-evaluation.ts",
+    "test:adversarial": "tsx scripts/test-adversarial-boundaries.ts",
     "verify:production": "tsx scripts/verify-production-environment.ts",
     "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts",
     "verify-deployment": "tsx scripts/verify-deployment.ts"

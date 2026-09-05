@@ -19,7 +19,7 @@ async function startServer() {
   }
   if (!envCheck.valid) {
     envCheck.errors.forEach(e => console.error(`[CONFIG FATAL ERROR] ${e}`));
-    if (isProd && process.env.STRICT_FAIL_FAST === "true") {
+    if (isProd) {
       console.error("❌ [STARTUP HALTED] Server cannot start in production due to missing or invalid mandatory configuration.");
       process.exit(1);
     }
@@ -30,7 +30,7 @@ async function startServer() {
   try {
     const schemaReady = await initPostgresSchema();
     if (!schemaReady) {
-      if (isProd && process.env.STRICT_FAIL_FAST === "true") {
+      if (isProd) {
         console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL or initialize pgvector schema in production. Halting startup.");
         process.exit(1);
       } else {
@@ -40,7 +40,7 @@ async function startServer() {
       console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
     }
   } catch (pgErr: any) {
-    if (isProd && process.env.STRICT_FAIL_FAST === "true") {
+    if (isProd) {
       console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL:", pgErr?.message || pgErr);
       process.exit(1);
     } else {

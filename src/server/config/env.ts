@@ -13,8 +13,10 @@ function getOrGenerateSecret(envVarName: string): string {
     return value.trim();
   }
   
-  if (process.env.STRICT_FAIL_FAST === "true") {
-    // Under explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
+  if (process.env.NODE_ENV === "production" || isProduction || process.env.STRICT_FAIL_FAST === "true") {
+    // Under production or explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
+    // Cloud Run containers are horizontally scaled; instance-local ephemeral keys cause immediate
+    // authentication failures across replicas.
     return "";
   }
 
@@ -107,38 +109,21 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
   }
 
   if (isProd) {
-    const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true";
-    const jwtSecret = process.env.JWT_SECRET?.trim() || ENV.JWT_SECRET;
+    const jwtSecret = (process.env.JWT_SECRET || "").trim();
     if (!jwtSecret || jwtSecret.length < 16) {
-      if (isStrictFailFast) {
-        errors.push("Mandatory JWT_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
-      } else {
-        warnings.push("JWT_SECRET is not configured in production environment. A secure 256-bit instance key is being used.");
-      }
+      errors.push("Mandatory JWT_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
     }
     
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET?.trim() || ENV.JWT_REFRESH_SECRET;
+    const jwtRefreshSecret = (process.env.JWT_REFRESH_SECRET || "").trim();
     if (!jwtRefreshSecret || jwtRefreshSecret.length < 16) {
-      if (isStrictFailFast) {
-        errors.push("Mandatory JWT_REFRESH_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
-      } else {
-        warnings.push("JWT_REFRESH_SECRET is not configured in production environment. A secure 256-bit instance key is being used.");
-      }
+      errors.push("Mandatory JWT_REFRESH_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
     }
 
-    const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
+    const dbUrl = (process.env.DATABASE_URL || "").trim();
     if (!dbUrl) {
-      if (isStrictFailFast) {
-        errors.push("Mandatory DATABASE_URL is missing in production. External PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
-      } else {
-        warnings.push("DATABASE_URL is not configured in production environment. Operating with embedded PostgreSQL with pgvector engine for container persistence.");
-      }
+      errors.push("Mandatory DATABASE_URL is missing in production. External PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
     } else if (dbUrl.includes("embedded") || dbUrl.includes("postgres_data")) {
-      if (isStrictFailFast) {
-        errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
-      } else {
-        warnings.push("Using embedded PostgreSQL with pgvector engine for container persistence.");
-      }
+      errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
     } else if (!dbUrl.startsWith("postgres://") && !dbUrl.startsWith("postgresql://")) {
       errors.push("DATABASE_URL must be a valid PostgreSQL connection string starting with 'postgres://' or 'postgresql://'.");
     }

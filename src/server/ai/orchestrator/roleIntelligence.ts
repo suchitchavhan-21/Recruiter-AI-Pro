@@ -126,14 +126,16 @@ export function classifyRole(input: RoleClassificationInput): RoleClassification
     }
   }
 
-  // 1. Engineering / Software Development
+  // 1. Engineering / Software Development & Solutions Architecture
   if (
     /\b(software|developer|frontend|backend|fullstack|devops|sre|cloud engineer|embedded|firmware|infrastructure engineer|systems engineer)\b/i.test(roleLower) ||
-    (/\b(engineer|architect)\b/i.test(roleLower) && !/\b(sales engineer|solutions architect|support)\b/i.test(roleLower))
+    (/\b(engineer|architect)\b/i.test(roleLower) && !/\b(sales engineer|support)\b/i.test(roleLower))
   ) {
+    const isSolutionsArch = /\b(solutions architect|cloud architect|enterprise architect)\b/i.test(roleLower);
     return {
       jobFamily: "engineering",
-      subFamily: /\b(frontend|react|ui|web)\b/i.test(text) ? "frontend" :
+      subFamily: isSolutionsArch ? "solutions_architecture" :
+                 /\b(frontend|react|ui|web)\b/i.test(text) ? "frontend" :
                  /\b(devops|sre|platform|infrastructure)\b/i.test(text) ? "infrastructure" : "backend",
       industry: input.industry || "technology",
       seniority,
@@ -141,8 +143,8 @@ export function classifyRole(input: RoleClassificationInput): RoleClassification
       domainIntensity: "high",
       behavioralIntensity: seniority === "Entry" ? "medium" : "high",
       leadershipIntensity: seniority === "Expert" || seniority === "Senior" ? "high" : "low",
-      practicalAssessmentType: "CODING",
-      codingRequired: true,
+      practicalAssessmentType: isSolutionsArch ? "CASE_STUDY" : "CODING",
+      codingRequired: !isSolutionsArch,
       assessmentRequired: true,
       confidence: 0.95
     };
@@ -444,16 +446,25 @@ export function generateInterviewBlueprint(input: RoleClassificationInput): Inte
           negativeSignals: ["Misaligned expectations", "Disregard for team velocity"],
           sampleQuestion: `What makes you uniquely prepared for this ${seniority} ${input.targetRole} role?`
         },
-        {
+        ...(codingRequired ? [{
           id: "coding",
           name: "Hands-on Coding & Execution",
           weight: 0.05,
           description: "Clean code structure, correctness, and edge-case handling.",
-          category: "practical",
+          category: "practical" as const,
           positiveSignals: ["Optimal time and space complexity", "Modular code structure"],
           negativeSignals: ["Syntax errors", "Neglects input validation"],
           sampleQuestion: "Demonstrate an optimal algorithm for processing structured streaming data."
-        }
+        }] : [{
+          id: "solution_architecture",
+          name: "Solution Architecture & Integration",
+          weight: 0.05,
+          description: "Customer requirements synthesis, cloud infrastructure components, and integration topology.",
+          category: "practical" as const,
+          positiveSignals: ["Clear integration diagramming", "Evaluates multi-cloud constraints"],
+          negativeSignals: ["Cannot justify technology selection", "Ignores operational costs"],
+          sampleQuestion: "How do you structure an enterprise cloud migration architecture while minimizing downtime?"
+        }])
       ];
       break;
 

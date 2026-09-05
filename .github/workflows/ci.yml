@@ -63,3 +63,9 @@ jobs:
 
       - name: Run LangChain Multi-Agent Tests
         run: npm run test:langchain
+
+      - name: Run Zero-Trust Adversarial Boundary Tests
+        run: npm run test:adversarial
+
+      - name: Run Production Fail-Fast & Startup Safety Tests
+        run: npm run verify-production-fail-fast

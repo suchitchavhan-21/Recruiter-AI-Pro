@@ -54,9 +54,12 @@ export function isPostgresActive(): boolean {
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true";
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || isProd;
   const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isStrictFailFast ? "" : "embedded://postgres_data");
   if (!dbUrl) {
+    if (isStrictFailFast) {
+      throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL DATABASE_URL is required. Missing database configuration is strictly prohibited.");
+    }
     return null;
   }
 

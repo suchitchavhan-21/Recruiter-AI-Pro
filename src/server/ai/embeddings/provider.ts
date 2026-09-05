@@ -29,7 +29,7 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
     };
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY;
+  const apiKey = (process.env.GEMINI_API_KEY !== undefined ? process.env.GEMINI_API_KEY : ENV.GEMINI_API_KEY)?.trim();
   if (!apiKey) {
     if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
       throw new Error("[EMBEDDING FATAL] GEMINI_API_KEY is not configured in production. Synthetic fallbacks are strictly prohibited in production.");
