@@ -1,8 +1,8 @@
 {
   "enabled": true,
-  "baselineCommit": "90fae0cd9bca0430b52a349791d199a5ca624469",
-  "frozenAt": "2026-09-05T12:10:00Z",
-  "version": 11,
+  "baselineCommit": "f9a3987d219eb516c26d54f993a73d652bdbeb89",
+  "frozenAt": "2026-09-05T12:35:00Z",
+  "version": 12,
   "schemaVersion": "1.0.0",
   "repository": "suchitchavhan-21/Recruiter-AI-Pro",
   "strategy": {
