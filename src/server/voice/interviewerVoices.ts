@@ -90,3 +90,33 @@ export function resolveInterviewerVoice(personaParam: unknown): PersonaVoiceConf
 
   return PERSONA_VOICE_MAP[id];
 }
+
+/**
+ * Returns all configured interviewer persona voice profiles.
+ */
+export function getAllPersonasVoiceConfig(): PersonaVoiceConfig[] {
+  return Object.values(PERSONA_VOICE_MAP);
+}
+
+export interface VoiceDiagnosticsItem {
+  personaId: number;
+  personaName: string;
+  voiceAlias: string;
+  googleVoiceName: string;
+  gender: "female" | "male";
+  locale: string;
+}
+
+/**
+ * Returns clean diagnostic metadata for all persona voices without exposing secrets.
+ */
+export function getPersonaVoiceDiagnostics(): VoiceDiagnosticsItem[] {
+  return Object.values(PERSONA_VOICE_MAP).map(p => ({
+    personaId: p.personaId,
+    personaName: p.personaName,
+    voiceAlias: p.voiceId,
+    googleVoiceName: p.googleVoice.name,
+    gender: p.gender,
+    locale: p.locale
+  }));
+}

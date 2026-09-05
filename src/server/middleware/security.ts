@@ -221,3 +221,12 @@ export const generalLimiter = createRateLimiter({
   keyPrefix: "gen",
   message: "Request rate limit exceeded."
 });
+
+export const codingLimiter = createRateLimiter({
+  windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
+  max: 30,
+  keyPrefix: "coding",
+  userAware: true,
+  message: "Coding execution rate limit exceeded. Please wait a moment before submitting again."
+});
+

@@ -188,6 +188,53 @@ export interface CandidateMemoryRecord {
   updatedAt: string;
 }
 
+export interface CodingQuestionRecord {
+  id: string; // e.g. "two-sum"
+  title: string;
+  difficulty: "Entry" | "Mid" | "Senior" | "Expert";
+  category: string;
+  description: string;
+  starterCode: Record<string, string>;
+  testCases: Array<{ input: any[]; expected: any; hidden?: boolean }>;
+  expectedComplexity: { time: string; space: string };
+  hints: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CodingAttemptRecord {
+  id: string; // UUID
+  userId: string; // foreign key to users
+  questionId: string;
+  code: string;
+  language: string;
+  status: "PASSED" | "FAILED" | "ERROR" | "TIMEOUT";
+  passedTests: number;
+  totalTests: number;
+  runtimeMs: number;
+  memoryBytes: number;
+  timeToSolveSeconds: number;
+  hintsUsed: number;
+  complexityAssessment?: { time: string; space: string; isOptimal: boolean };
+  interviewerFeedback?: string;
+  createdAt: string;
+}
+
+export interface InterviewCompetencyScoreRecord {
+  id: string; // UUID
+  sessionId: string; // foreign key to interviews
+  userId: string; // foreign key to users
+  competency: string;
+  score: number;
+  confidence: number;
+  evidence: string;
+  positiveSignals: string[];
+  negativeSignals: string[];
+  missingEvidence: string[];
+  recommendedFollowUp: string;
+  createdAt: string;
+}
+
 export interface DatabaseState {
   users: User[];
   sessions: UserSession[];
@@ -197,5 +244,8 @@ export interface DatabaseState {
   applications: JobApplicationRecord[];
   starStories: SavedSTARStoryRecord[];
   candidateMemories: CandidateMemoryRecord[];
+  codingQuestions: CodingQuestionRecord[];
+  codingAttempts: CodingAttemptRecord[];
+  competencyScores: InterviewCompetencyScoreRecord[];
   auditLogs: AdminAuditLog[];
 }

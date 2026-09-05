@@ -11,6 +11,9 @@ import {
   SavedSTARStoryRecord, 
   CandidateMemoryRecord,
   CandidateMemoryProfile,
+  CodingQuestionRecord,
+  CodingAttemptRecord,
+  InterviewCompetencyScoreRecord,
   AdminAuditLog, 
   DatabaseState 
 } from "./schema";
@@ -47,9 +50,13 @@ function initDefaultState(): DatabaseState {
     applications: [],
     starStories: [],
     candidateMemories: [],
+    codingQuestions: [],
+    codingAttempts: [],
+    competencyScores: [],
     auditLogs: []
   };
 }
+
 
 function loadDatabase(): DatabaseState {
   if (dbCache) {
@@ -78,6 +85,10 @@ function loadDatabase(): DatabaseState {
   if (!Array.isArray(state.resumes)) state.resumes = [];
   if (!Array.isArray(state.applications)) state.applications = [];
   if (!Array.isArray(state.starStories)) state.starStories = [];
+  if (!Array.isArray(state.candidateMemories)) state.candidateMemories = [];
+  if (!Array.isArray(state.codingQuestions)) state.codingQuestions = [];
+  if (!Array.isArray(state.codingAttempts)) state.codingAttempts = [];
+  if (!Array.isArray(state.competencyScores)) state.competencyScores = [];
   if (!Array.isArray(state.auditLogs)) state.auditLogs = [];
 
   dbCache = state;
@@ -1197,4 +1208,228 @@ export async function saveCandidateMemory(userId: string, profile: CandidateMemo
     });
   }
   await persistDatabaseAsync();
+}
+
+// ==========================================
+// CODING PRACTICE & ATTEMPTS REPOSITORY
+// ==========================================
+
+export async function findCodingQuestions(filter?: { category?: string; difficulty?: string }): Promise<CodingQuestionRecord[]> {
+  if (isPostgresActive()) {
+    let sql = "SELECT * FROM coding_questions WHERE 1=1";
+    const params: any[] = [];
+    if (filter?.category) {
+      params.push(filter.category);
+      sql += ` AND category = $${params.length}`;
+    }
+    if (filter?.difficulty) {
+      params.push(filter.difficulty);
+      sql += ` AND difficulty = $${params.length}`;
+    }
+    sql += " ORDER BY created_at ASC;";
+    const res = await queryPostgres(sql, params);
+    return res.rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      difficulty: r.difficulty,
+      category: r.category,
+      description: r.description,
+      starterCode: r.starter_code || {},
+      testCases: r.test_cases || [],
+      expectedComplexity: r.expected_complexity || {},
+      hints: r.hints || [],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
+  }
+
+  const db = loadDatabase();
+  let list = db.codingQuestions || [];
+  if (filter?.category) list = list.filter(q => q.category === filter.category);
+  if (filter?.difficulty) list = list.filter(q => q.difficulty === filter.difficulty);
+  return list;
+}
+
+export async function findCodingQuestionById(id: string): Promise<CodingQuestionRecord | null> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres("SELECT * FROM coding_questions WHERE id = $1;", [id]);
+    if (res.rows.length === 0) return null;
+    const r = res.rows[0];
+    return {
+      id: r.id,
+      title: r.title,
+      difficulty: r.difficulty,
+      category: r.category,
+      description: r.description,
+      starterCode: r.starter_code || {},
+      testCases: r.test_cases || [],
+      expectedComplexity: r.expected_complexity || {},
+      hints: r.hints || [],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    };
+  }
+
+  const db = loadDatabase();
+  return (db.codingQuestions || []).find(q => q.id === id) || null;
+}
+
+export async function upsertCodingQuestion(question: CodingQuestionRecord): Promise<void> {
+  if (isPostgresActive()) {
+    await queryPostgres(`
+      INSERT INTO coding_questions (id, title, difficulty, category, description, starter_code, test_cases, expected_complexity, hints, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        difficulty = EXCLUDED.difficulty,
+        category = EXCLUDED.category,
+        description = EXCLUDED.description,
+        starter_code = EXCLUDED.starter_code,
+        test_cases = EXCLUDED.test_cases,
+        expected_complexity = EXCLUDED.expected_complexity,
+        hints = EXCLUDED.hints,
+        updated_at = EXCLUDED.updated_at;
+    `, [
+      question.id,
+      question.title,
+      question.difficulty,
+      question.category,
+      question.description,
+      JSON.stringify(question.starterCode),
+      JSON.stringify(question.testCases),
+      JSON.stringify(question.expectedComplexity),
+      JSON.stringify(question.hints),
+      question.createdAt,
+      question.updatedAt
+    ]);
+    return;
+  }
+
+  const db = loadDatabase();
+  if (!db.codingQuestions) db.codingQuestions = [];
+  const idx = db.codingQuestions.findIndex(q => q.id === question.id);
+  if (idx >= 0) {
+    db.codingQuestions[idx] = question;
+  } else {
+    db.codingQuestions.push(question);
+  }
+  await persistDatabaseAsync();
+}
+
+export async function insertCodingAttempt(attempt: CodingAttemptRecord): Promise<void> {
+  if (isPostgresActive()) {
+    await queryPostgres(`
+      INSERT INTO coding_attempts (id, user_id, question_id, code, language, status, passed_tests, total_tests, runtime_ms, memory_bytes, time_to_solve_seconds, hints_used, complexity_assessment, interviewer_feedback, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
+    `, [
+      attempt.id,
+      attempt.userId,
+      attempt.questionId,
+      attempt.code,
+      attempt.language,
+      attempt.status,
+      attempt.passedTests,
+      attempt.totalTests,
+      attempt.runtimeMs,
+      attempt.memoryBytes,
+      attempt.timeToSolveSeconds,
+      attempt.hintsUsed,
+      JSON.stringify(attempt.complexityAssessment || {}),
+      attempt.interviewerFeedback || "",
+      attempt.createdAt
+    ]);
+    return;
+  }
+
+  const db = loadDatabase();
+  if (!db.codingAttempts) db.codingAttempts = [];
+  db.codingAttempts.push(attempt);
+  await persistDatabaseAsync();
+}
+
+export async function findCodingAttemptsByUserId(userId: string): Promise<CodingAttemptRecord[]> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres(
+      "SELECT * FROM coding_attempts WHERE user_id = $1 ORDER BY created_at DESC;",
+      [userId]
+    );
+    return res.rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      questionId: r.question_id,
+      code: r.code,
+      language: r.language,
+      status: r.status,
+      passedTests: r.passed_tests,
+      totalTests: r.total_tests,
+      runtimeMs: r.runtime_ms,
+      memoryBytes: Number(r.memory_bytes),
+      timeToSolveSeconds: r.time_to_solve_seconds,
+      hintsUsed: r.hints_used,
+      complexityAssessment: r.complexity_assessment || {},
+      interviewerFeedback: r.interviewer_feedback,
+      createdAt: r.created_at
+    }));
+  }
+
+  const db = loadDatabase();
+  return (db.codingAttempts || []).filter(a => a.userId === userId);
+}
+
+// ==========================================
+// INTERVIEW COMPETENCY SCORES REPOSITORY
+// ==========================================
+
+export async function insertCompetencyScore(scoreRecord: InterviewCompetencyScoreRecord): Promise<void> {
+  if (isPostgresActive()) {
+    await queryPostgres(`
+      INSERT INTO interview_competency_scores (id, session_id, user_id, competency, score, confidence, evidence, positive_signals, negative_signals, missing_evidence, recommended_follow_up, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+    `, [
+      scoreRecord.id,
+      scoreRecord.sessionId,
+      scoreRecord.userId,
+      scoreRecord.competency,
+      scoreRecord.score,
+      scoreRecord.confidence,
+      scoreRecord.evidence,
+      JSON.stringify(scoreRecord.positiveSignals),
+      JSON.stringify(scoreRecord.negativeSignals),
+      JSON.stringify(scoreRecord.missingEvidence),
+      scoreRecord.recommendedFollowUp,
+      scoreRecord.createdAt
+    ]);
+    return;
+  }
+
+  const db = loadDatabase();
+  if (!db.competencyScores) db.competencyScores = [];
+  db.competencyScores.push(scoreRecord);
+  await persistDatabaseAsync();
+}
+
+export async function findCompetencyScoresBySessionId(sessionId: string, userId: string): Promise<InterviewCompetencyScoreRecord[]> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres(
+      "SELECT * FROM interview_competency_scores WHERE session_id = $1 AND user_id = $2 ORDER BY created_at ASC;",
+      [sessionId, userId]
+    );
+    return res.rows.map(r => ({
+      id: r.id,
+      sessionId: r.session_id,
+      userId: r.user_id,
+      competency: r.competency,
+      score: r.score,
+      confidence: Number(r.confidence),
+      evidence: r.evidence,
+      positiveSignals: r.positive_signals || [],
+      negativeSignals: r.negative_signals || [],
+      missingEvidence: r.missing_evidence || [],
+      recommendedFollowUp: r.recommended_follow_up,
+      createdAt: r.created_at
+    }));
+  }
+
+  const db = loadDatabase();
+  return (db.competencyScores || []).filter(s => s.sessionId === sessionId && s.userId === userId);
 }

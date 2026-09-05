@@ -9,7 +9,7 @@
  */
 
 import { ENV } from "../config/env";
-import { PERSONA_VOICE_MAP } from "./interviewerVoices";
+import { PERSONA_VOICE_MAP, getPersonaVoiceDiagnostics } from "./interviewerVoices";
 
 export interface TTSProvider {
   name: string;
@@ -41,8 +41,11 @@ export class MockTTSProvider implements TTSProvider {
   name = "MockGoogleTTS";
 
   async synthesizeSpeech(text: string, voiceId: string): Promise<Buffer> {
+    const start = Date.now();
     // Generate ~83.4 KB of valid MPEG audio frames (approx 5.22 seconds of 44.1kHz audio)
-    return createSilentMp3Buffer(200);
+    const buf = createSilentMp3Buffer(200);
+    setLastSynthesisLatency(Date.now() - start);
+    return buf;
   }
 }
 
@@ -70,6 +73,7 @@ export class GoogleCloudTTSProvider implements TTSProvider {
   }
 
   async synthesizeSpeech(text: string, voiceId: string): Promise<Buffer> {
+    const start = Date.now();
     const apiKey = (process.env.GOOGLE_CLOUD_API_KEY || process.env.GOOGLE_CLOUD_TTS_API_KEY || "").trim();
     const accessToken = (process.env.GOOGLE_CLOUD_ACCESS_TOKEN || "").trim();
     const voiceConfig = this.getVoiceConfig(voiceId);
@@ -123,6 +127,7 @@ export class GoogleCloudTTSProvider implements TTSProvider {
           throw new Error("Google Cloud TTS response missing audioContent field");
         }
 
+        setLastSynthesisLatency(Date.now() - start);
         return Buffer.from(json.audioContent, "base64");
       } catch (err: any) {
         const sanitizedMsg = (err?.message || "Unknown error").replace(/key=[^&\s]+/gi, "key=[REDACTED]");
@@ -139,12 +144,30 @@ export class GoogleCloudTTSProvider implements TTSProvider {
   }
 }
 
+let lastSynthesisLatencyMs = 0;
+
+export function getLastSynthesisLatency(): number {
+  return lastSynthesisLatencyMs;
+}
+
+export function setLastSynthesisLatency(ms: number): void {
+  lastSynthesisLatencyMs = ms;
+}
+
 // Backward-compatible alias
 export const ProductionTTSProvider = GoogleCloudTTSProvider;
 
-let activeTTSProvider: TTSProvider = (process.env.MOCK_TTS === "true" || process.env.USE_MOCK_TTS === "true")
-  ? new MockTTSProvider()
-  : new GoogleCloudTTSProvider();
+function resolveInitialTTSProvider(): TTSProvider {
+  const isRealRequired = process.env.REAL_TTS_REQUIRED === "true";
+  if (isRealRequired) {
+    return new GoogleCloudTTSProvider();
+  }
+  return (process.env.MOCK_TTS === "true" || process.env.USE_MOCK_TTS === "true")
+    ? new MockTTSProvider()
+    : new GoogleCloudTTSProvider();
+}
+
+let activeTTSProvider: TTSProvider = resolveInitialTTSProvider();
 
 export function getTTSProvider(): TTSProvider {
   return activeTTSProvider;
@@ -155,7 +178,29 @@ export function setTTSProvider(provider: TTSProvider): void {
 }
 
 export function resetTTSProvider(): void {
-  activeTTSProvider = (process.env.MOCK_TTS === "true" || process.env.USE_MOCK_TTS === "true")
-    ? new MockTTSProvider()
-    : new GoogleCloudTTSProvider();
+  activeTTSProvider = resolveInitialTTSProvider();
+}
+
+export interface TTSDiagnosticsReport {
+  activeProvider: string;
+  realTTSRequired: boolean;
+  credentialsConfigured: boolean;
+  credentialType: "api_key" | "access_token" | "none";
+  personas: import("./interviewerVoices").VoiceDiagnosticsItem[];
+  lastLatencyMs: number;
+}
+
+export function getTTSDiagnostics(): TTSDiagnosticsReport {
+  const apiKey = (process.env.GOOGLE_CLOUD_API_KEY || process.env.GOOGLE_CLOUD_TTS_API_KEY || "").trim();
+  const accessToken = (process.env.GOOGLE_CLOUD_ACCESS_TOKEN || "").trim();
+  const hasCredentials = Boolean(apiKey || accessToken);
+
+  return {
+    activeProvider: activeTTSProvider.name,
+    realTTSRequired: process.env.REAL_TTS_REQUIRED === "true",
+    credentialsConfigured: hasCredentials,
+    credentialType: accessToken ? "access_token" : apiKey ? "api_key" : "none",
+    personas: getPersonaVoiceDiagnostics(),
+    lastLatencyMs: lastSynthesisLatencyMs
+  };
 }

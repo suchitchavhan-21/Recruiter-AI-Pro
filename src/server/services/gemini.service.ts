@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ENV } from "../config/env";
+import { CompetencyScore, CompetencyType, normalizeCompetencyScore } from "../ai/orchestrator/competencyModel";
+import { generateScoringReport, DecisionSupportBadge } from "../ai/orchestrator/scoringModel";
 
 let aiClient: GoogleGenAI | null = null;
 
@@ -272,7 +274,12 @@ export interface InterviewEvaluationResult {
     technical?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
     hiringManager?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
   };
+  decisionBadge?: DecisionSupportBadge;
+  badgeRationale?: string;
+  competencyScores?: Record<CompetencyType, CompetencyScore>;
+  actionableRecommendations?: string[];
 }
+
 
 /**
  * Programmatically validates that evaluation claims and quotes are grounded in actual interview transcript answers.
@@ -350,7 +357,110 @@ export function validateInterviewEvidenceGrounding(
   };
 }
 
+/**
+ * Derives objective 7-dimensional competency breakdown and decision-support report.
+ */
+export function deriveCompetencyBreakdown(
+  qaPairs: Array<{ questionId?: number; questionText?: string; type?: string; answerText?: string }>,
+  baseScore: number
+): {
+  competencyScores: Record<CompetencyType, CompetencyScore>;
+  scoringReport: ReturnType<typeof generateScoringReport>;
+} {
+  const technicalAnswers = qaPairs.filter(q => q.type === "technical").map(q => q.answerText).filter(Boolean);
+  const behavioralAnswers = qaPairs.filter(q => q.type === "behavioral").map(q => q.answerText).filter(Boolean);
+
+  const techSnippet = technicalAnswers.join(" ");
+  const behavSnippet = behavioralAnswers.join(" ");
+  const allSnippet = qaPairs.map(q => q.answerText).filter(Boolean).join(" ");
+
+  const hasTechMetrics = /\b\d+(%|ms|s|k|m|gb|tb|qps|rps)\b/i.test(techSnippet);
+  const hasSTARAction = /\b(I |my |created|designed|led|built|debugged|optimized|refactored)\b/i.test(behavSnippet);
+
+  // 1. Technical Depth (weight: 0.25)
+  const technicalScore = normalizeCompetencyScore(
+    "technical",
+    baseScore,
+    techSnippet.slice(0, 300),
+    hasTechMetrics ? ["Demonstrated awareness of quantitative latency/throughput metrics"] : ["Addressed engineering concepts"],
+    technicalAnswers.length === 0 ? ["No technical answers provided"] : []
+  );
+
+  // 2. Problem Solving (weight: 0.20)
+  const problemSolvingScore = normalizeCompetencyScore(
+    "problem_solving",
+    Math.round(baseScore * 0.98),
+    allSnippet.slice(0, 300),
+    allSnippet.length > 100 ? ["Structured problem breakdown"] : [],
+    allSnippet.length < 50 ? ["Limited exploration of boundary edge cases"] : []
+  );
+
+  // 3. System Design (weight: 0.15)
+  const systemDesignScore = normalizeCompetencyScore(
+    "system_design",
+    Math.round(baseScore * 0.95),
+    techSnippet.slice(0, 300),
+    /\b(cache|distributed|database|queue|microservice|partition|sharding|replication)\b/i.test(techSnippet)
+      ? ["Explicitly referenced distributed systems primitives"]
+      : [],
+    !/\b(failover|circuit breaker|partition|consistency)\b/i.test(techSnippet)
+      ? ["Did not explore resilience and failure domain trade-offs"]
+      : []
+  );
+
+  // 4. Communication (weight: 0.15)
+  const communicationScore = normalizeCompetencyScore(
+    "communication",
+    allSnippet.length > 150 ? Math.min(100, baseScore + 5) : Math.max(20, baseScore - 15),
+    allSnippet.slice(0, 200),
+    allSnippet.length > 150 ? ["Articulate and structured response cadence"] : [],
+    allSnippet.length < 60 ? ["Responses were brief or fragmented"] : []
+  );
+
+  // 5. Behavioral (weight: 0.10)
+  const behavioralScore = normalizeCompetencyScore(
+    "behavioral",
+    hasSTARAction ? Math.min(100, baseScore + 4) : Math.max(30, baseScore - 10),
+    behavSnippet.slice(0, 300),
+    hasSTARAction ? ["Clear personal agency and ownership demonstrated"] : [],
+    !hasSTARAction && behavioralAnswers.length > 0 ? ["Passive delivery ('we' instead of 'I')"] : []
+  );
+
+  // 6. Role Fit (weight: 0.10)
+  const roleFitScore = normalizeCompetencyScore(
+    "role_fit",
+    baseScore,
+    allSnippet.slice(0, 200),
+    ["Relevant technical and contextual alignment with target position"],
+    []
+  );
+
+  // 7. Coding (weight: 0.05)
+  const codingScore = normalizeCompetencyScore(
+    "coding",
+    baseScore,
+    technicalAnswers[0]?.slice(0, 200) || "",
+    ["Algorithmic logic applied during architectural trade-offs"],
+    []
+  );
+
+  const competencyScores: Record<CompetencyType, CompetencyScore> = {
+    technical: technicalScore,
+    problem_solving: problemSolvingScore,
+    system_design: systemDesignScore,
+    communication: communicationScore,
+    behavioral: behavioralScore,
+    role_fit: roleFitScore,
+    coding: codingScore
+  };
+
+  const scoringReport = generateScoringReport(competencyScores);
+
+  return { competencyScores, scoringReport };
+}
+
 export async function evaluateInterviewSession(params: {
+
   role: string;
   company: string;
   difficulty: string;
@@ -522,18 +632,24 @@ Return ONLY valid JSON matching this schema:
     const claimsToValidate = finalStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
     const evidenceGrounding = validateInterviewEvidenceGrounding(params.qaPairs, claimsToValidate);
 
+    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(params.qaPairs, finalScore);
+
     return {
       overallRating: finalRating,
-      score: finalScore,
+      score: scoringReport.overallScore || finalScore,
+      decisionBadge: scoringReport.decisionBadge,
+      badgeRationale: scoringReport.badgeRationale,
+      competencyScores: scoringReport.competencyBreakdown,
+      actionableRecommendations: scoringReport.actionableRecommendations,
       overallFeedback: parsed?.overallFeedback || (answeredCount === 0 
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
-        : `Candidate completed ${answeredCount} of ${totalQuestions} questions with an overall assessment score of ${finalScore}%.`),
+        : `Candidate completed ${answeredCount} of ${totalQuestions} questions with an overall assessment score of ${scoringReport.overallScore || finalScore}%.`),
       strengths: finalStrengths,
-      improvements: parsed?.improvements?.length ? parsed.improvements : ["Elaborate on edge case trade-offs", "Quantify business and latency impact metrics"],
+      improvements: parsed?.improvements?.length ? parsed.improvements : (scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate on edge case trade-offs", "Quantify business and latency impact metrics"]),
       mistakesMade: parsed?.mistakesMade || (answeredCount === 0 ? ["Questions skipped without response"] : ["Could provide more concrete numbers earlier in the response"]),
       idealAnswers: parsed?.idealAnswers || ["Include explicit architectural diagrams and metric before/after benchmarks."],
       hiringRecommendation: parsed?.hiringRecommendation || (finalScore >= 85 ? `Strongly recommend hire for ${params.role}.` : finalScore >= 70 ? `Recommend lean hire with follow-up on system design.` : `Recommend further preparation before re-interviewing.`),
-      practicePlan: parsed?.practicePlan || ["Practice STAR structured whiteboarding", "Refine behavioral elevator pitch"],
+      practicePlan: parsed?.practicePlan || scoringReport.actionableRecommendations,
       evidenceGrounding,
       questionBreakdown,
       panelFeedback
@@ -576,18 +692,24 @@ Return ONLY valid JSON matching this schema:
     const fallbackClaims = fallbackStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
     const fallbackGrounding = validateInterviewEvidenceGrounding(params.qaPairs, fallbackClaims);
 
+    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(params.qaPairs, calculatedScore);
+
     return {
       overallRating: calculatedRating,
-      score: calculatedScore,
+      score: scoringReport.overallScore || calculatedScore,
+      decisionBadge: scoringReport.decisionBadge,
+      badgeRationale: scoringReport.badgeRationale,
+      competencyScores: scoringReport.competencyBreakdown,
+      actionableRecommendations: scoringReport.actionableRecommendations,
       overallFeedback: answeredCount === 0
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
-        : `The candidate completed ${answeredCount} of ${totalQuestions} questions with a calibrated score of ${calculatedScore}%.`,
+        : `The candidate completed ${answeredCount} of ${totalQuestions} questions with a calibrated score of ${scoringReport.overallScore || calculatedScore}%.`,
       strengths: fallbackStrengths,
-      improvements: ["Elaborate further on concrete edge case scenarios", "Provide more depth on distributed resilience patterns and metrics"],
+      improvements: scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate further on concrete edge case scenarios", "Provide more depth on distributed resilience patterns and metrics"],
       mistakesMade: answeredCount === 0 ? ["All questions skipped."] : ["Could quantify throughput metrics earlier in the transcript."],
       idealAnswers: ["Highlight multi-region active-active replication with distributed caching and p99 metrics."],
       hiringRecommendation: calculatedScore >= 85 ? `Recommend hire for ${params.role || "Software Engineering"} role.` : calculatedScore >= 70 ? `Recommend lean hire with system design follow-up.` : `Recommend further practice before candidate interview.`,
-      practicePlan: ["Practice whiteboarding high-concurrency systems", "Refine STAR behavioral elevator pitch"],
+      practicePlan: scoringReport.actionableRecommendations,
       evidenceGrounding: fallbackGrounding,
       questionBreakdown: fallbackBreakdown,
       panelFeedback: {
@@ -598,6 +720,7 @@ Return ONLY valid JSON matching this schema:
     };
   }
 }
+
 
 // ----------------------------------------------------
 // 3. DRAFT ANSWER GENERATOR

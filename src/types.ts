@@ -60,7 +60,12 @@ export interface FeedbackReport {
   idealAnswers?: string[];
   hiringRecommendation?: string;
   practicePlan?: string[];
+  decisionBadge?: "Strong evidence" | "Moderate evidence" | "Insufficient evidence" | "Needs improvement";
+  badgeRationale?: string;
+  competencyScores?: Record<string, any>;
+  actionableRecommendations?: string[];
 }
+
 
 export interface CoachingData {
   feedback: string;

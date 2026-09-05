@@ -381,6 +381,62 @@ export async function initPostgresSchema(): Promise<boolean> {
       );
     `);
 
+    // 13. Coding Questions Bank Table
+    await queryPostgres(`
+      CREATE TABLE IF NOT EXISTS coding_questions (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        difficulty TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        starter_code JSONB NOT NULL DEFAULT '{}',
+        test_cases JSONB NOT NULL DEFAULT '[]',
+        expected_complexity JSONB NOT NULL DEFAULT '{}',
+        hints JSONB NOT NULL DEFAULT '[]',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 14. Candidate Coding Attempts Table (Tenant Isolated)
+    await queryPostgres(`
+      CREATE TABLE IF NOT EXISTS coding_attempts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        question_id TEXT NOT NULL,
+        code TEXT NOT NULL,
+        language TEXT NOT NULL,
+        status TEXT NOT NULL,
+        passed_tests INT NOT NULL DEFAULT 0,
+        total_tests INT NOT NULL DEFAULT 0,
+        runtime_ms INT NOT NULL DEFAULT 0,
+        memory_bytes BIGINT NOT NULL DEFAULT 0,
+        time_to_solve_seconds INT NOT NULL DEFAULT 0,
+        hints_used INT NOT NULL DEFAULT 0,
+        complexity_assessment JSONB DEFAULT '{}',
+        interviewer_feedback TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // 15. Structured Evidence-Based Competency Scores Table (Tenant Isolated)
+    await queryPostgres(`
+      CREATE TABLE IF NOT EXISTS interview_competency_scores (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL REFERENCES interviews(id) ON DELETE CASCADE,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        competency TEXT NOT NULL,
+        score INT NOT NULL DEFAULT 0,
+        confidence NUMERIC NOT NULL DEFAULT 0.0,
+        evidence TEXT NOT NULL,
+        positive_signals JSONB DEFAULT '[]',
+        negative_signals JSONB DEFAULT '[]',
+        missing_evidence JSONB DEFAULT '[]',
+        recommended_follow_up TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // 13. Indexes for Vector Search Performance (HNSW) & Multi-Tenant Isolation
     if (pgVectorAvailable) {
       try {
@@ -400,13 +456,17 @@ export async function initPostgresSchema(): Promise<boolean> {
         ON vector_chunks (user_id, knowledge_domain);
         CREATE INDEX IF NOT EXISTS idx_vector_chunks_doc 
         ON vector_chunks (document_id);
+        CREATE INDEX IF NOT EXISTS idx_coding_attempts_user
+        ON coding_attempts (user_id, question_id);
+        CREATE INDEX IF NOT EXISTS idx_competency_scores_session
+        ON interview_competency_scores (session_id, user_id);
       `);
     } catch (idxErr: any) {
       console.warn("[POSTGRES NOTE] Multi-tenant index creation notice:", idxErr.message);
     }
 
     isInitialized = true;
-    console.log("✅ [POSTGRES] All 8 relational tables, vector_chunks, and HNSW indexes initialized successfully.");
+    console.log("✅ [POSTGRES] All 11 relational tables, vector_chunks, and HNSW indexes initialized successfully.");
 
     // In development mode, safely sync existing JSON data into PGlite without data loss or overwriting
     await syncJsonStoreToPostgresDev();

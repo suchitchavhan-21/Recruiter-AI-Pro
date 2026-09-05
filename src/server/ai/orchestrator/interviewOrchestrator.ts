@@ -1,4 +1,4 @@
-import { generateUUID, findInterviewById, insertInterview, updateInterviewById, updateInterviewTurnAtomically } from "../../db/repository";
+import { generateUUID, findInterviewById, insertInterview, updateInterviewById, updateInterviewTurnAtomically, insertCompetencyScore } from "../../db/repository";
 import { InterviewSessionRecord } from "../../db/schema";
 import { evaluateInterviewSession, InterviewEvaluationResult } from "../../services/gemini.service";
 import { retrieveCandidateEvidence } from "../agents/tools";
@@ -372,6 +372,30 @@ export class InterviewOrchestrator {
 
       state.evaluation = evaluation;
 
+      // Persist structured 7-dimensional competency scores in PostgreSQL
+      if (evaluation.competencyScores) {
+        for (const [compKey, compScore] of Object.entries(evaluation.competencyScores)) {
+          try {
+            await insertCompetencyScore({
+              id: generateUUID(),
+              sessionId: state.sessionId,
+              userId: params.userId,
+              competency: compKey,
+              score: compScore.score,
+              confidence: compScore.confidence,
+              evidence: compScore.evidence,
+              positiveSignals: compScore.positiveSignals || [],
+              negativeSignals: compScore.negativeSignals || [],
+              missingEvidence: compScore.missingEvidence || [],
+              recommendedFollowUp: compScore.recommendedFollowUp || "",
+              createdAt: new Date().toISOString()
+            });
+          } catch (scoreErr: any) {
+            console.warn(`[ORCHESTRATOR WARN] Failed to persist competency score for ${compKey}:`, scoreErr?.message);
+          }
+        }
+      }
+
       // Update candidate memory facts from completed interview
       await updateCandidateMemoryFromInterview(
         params.userId,
@@ -380,6 +404,7 @@ export class InterviewOrchestrator {
         state.targetRole,
         state.company
       );
+
 
       // Update in memory and persist in DB
       stateCache.set(state.sessionId, state);

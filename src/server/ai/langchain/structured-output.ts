@@ -81,6 +81,95 @@ export const StarEvaluationSchema = z.object({
 });
 export type StarEvaluationOutput = z.infer<typeof StarEvaluationSchema>;
 
+/**
+ * 6. Schema for Evidence-Based Multi-Dimensional Competency Evaluation
+ */
+export const CompetencyEvaluationSchema = z.object({
+  overallScore: z.number().min(0).max(100),
+  decisionBadge: z.enum([
+    "Strong evidence",
+    "Moderate evidence",
+    "Insufficient evidence",
+    "Needs improvement"
+  ]),
+  badgeRationale: z.string(),
+  competencies: z.object({
+    technical: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    }),
+    problem_solving: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    }),
+    system_design: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    }),
+    communication: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    }),
+    behavioral: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string(),
+      starBreakdown: z.object({
+        situation: z.number().min(0).max(25),
+        task: z.number().min(0).max(25),
+        action: z.number().min(0).max(25),
+        result: z.number().min(0).max(25)
+      }).optional()
+    }),
+    role_fit: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    }),
+    coding: z.object({
+      score: z.number().min(0).max(100),
+      confidence: z.number().min(0).max(1),
+      evidence: z.string(),
+      positiveSignals: z.array(z.string()).default([]),
+      negativeSignals: z.array(z.string()).default([]),
+      missingEvidence: z.array(z.string()).default([]),
+      recommendedFollowUp: z.string()
+    })
+  }),
+  strengths: z.array(z.string()).default([]),
+  growthAreas: z.array(z.string()).default([]),
+  actionableRecommendations: z.array(z.string()).default([])
+});
+export type CompetencyEvaluationOutput = z.infer<typeof CompetencyEvaluationSchema>;
+
 function tryParseJson(str: string): any {
   if (!str) return null;
   try {

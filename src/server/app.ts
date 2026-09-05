@@ -1,7 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { applySecurityHeaders, applyCorsMiddleware, ttsLimiter } from "./middleware/security";
-import { getTTSProvider } from "./voice/ttsProvider";
+import { getTTSProvider, getTTSDiagnostics } from "./voice/ttsProvider";
 import { centralErrorHandler } from "./middleware/errorHandler";
 import { authRouter } from "./routes/auth.routes";
 import { profileRouter } from "./routes/profile.routes";
@@ -81,6 +81,7 @@ import {
   matchJDEvidenceHandler, 
   calculateATSScoreHandler 
 } from "./controllers/resume.controller";
+import { codingRouter } from "./routes/coding.routes";
 
 export function createExpressApp(): express.Application {
   const app = express();
@@ -242,6 +243,16 @@ export function createExpressApp(): express.Application {
     }
   });
 
+  // Authoritative Voice Diagnostics Endpoint (Auditable, zero secret leakage)
+  app.get("/api/tts/diagnostics", requireAuth, ttsLimiter, (req, res) => {
+    try {
+      const diagnostics = getTTSDiagnostics();
+      return res.status(200).json(diagnostics);
+    } catch (diagErr: any) {
+      return res.status(500).json({ error: "Failed to load speech synthesis diagnostics" });
+    }
+  });
+
   // ----------------------------------------------------
   // DIRECT BACKWARD-COMPATIBLE API BRIDGES
   // (Guarantees every frontend button & fetch url continues working instantly)
@@ -303,6 +314,9 @@ export function createExpressApp(): express.Application {
   // Analytics Bridges
   app.get("/api/dashboard", requireAuth, getDashboardAnalyticsHandler);
   app.get("/api/analytics/dashboard", requireAuth, getDashboardAnalyticsHandler);
+
+  // Coding Practice & Sandbox Bridges
+  app.use("/api/coding", codingRouter);
 
   // 404 handler for undefined API routes
   app.all("/api/*", (req, res) => {

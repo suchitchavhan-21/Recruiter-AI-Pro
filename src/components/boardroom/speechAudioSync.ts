@@ -164,6 +164,9 @@ class SpeechAudioSyncEngine {
 
       this.currentSource = source;
       this.isPlaying = true;
+      if (typeof window !== "undefined") {
+        (window as any).__LAST_TTS_SOURCE__ = "google_cloud_neural2";
+      }
 
       // Trigger start lifecycle
       if (utterance.onstart) {
@@ -186,7 +189,10 @@ class SpeechAudioSyncEngine {
       if (err?.name === "AbortError") return;
 
       // Resilient fallback to native browser voice if offline/network failure
-      console.warn("[TTS PIPELINE]: Falling back to native browser speech:", err?.message);
+      console.warn("[TTS PIPELINE]: Falling back to offline browser speech synthesis:", err?.message);
+      if (typeof window !== "undefined") {
+        (window as any).__LAST_TTS_SOURCE__ = "offline_browser_fallback";
+      }
       if (fallbackSpeak) {
         this.isPlaying = false;
         fallbackSpeak(utterance);
