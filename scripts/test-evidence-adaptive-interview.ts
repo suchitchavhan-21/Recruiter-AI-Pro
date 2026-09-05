@@ -138,6 +138,22 @@ async function runAdaptiveEvidenceTests() {
   assert(derived.competencyScores.technical.positiveSignals.length > 0, "Positive signal detected for 50k QPS / Kafka");
   assert(derived.competencyScores.behavioral.positiveSignals.length > 0, "Positive signal detected for personal agency (I created, benchmark)");
   assert(derived.scoringReport.overallScore > 0, `Scoring report overall score computed: ${derived.scoringReport.overallScore}`);
+  assert(derived.scoringReport.overallConfidence > 0, `Scoring report overall confidence computed: ${derived.scoringReport.overallConfidence}`);
+  assert(derived.scoringReport.decisionSupportBadge === "Strong evidence", `Decision support badge is '${derived.scoringReport.decisionSupportBadge}'`);
+
+  // Verify all 7 competency score objects contain required attributes
+  const allSevenCompetencies: CompetencyType[] = ["technical", "problem_solving", "system_design", "communication", "behavioral", "role_fit", "coding"];
+  for (const c of allSevenCompetencies) {
+    const compObj = derived.competencyScores[c];
+    assert(compObj !== undefined, `Competency '${c}' is present`);
+    assert(typeof compObj.score === "number", `Competency '${c}' score is numeric (${compObj.score})`);
+    assert(typeof compObj.confidence === "number", `Competency '${c}' confidence is numeric (${compObj.confidence})`);
+    assert(typeof compObj.evidence === "string", `Competency '${c}' has verifiable evidence string`);
+    assert(Array.isArray(compObj.positiveSignals), `Competency '${c}' has positiveSignals array`);
+    assert(Array.isArray(compObj.negativeSignals), `Competency '${c}' has negativeSignals array`);
+    assert(Array.isArray(compObj.missingEvidence), `Competency '${c}' has missingEvidence array`);
+    assert(typeof compObj.recommendedFollowUp === "string", `Competency '${c}' has recommendedFollowUp string`);
+  }
 
   // 6. Tenant-Isolated Database Persistence
   console.log("\nTest Group 6: Tenant-Isolated PostgreSQL Competency Persistence");

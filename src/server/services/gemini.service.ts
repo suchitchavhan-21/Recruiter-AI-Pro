@@ -254,6 +254,20 @@ export interface InterviewEvidenceGrounding {
 export interface InterviewEvaluationResult {
   overallRating: "Strong Hire" | "Lean Hire" | "No Hire";
   score: number;
+  overallScore: number;
+  overallConfidence: number;
+  decisionBadge?: DecisionSupportBadge;
+  decisionSupportBadge: DecisionSupportBadge;
+  badgeRationale?: string;
+  competencyScores?: Record<CompetencyType, CompetencyScore>;
+  technicalScore: CompetencyScore;
+  problemSolvingScore: CompetencyScore;
+  systemDesignScore: CompetencyScore;
+  communicationScore: CompetencyScore;
+  behavioralScore: CompetencyScore;
+  roleFitScore: CompetencyScore;
+  codingScore: CompetencyScore;
+  actionableRecommendations?: string[];
   overallFeedback: string;
   strengths: string[];
   improvements: string[];
@@ -274,10 +288,6 @@ export interface InterviewEvaluationResult {
     technical?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
     hiringManager?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
   };
-  decisionBadge?: DecisionSupportBadge;
-  badgeRationale?: string;
-  competencyScores?: Record<CompetencyType, CompetencyScore>;
-  actionableRecommendations?: string[];
 }
 
 
@@ -637,9 +647,19 @@ Return ONLY valid JSON matching this schema:
     return {
       overallRating: finalRating,
       score: scoringReport.overallScore || finalScore,
+      overallScore: scoringReport.overallScore || finalScore,
+      overallConfidence: scoringReport.overallConfidence,
       decisionBadge: scoringReport.decisionBadge,
+      decisionSupportBadge: scoringReport.decisionBadge,
       badgeRationale: scoringReport.badgeRationale,
       competencyScores: scoringReport.competencyBreakdown,
+      technicalScore: scoringReport.competencyBreakdown.technical,
+      problemSolvingScore: scoringReport.competencyBreakdown.problem_solving,
+      systemDesignScore: scoringReport.competencyBreakdown.system_design,
+      communicationScore: scoringReport.competencyBreakdown.communication,
+      behavioralScore: scoringReport.competencyBreakdown.behavioral,
+      roleFitScore: scoringReport.competencyBreakdown.role_fit,
+      codingScore: scoringReport.competencyBreakdown.coding,
       actionableRecommendations: scoringReport.actionableRecommendations,
       overallFeedback: parsed?.overallFeedback || (answeredCount === 0 
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
@@ -697,9 +717,19 @@ Return ONLY valid JSON matching this schema:
     return {
       overallRating: calculatedRating,
       score: scoringReport.overallScore || calculatedScore,
+      overallScore: scoringReport.overallScore || calculatedScore,
+      overallConfidence: scoringReport.overallConfidence,
       decisionBadge: scoringReport.decisionBadge,
+      decisionSupportBadge: scoringReport.decisionBadge,
       badgeRationale: scoringReport.badgeRationale,
       competencyScores: scoringReport.competencyBreakdown,
+      technicalScore: scoringReport.competencyBreakdown.technical,
+      problemSolvingScore: scoringReport.competencyBreakdown.problem_solving,
+      systemDesignScore: scoringReport.competencyBreakdown.system_design,
+      communicationScore: scoringReport.competencyBreakdown.communication,
+      behavioralScore: scoringReport.competencyBreakdown.behavioral,
+      roleFitScore: scoringReport.competencyBreakdown.role_fit,
+      codingScore: scoringReport.competencyBreakdown.coding,
       actionableRecommendations: scoringReport.actionableRecommendations,
       overallFeedback: answeredCount === 0
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."

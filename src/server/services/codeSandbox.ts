@@ -1,14 +1,50 @@
 /**
  * Recruiter AI Pro — Safe Sandboxed Code Execution Engine
  * 
- * Production-grade isolated execution sandbox for candidate coding challenges:
- * - Isolated Node.js vm context with zero access to process, fs, net, child_process, or require
- * - Bounded CPU execution timeout (1500ms) to prevent infinite loops
- * - Deterministic test case evaluation
- * - Static AST/heuristic complexity assessment (detects O(n) vs O(n^2) and auxiliary space)
+ * ==============================================================================
+ * ARCHITECTURAL CLASSIFICATION & SECURITY BOUNDARY NOTICE:
+ * ==============================================================================
+ * 1. RESTRICTED IN-PROCESS RUNNER (DEVELOPMENT/TESTING MODE):
+ *    Utilizes Node.js vm.createContext() with AST/regex pattern restriction and
+ *    execution timeouts. Node.js 'vm' is NOT a security boundary for arbitrary
+ *    untrusted code and must never be represented as such in production.
+ * 
+ * 2. ISOLATED SUBPROCESS WORKER (RESTRICTED ENVIRONMENT MODE):
+ *    Spawns an isolated ephemeral child process outside the primary Express process:
+ *    - Stripped environment: zero application credentials, zero database credentials
+ *    - Memory limits enforced via --max-old-space-size=64
+ *    - Wall-clock execution timeout and maxBuffer output size limits
+ *    - Ephemeral isolated temporary directory wiped immediately after execution
+ *    - Process killed / destroyed immediately upon completion
+ * 
+ * 3. PRODUCTION MULTI-TENANT UNTRUSTED CODE REQUIREMENT:
+ *    For arbitrary untrusted multi-tenant execution in production, deployment
+ *    infrastructure must utilize containerized sandbox boundaries (such as
+ *    gVisor runsc, nsjail, Firecracker microVMs, or hardened serverless workers)
+ *    with disabled network egress, unprivileged user namespaces, and seccomp filters.
+ * ==============================================================================
  */
 
 import vm from "vm";
+import { execFile } from "child_process";
+import fs from "fs";
+import path from "path";
+import os from "os";
+
+export const RUNNER_CLASSIFICATIONS = {
+  DEV_TEST: "Restricted In-Process Runner (Development/Testing Mode)",
+  SUBPROCESS_RESTRICTED: "Isolated Subprocess Worker (Restricted Environment Mode)",
+  PRODUCTION_REQUIREMENT: "Containerized gVisor/nsjail sandbox microVM (Production Untrusted Code Requirement)"
+} as const;
+
+export type ExecutionStatus = 
+  | "PASSED"
+  | "FAILED"
+  | "TIMEOUT"
+  | "MEMORY_LIMIT"
+  | "RESOURCE_LIMIT"
+  | "SANDBOX_ERROR"
+  | "INVALID_SUBMISSION";
 
 export interface TestCase {
   input: any[];
@@ -28,7 +64,7 @@ export interface SingleTestResult {
 }
 
 export interface SandboxExecutionResult {
-  status: "PASSED" | "FAILED" | "ERROR" | "TIMEOUT";
+  status: ExecutionStatus;
   passedTests: number;
   totalTests: number;
   results: SingleTestResult[];
@@ -41,6 +77,7 @@ export interface SandboxExecutionResult {
     explanation: string;
   };
   interviewerFeedback: string;
+  runnerMode?: "isolated_subprocess" | "restricted_dev_inprocess";
 }
 
 /**
@@ -130,75 +167,72 @@ function areDeeplyEqual(a: any, b: any): boolean {
 /**
  * Executes user JavaScript solution safely in a sandboxed vm.
  */
-export async function executeInSandbox(
+export const FORBIDDEN_EXECUTION_PATTERNS = [
+  /\bprocess\b/,
+  /\bchild_process\b/,
+  /\bfs\b/,
+  /\bnet\b/,
+  /\bhttp\b/,
+  /\bhttps\b/,
+  /\bimport\b/,
+  /\brequire\b/,
+  /\bglobal\b/,
+  /\b__proto__\b/,
+  /\bconstructor\b/
+];
+
+/**
+ * Validates candidate code against restricted system access patterns.
+ */
+export function checkRestrictedCodePatterns(code: string): { valid: boolean; violation?: string } {
+  for (const pattern of FORBIDDEN_EXECUTION_PATTERNS) {
+    if (pattern.test(code)) {
+      return {
+        valid: false,
+        violation: `Restricted system access pattern '${pattern}' is prohibited.`
+      };
+    }
+  }
+  return { valid: true };
+}
+
+/**
+ * Mode A: Restricted In-Process Runner (Development/Testing Mode)
+ * Uses Node.js vm.createContext() with timeouts and restricted scopes.
+ */
+export async function executeInRestrictedDevRunner(
   userCode: string,
   entryFunctionName: string,
   testCases: TestCase[],
   expectedOptimal: { time: string; space: string } = { time: "O(n)", space: "O(n)" }
 ): Promise<SandboxExecutionResult> {
-  // Prohibit dangerous words and escapes before compiling
-  const forbiddenPatterns = [
-    /\bprocess\b/,
-    /\bchild_process\b/,
-    /\bfs\b/,
-    /\bnet\b/,
-    /\bhttp\b/,
-    /\bhttps\b/,
-    /\bimport\b/,
-    /\brequire\b/,
-    /\bglobal\b/,
-    /\b__proto__\b/,
-    /\bconstructor\b/
-  ];
-
-  for (const pattern of forbiddenPatterns) {
-    if (pattern.test(userCode)) {
-      return {
-        status: "ERROR",
-        passedTests: 0,
-        totalTests: testCases.length,
-        results: [],
-        runtimeMs: 0,
-        memoryBytes: 0,
-        complexityAssessment: {
-          time: "Unknown",
-          space: "Unknown",
-          isOptimal: false,
-          explanation: `Restricted keyword or pattern detected: ${pattern}`
-        },
-        interviewerFeedback: `Execution rejected: Untrusted system access pattern '${pattern}' is strictly prohibited.`
-      };
-    }
-  }
-
+  const patternCheck = checkRestrictedCodePatterns(userCode);
   const complexity = analyzeCodeComplexity(userCode, expectedOptimal);
 
-  // Safe isolated sandbox context
+  if (!patternCheck.valid) {
+    return {
+      status: "INVALID_SUBMISSION",
+      passedTests: 0,
+      totalTests: testCases.length,
+      results: [],
+      runtimeMs: 0,
+      memoryBytes: 0,
+      complexityAssessment: complexity,
+      interviewerFeedback: `Execution rejected: ${patternCheck.violation}`,
+      runnerMode: "restricted_dev_inprocess"
+    };
+  }
+
   const sandbox = {
-    console: {
-      log: () => {},
-      error: () => {},
-      warn: () => {}
-    },
-    Math,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
-    Map,
-    Set,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite
+    console: { log: () => {}, error: () => {}, warn: () => {} },
+    Math, Array, Object, String, Number, Boolean, Map, Set,
+    parseInt, parseFloat, isNaN, isFinite
   };
 
   const context = vm.createContext(sandbox);
 
-  let compiledScript: vm.Script;
   try {
-    compiledScript = new vm.Script(`
+    const compiledScript = new vm.Script(`
       "use strict";
       ${userCode};
       if (typeof ${entryFunctionName} !== "function") {
@@ -208,14 +242,15 @@ export async function executeInSandbox(
     compiledScript.runInContext(context, { timeout: 1000 });
   } catch (compileErr: any) {
     return {
-      status: "ERROR",
+      status: "INVALID_SUBMISSION",
       passedTests: 0,
       totalTests: testCases.length,
       results: [],
       runtimeMs: 0,
       memoryBytes: 0,
       complexityAssessment: complexity,
-      interviewerFeedback: `Compilation error: ${compileErr.message}`
+      interviewerFeedback: `Compilation error: ${compileErr.message}`,
+      runnerMode: "restricted_dev_inprocess"
     };
   }
 
@@ -228,14 +263,10 @@ export async function executeInSandbox(
     const testStart = Date.now();
 
     try {
-      // Deep clone inputs to prevent mutation across tests
       const inputClones = JSON.parse(JSON.stringify(tc.input));
       (context as any).__test_input__ = inputClones;
 
-      const evalScript = new vm.Script(`
-        ${entryFunctionName}(...__test_input__);
-      `);
-
+      const evalScript = new vm.Script(`${entryFunctionName}(...__test_input__);`);
       const actual = evalScript.runInContext(context, { timeout: 1500 });
       const elapsed = Date.now() - testStart;
       totalRuntime += elapsed;
@@ -255,7 +286,7 @@ export async function executeInSandbox(
     } catch (runErr: any) {
       const elapsed = Date.now() - testStart;
       totalRuntime += elapsed;
-      const isTimeout = runErr.message.includes("timed out");
+      const isTimeout = (runErr?.message || "").includes("timed out");
 
       results.push({
         index: i + 1,
@@ -276,14 +307,15 @@ export async function executeInSandbox(
           runtimeMs: totalRuntime,
           memoryBytes: 0,
           complexityAssessment: complexity,
-          interviewerFeedback: "Solution encountered Time Limit Exceeded (execution exceeded 1500ms limit)."
+          interviewerFeedback: "Solution encountered Time Limit Exceeded (execution exceeded 1500ms limit).",
+          runnerMode: "restricted_dev_inprocess"
         };
       }
     }
   }
 
   const allPassed = passedCount === testCases.length;
-  const status = allPassed ? "PASSED" : "FAILED";
+  const status: ExecutionStatus = allPassed ? "PASSED" : "FAILED";
 
   let feedback = "";
   if (allPassed) {
@@ -305,6 +337,305 @@ export async function executeInSandbox(
     runtimeMs: totalRuntime,
     memoryBytes: Math.round(process.memoryUsage().heapUsed / 1024),
     complexityAssessment: complexity,
-    interviewerFeedback: feedback
+    interviewerFeedback: feedback,
+    runnerMode: "restricted_dev_inprocess"
   };
+}
+
+/**
+ * Mode B: Isolated Subprocess Worker (Restricted Environment Mode)
+ * Executes outside the Express server in an isolated child process with stripped credentials.
+ */
+export async function executeInIsolatedSubprocess(
+  userCode: string,
+  entryFunctionName: string,
+  testCases: TestCase[],
+  expectedOptimal: { time: string; space: string } = { time: "O(n)", space: "O(n)" }
+): Promise<SandboxExecutionResult> {
+  const patternCheck = checkRestrictedCodePatterns(userCode);
+  const complexity = analyzeCodeComplexity(userCode, expectedOptimal);
+
+  if (!patternCheck.valid) {
+    return {
+      status: "INVALID_SUBMISSION",
+      passedTests: 0,
+      totalTests: testCases.length,
+      results: [],
+      runtimeMs: 0,
+      memoryBytes: 0,
+      complexityAssessment: complexity,
+      interviewerFeedback: `Execution rejected: ${patternCheck.violation}`,
+      runnerMode: "isolated_subprocess"
+    };
+  }
+
+  // Create isolated ephemeral temporary directory
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "recruiter-worker-"));
+  const workerScriptPath = path.join(tempDir, "isolatedWorker.js");
+  const payloadPath = path.join(tempDir, "payload.json");
+
+  // Worker script to execute isolated from Express credentials
+  const workerScriptContent = `
+"use strict";
+const fs = require("fs");
+const vm = require("vm");
+
+const areDeeplyEqual = ${areDeeplyEqual.toString()};
+
+try {
+  const rawPayload = fs.readFileSync(process.argv[2], "utf8");
+  const payload = JSON.parse(rawPayload);
+  const { userCode, entryFunctionName, testCases } = payload;
+
+  const sandbox = {
+    console: { log: () => {}, error: () => {}, warn: () => {} },
+    Math, Array, Object, String, Number, Boolean, Map, Set,
+    parseInt, parseFloat, isNaN, isFinite
+  };
+
+  const context = vm.createContext(sandbox);
+  const compiledScript = new vm.Script(
+    '"use strict";\\n' + userCode + ';\\nif (typeof ' + entryFunctionName + ' !== "function") { throw new Error("Function \\'' + entryFunctionName + '\\' is not defined"); }'
+  );
+  compiledScript.runInContext(context, { timeout: 1000 });
+
+  const results = [];
+  let totalRuntime = 0;
+  let passedCount = 0;
+
+  for (let i = 0; i < testCases.length; i++) {
+    const tc = testCases[i];
+    const testStart = Date.now();
+    try {
+      context.__test_input__ = tc.input;
+      const evalScript = new vm.Script(entryFunctionName + '(...__test_input__);');
+      const actual = evalScript.runInContext(context, { timeout: 1500 });
+      const elapsed = Date.now() - testStart;
+      totalRuntime += elapsed;
+
+      const passed = areDeeplyEqual(actual, tc.expected);
+      if (passed) passedCount++;
+
+      results.push({
+        index: i + 1,
+        passed,
+        input: tc.hidden ? ["(hidden test input)"] : tc.input,
+        expected: tc.hidden ? "(hidden expected output)" : tc.expected,
+        actual: tc.hidden ? (passed ? "(passed)" : "(failed)") : actual,
+        executionTimeMs: elapsed,
+        hidden: tc.hidden
+      });
+    } catch (runErr) {
+      const elapsed = Date.now() - testStart;
+      totalRuntime += elapsed;
+      const isTimeout = (runErr?.message || "").includes("timed out");
+      results.push({
+        index: i + 1,
+        passed: false,
+        input: tc.hidden ? ["(hidden test input)"] : tc.input,
+        expected: tc.hidden ? "(hidden expected output)" : tc.expected,
+        executionTimeMs: elapsed,
+        hidden: tc.hidden,
+        error: isTimeout ? "Time Limit Exceeded (1500ms)" : (runErr.message || "Execution error")
+      });
+      if (isTimeout) {
+        process.stdout.write(JSON.stringify({
+          status: "TIMEOUT",
+          passedTests: passedCount,
+          totalTests: testCases.length,
+          results,
+          runtimeMs: totalRuntime,
+          memoryBytes: Math.round(process.memoryUsage().heapUsed / 1024)
+        }));
+        process.exit(0);
+      }
+    }
+  }
+
+  const allPassed = passedCount === testCases.length;
+  process.stdout.write(JSON.stringify({
+    status: allPassed ? "PASSED" : "FAILED",
+    passedTests: passedCount,
+    totalTests: testCases.length,
+    results,
+    runtimeMs: totalRuntime,
+    memoryBytes: Math.round(process.memoryUsage().heapUsed / 1024)
+  }));
+  process.exit(0);
+} catch (err) {
+  process.stdout.write(JSON.stringify({
+    status: "INVALID_SUBMISSION",
+    error: err.message || "Failed to execute worker"
+  }));
+  process.exit(0);
+}
+`;
+
+  try {
+    fs.writeFileSync(payloadPath, JSON.stringify({ userCode, entryFunctionName, testCases }));
+    fs.writeFileSync(workerScriptPath, workerScriptContent);
+
+    // Stripped environment: zero application or database credentials
+    const strippedEnv: NodeJS.ProcessEnv = {
+      PATH: process.env.PATH || "",
+      NODE_ENV: "sandbox"
+    };
+
+    return await new Promise<SandboxExecutionResult>((resolve) => {
+      execFile(
+        process.execPath,
+        ["--max-old-space-size=64", workerScriptPath, payloadPath],
+        {
+          cwd: tempDir,
+          env: strippedEnv,
+          timeout: 2500,
+          maxBuffer: 512 * 1024 // 512 KB output cap
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            if (error.killed && (error.signal === "SIGTERM" || (error as any).code === "ETIMEDOUT")) {
+              return resolve({
+                status: "TIMEOUT",
+                passedTests: 0,
+                totalTests: testCases.length,
+                results: [],
+                runtimeMs: 2500,
+                memoryBytes: 0,
+                complexityAssessment: complexity,
+                interviewerFeedback: "Solution terminated: Execution timed out.",
+                runnerMode: "isolated_subprocess"
+              });
+            }
+            if ((error as any).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+              return resolve({
+                status: "RESOURCE_LIMIT",
+                passedTests: 0,
+                totalTests: testCases.length,
+                results: [],
+                runtimeMs: 0,
+                memoryBytes: 0,
+                complexityAssessment: complexity,
+                interviewerFeedback: "Execution output exceeded resource limits.",
+                runnerMode: "isolated_subprocess"
+              });
+            }
+            if (stderr && stderr.includes("JavaScript heap out of memory")) {
+              return resolve({
+                status: "MEMORY_LIMIT",
+                passedTests: 0,
+                totalTests: testCases.length,
+                results: [],
+                runtimeMs: 0,
+                memoryBytes: 64 * 1024,
+                complexityAssessment: complexity,
+                interviewerFeedback: "Solution exceeded memory limit (64MB heap quota).",
+                runnerMode: "isolated_subprocess"
+              });
+            }
+            return resolve({
+              status: "SANDBOX_ERROR",
+              passedTests: 0,
+              totalTests: testCases.length,
+              results: [],
+              runtimeMs: 0,
+              memoryBytes: 0,
+              complexityAssessment: complexity,
+              interviewerFeedback: `Sandbox execution error: ${error.message}`,
+              runnerMode: "isolated_subprocess"
+            });
+          }
+
+          try {
+            const parsed = JSON.parse(stdout.trim());
+            if (parsed.status === "INVALID_SUBMISSION") {
+              return resolve({
+                status: "INVALID_SUBMISSION",
+                passedTests: 0,
+                totalTests: testCases.length,
+                results: [],
+                runtimeMs: 0,
+                memoryBytes: 0,
+                complexityAssessment: complexity,
+                interviewerFeedback: `Submission error: ${parsed.error || "Invalid code"}`,
+                runnerMode: "isolated_subprocess"
+              });
+            }
+
+            const allPassed = parsed.passedTests === testCases.length;
+            let feedback = "";
+            if (allPassed) {
+              feedback = `All ${testCases.length} test cases passed. Algorithm estimated at ${complexity.time} time and ${complexity.space} space.`;
+              if (complexity.isOptimal) {
+                feedback += " Solution achieves optimal theoretical complexity.";
+              } else {
+                feedback += ` Note: Problem allows an optimal ${expectedOptimal.time} solution. Consider optimizing further.`;
+              }
+            } else {
+              feedback = `Passed ${parsed.passedTests}/${testCases.length} test cases. Review edge cases and expected return structures.`;
+            }
+
+            resolve({
+              status: parsed.status,
+              passedTests: parsed.passedTests,
+              totalTests: parsed.totalTests,
+              results: parsed.results || [],
+              runtimeMs: parsed.runtimeMs || 0,
+              memoryBytes: parsed.memoryBytes || 0,
+              complexityAssessment: complexity,
+              interviewerFeedback: feedback,
+              runnerMode: "isolated_subprocess"
+            });
+          } catch (parseErr: any) {
+            resolve({
+              status: "SANDBOX_ERROR",
+              passedTests: 0,
+              totalTests: testCases.length,
+              results: [],
+              runtimeMs: 0,
+              memoryBytes: 0,
+              complexityAssessment: complexity,
+              interviewerFeedback: "Failed to parse worker output.",
+              runnerMode: "isolated_subprocess"
+            });
+          }
+        }
+      );
+    });
+  } catch (outerErr: any) {
+    return {
+      status: "SANDBOX_ERROR",
+      passedTests: 0,
+      totalTests: testCases.length,
+      results: [],
+      runtimeMs: 0,
+      memoryBytes: 0,
+      complexityAssessment: complexity,
+      interviewerFeedback: `Worker orchestration failure: ${outerErr.message}`,
+      runnerMode: "isolated_subprocess"
+    };
+  } finally {
+    // Destroy and clean up isolated ephemeral filesystem
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // Best-effort cleanup
+    }
+  }
+}
+
+/**
+ * Authoritative sandbox execution entry point.
+ * By default executes via isolated subprocess worker outside the Express process.
+ */
+export async function executeInSandbox(
+  userCode: string,
+  entryFunctionName: string,
+  testCases: TestCase[],
+  expectedOptimal: { time: string; space: string } = { time: "O(n)", space: "O(n)" }
+): Promise<SandboxExecutionResult> {
+  const useInProcess = process.env.USE_IN_PROCESS_SANDBOX === "true";
+  if (useInProcess) {
+    return executeInRestrictedDevRunner(userCode, entryFunctionName, testCases, expectedOptimal);
+  }
+  return executeInIsolatedSubprocess(userCode, entryFunctionName, testCases, expectedOptimal);
 }

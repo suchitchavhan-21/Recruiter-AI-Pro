@@ -29,7 +29,9 @@ export type DecisionSupportBadge =
 
 export interface CandidateScoringReport {
   overallScore: number; // 0 - 100
+  overallConfidence: number; // 0.0 - 1.0
   decisionBadge: DecisionSupportBadge;
+  decisionSupportBadge: DecisionSupportBadge; // Canonical alias
   badgeRationale: string;
   competencyBreakdown: Record<CompetencyType, CompetencyScore>;
   strengths: string[];
@@ -135,7 +137,9 @@ export function generateScoringReport(
 
   return {
     overallScore,
+    overallConfidence: avgConfidence,
     decisionBadge,
+    decisionSupportBadge: decisionBadge,
     badgeRationale,
     competencyBreakdown: scores,
     strengths,

@@ -9,7 +9,7 @@
  * 5. Seeding and retrieval of coding challenges
  */
 
-import { executeInSandbox } from "../src/server/services/codeSandbox";
+import { executeInSandbox, RUNNER_CLASSIFICATIONS } from "../src/server/services/codeSandbox";
 import { seedCodingQuestionsIfEmpty } from "../src/server/services/codingBank";
 import { findCodingQuestionById } from "../src/server/db/repository";
 import { initPostgresSchema, closePostgresPool } from "../src/server/db/postgres";
@@ -113,7 +113,7 @@ async function runCodingSandboxTests() {
     }
   `;
   const processRes = await executeInSandbox(processEscapeCode, "solution", [{ input: [], expected: 1 }]);
-  assert(processRes.status === "ERROR", "Attempt to access 'process' is blocked with ERROR status");
+  assert(processRes.status === "INVALID_SUBMISSION", `Attempt to access 'process' is blocked with status: ${processRes.status}`);
 
   // 4b. Require / fs access
   const fsEscapeCode = `
@@ -123,7 +123,7 @@ async function runCodingSandboxTests() {
     }
   `;
   const fsRes = await executeInSandbox(fsEscapeCode, "solution", [{ input: [], expected: 1 }]);
-  assert(fsRes.status === "ERROR", "Attempt to access 'require' is blocked with ERROR status");
+  assert(fsRes.status === "INVALID_SUBMISSION", `Attempt to access 'require' is blocked with status: ${fsRes.status}`);
 
   // 4c. Global / eval tampering
   const evalTamperCode = `
@@ -132,7 +132,7 @@ async function runCodingSandboxTests() {
     }
   `;
   const evalRes = await executeInSandbox(evalTamperCode, "solution", [{ input: [], expected: 1 }]);
-  assert(evalRes.status === "ERROR" || evalRes.status === "FAILED", "Constructor prototype escape is neutralized");
+  assert(evalRes.status === "INVALID_SUBMISSION" || evalRes.status === "FAILED" || evalRes.status === "SANDBOX_ERROR", `Constructor prototype escape is neutralized with status: ${evalRes.status}`);
 
   // 4d. Timeout protection (infinite loop)
   console.log("  Running timeout protection test (expecting ~1500ms)...");
@@ -169,6 +169,12 @@ async function runCodingSandboxTests() {
   );
   assert(parenRes.status === "PASSED", `Valid Parentheses passed ${parenRes.passedTests}/${parenRes.totalTests} test cases`);
   assert(parenRes.complexityAssessment.isOptimal === true, "Valid Parentheses optimal stack solution recognized");
+
+  // 6. Security Boundary Classification Invariants
+  console.log("\nTest Group 6: Security Boundary Classification Invariants");
+  assert(RUNNER_CLASSIFICATIONS.DEV_TEST.includes("Restricted In-Process Runner"), "Mode A documents Restricted In-Process Runner (Development/Testing Mode)");
+  assert(RUNNER_CLASSIFICATIONS.SUBPROCESS_RESTRICTED.includes("Isolated Subprocess Worker"), "Mode B documents Isolated Subprocess Worker (Restricted Environment Mode)");
+  assert(RUNNER_CLASSIFICATIONS.PRODUCTION_REQUIREMENT.includes("gVisor/nsjail"), "Production boundary explicitly mandates containerized gVisor/nsjail microVMs");
 
 
   console.log("\n==================================================");

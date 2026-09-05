@@ -144,8 +144,8 @@ class SpeechAudioSyncEngine {
             ? Number((window as any).__ACTIVE_INTERVIEWER_PERSONA_ID__)
             : this.activePersonaId);
 
-      // Determine persona voice ID
-      const voiceId = personaId === 0 ? "Salli" : (personaId === 1 ? "Matthew" : "Brian");
+      // Determine persona voice ID (canonical Google Cloud Neural2 voice)
+      const voiceId = personaId === 0 ? "en-US-Neural2-F" : (personaId === 1 ? "en-US-Neural2-D" : "en-GB-Neural2-B");
 
       // Fetch natural human speech audio from neural TTS endpoint
       const res = await apiFetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${personaId}&voice=${voiceId}`, {
@@ -187,6 +187,24 @@ class SpeechAudioSyncEngine {
       source.start(0);
     } catch (err: any) {
       if (err?.name === "AbortError") return;
+
+      // Check if real TTS is strictly required (prohibits silent browser fallback)
+      const isRealTTSRequired = 
+        (typeof window !== "undefined" && (window as any).__REAL_TTS_REQUIRED__ === true) ||
+        ((import.meta as any)?.env?.VITE_REAL_TTS_REQUIRED === "true");
+
+      if (isRealTTSRequired) {
+        console.error("[TTS PIPELINE]: Real Google Cloud TTS is strictly required; silent browser speech fallback rejected:", err?.message);
+        if (typeof window !== "undefined") {
+          (window as any).__LAST_TTS_SOURCE__ = "tts_unavailable";
+          (window as any).__LAST_TTS_ERROR__ = err?.message || "TTS_UNAVAILABLE";
+        }
+        this.isPlaying = false;
+        if (utterance.onerror) {
+          (utterance as any).onerror(new Event("error"));
+        }
+        return;
+      }
 
       // Resilient fallback to native browser voice if offline/network failure
       console.warn("[TTS PIPELINE]: Falling back to offline browser speech synthesis:", err?.message);

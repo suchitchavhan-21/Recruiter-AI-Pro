@@ -1,4 +1,4 @@
-import { PERSONA_VOICE_MAP, resolveInterviewerVoice, getPersonaVoiceDiagnostics } from "../src/server/voice/interviewerVoices";
+import { PERSONA_VOICE_MAP, resolveInterviewerVoice, getPersonaVoiceDiagnostics, assertPersonaVoiceInvariants } from "../src/server/voice/interviewerVoices";
 import { getTTSDiagnostics, GoogleCloudTTSProvider, MockTTSProvider } from "../src/server/voice/ttsProvider";
 
 async function runVoicePersonaMatrixTests() {
@@ -28,7 +28,8 @@ async function runVoicePersonaMatrixTests() {
   assert(sarah.googleVoice.ssmlGender === "FEMALE", "Persona 0 ssmlGender is strictly 'FEMALE'");
   assert(sarah.googleVoice.name === "en-US-Neural2-F", "Persona 0 Google Voice is 'en-US-Neural2-F'");
   assert(sarah.googleVoice.languageCode === "en-US", "Persona 0 languageCode is 'en-US'");
-  assert(sarah.voiceId === "Salli", "Persona 0 backward-compatible alias is 'Salli'");
+  assert(sarah.voiceId === "en-US-Neural2-F", "Persona 0 canonical voiceId is 'en-US-Neural2-F'");
+  assert(sarah.legacyAlias === "Salli", "Persona 0 backward-compatible alias is 'Salli'");
 
   // --- 2. DAVID CHEN (PERSONA 1) ---
   console.log("\n--- TEST 2: DAVID CHEN (PERSONA 1) MAPPINGS ---");
@@ -39,7 +40,8 @@ async function runVoicePersonaMatrixTests() {
   assert(david.googleVoice.ssmlGender === "MALE", "Persona 1 ssmlGender is strictly 'MALE'");
   assert(david.googleVoice.name === "en-US-Neural2-D", "Persona 1 Google Voice is 'en-US-Neural2-D'");
   assert(david.googleVoice.languageCode === "en-US", "Persona 1 languageCode is 'en-US'");
-  assert(david.voiceId === "Matthew", "Persona 1 backward-compatible alias is 'Matthew'");
+  assert(david.voiceId === "en-US-Neural2-D", "Persona 1 canonical voiceId is 'en-US-Neural2-D'");
+  assert(david.legacyAlias === "Matthew", "Persona 1 backward-compatible alias is 'Matthew'");
 
   // --- 3. MARCUS BRODY (PERSONA 2) ---
   console.log("\n--- TEST 3: MARCUS BRODY (PERSONA 2) MAPPINGS ---");
@@ -50,17 +52,22 @@ async function runVoicePersonaMatrixTests() {
   assert(marcus.googleVoice.ssmlGender === "MALE", "Persona 2 ssmlGender is strictly 'MALE'");
   assert(marcus.googleVoice.name === "en-GB-Neural2-B", "Persona 2 Google Voice is 'en-GB-Neural2-B'");
   assert(marcus.googleVoice.languageCode === "en-GB", "Persona 2 languageCode is 'en-GB'");
-  assert(marcus.voiceId === "Brian", "Persona 2 backward-compatible alias is 'Brian'");
+  assert(marcus.voiceId === "en-GB-Neural2-B", "Persona 2 canonical voiceId is 'en-GB-Neural2-B'");
+  assert(marcus.legacyAlias === "Brian", "Persona 2 backward-compatible alias is 'Brian'");
 
   // --- 4. RESOLVER BEHAVIOR & FLEXIBLE LOOKUP ---
   console.log("\n--- TEST 4: RESOLVER LOOKUPS & SYNONYMS ---");
   assert(resolveInterviewerVoice(0).personaId === 0, "resolveInterviewerVoice(0) resolves Sarah");
   assert(resolveInterviewerVoice("0").personaId === 0, "resolveInterviewerVoice('0') resolves Sarah");
   assert(resolveInterviewerVoice("sarah").personaId === 0, "resolveInterviewerVoice('sarah') resolves Sarah");
+  assert(resolveInterviewerVoice("salli").personaId === 0, "resolveInterviewerVoice('salli') resolves Sarah via legacy alias");
+  assert(resolveInterviewerVoice("en-US-Neural2-F").personaId === 0, "resolveInterviewerVoice('en-US-Neural2-F') resolves Sarah via canonical voice ID");
   assert(resolveInterviewerVoice(1).personaId === 1, "resolveInterviewerVoice(1) resolves David");
   assert(resolveInterviewerVoice("david").personaId === 1, "resolveInterviewerVoice('david') resolves David");
+  assert(resolveInterviewerVoice("matthew").personaId === 1, "resolveInterviewerVoice('matthew') resolves David via legacy alias");
   assert(resolveInterviewerVoice(2).personaId === 2, "resolveInterviewerVoice(2) resolves Marcus");
   assert(resolveInterviewerVoice("marcus").personaId === 2, "resolveInterviewerVoice('marcus') resolves Marcus");
+  assert(resolveInterviewerVoice("brian").personaId === 2, "resolveInterviewerVoice('brian') resolves Marcus via legacy alias");
 
   // --- 5. RESOLVER REJECTION OF INVALID / EMPTY INPUTS ---
   console.log("\n--- TEST 5: REJECTION OF INVALID / EMPTY INPUTS ---");
@@ -88,8 +95,8 @@ async function runVoicePersonaMatrixTests() {
   }
   assert(stringInvalidRejected, "Unknown string persona rejected with INVALID_PERSONA error");
 
-  // --- 6. VOICE DIAGNOSTICS AUDIT ---
-  console.log("\n--- TEST 6: VOICE DIAGNOSTICS AUDIT ---");
+  // --- 6. VOICE DIAGNOSTICS & TELEMETRY AUDIT ---
+  console.log("\n--- TEST 6: VOICE DIAGNOSTICS & TELEMETRY AUDIT ---");
   const diagnostics = getTTSDiagnostics();
   assert(diagnostics.personas.length === 3, "Diagnostics reports exactly 3 personas");
   assert(diagnostics.personas[0].googleVoiceName === "en-US-Neural2-F", "Diagnostics reports Sarah Google Voice");
@@ -97,17 +104,21 @@ async function runVoicePersonaMatrixTests() {
   assert(diagnostics.personas[2].googleVoiceName === "en-GB-Neural2-B", "Diagnostics reports Marcus Google Voice");
   assert(typeof diagnostics.activeProvider === "string", `Diagnostics activeProvider is string ('${diagnostics.activeProvider}')`);
   assert(typeof diagnostics.credentialsConfigured === "boolean", "Diagnostics reports credential configuration flag");
+  assert(Array.isArray(diagnostics.recentTelemetry), "Diagnostics reports recent telemetry array");
 
   // Security check: diagnostics stringified must not contain secret patterns
   const diagString = JSON.stringify(diagnostics);
   assert(!diagString.includes("AIzaSy"), "Diagnostics payload does not leak Google API key patterns");
   assert(!diagString.includes("Bearer"), "Diagnostics payload does not leak Bearer tokens");
 
-  // --- 7. MALE / FEMALE STRICT INVARIANTS ---
+  // --- 7. MALE / FEMALE STRICT INVARIANTS & AUTOMATED INVARIANT ASSERTIONS ---
   console.log("\n--- TEST 7: MALE / FEMALE STRICT INVARIANTS ---");
   assert(PERSONA_VOICE_MAP[0].gender === "female", "Persona 0 is FEMALE");
   assert(PERSONA_VOICE_MAP[1].gender === "male", "Persona 1 is MALE");
   assert(PERSONA_VOICE_MAP[2].gender === "male", "Persona 2 is MALE");
+
+  const invariantResult = assertPersonaVoiceInvariants();
+  assert(invariantResult.success === true, `Automated assertPersonaVoiceInvariants() verified ${invariantResult.verifiedCount} invariants cleanly`);
 
   console.log("\n================================================================================");
   console.log(`VOICE PERSONA MATRIX RESULTS: ${passed} PASSED | ${failed} FAILED`);

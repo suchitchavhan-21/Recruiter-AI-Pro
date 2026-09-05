@@ -206,7 +206,11 @@ export function createExpressApp(): express.Application {
 
       // 2. Reject conflicting client-provided voice parameters
       const voiceParam = req.query.voice ? String(req.query.voice).trim() : null;
-      if (voiceParam && voiceParam.toLowerCase() !== personaConfig.voiceId.toLowerCase()) {
+      if (
+        voiceParam &&
+        voiceParam.toLowerCase() !== personaConfig.voiceId.toLowerCase() &&
+        voiceParam.toLowerCase() !== personaConfig.legacyAlias.toLowerCase()
+      ) {
         return res.status(400).json({
           error: `VOICE_CONFLICT: Voice '${voiceParam}' conflicts with persona ${personaConfig.personaId} (${personaConfig.personaName}). Authoritative voice is '${personaConfig.voiceId}'`
         });
@@ -233,8 +237,9 @@ export function createExpressApp(): express.Application {
       res.setHeader("Content-Type", "audio/mpeg");
       res.setHeader("Content-Length", audioBuffer.byteLength);
       res.setHeader("Cache-Control", "private, no-cache, no-store");
-      res.setHeader("Access-Control-Expose-Headers", "X-TTS-Voice, X-TTS-Persona");
+      res.setHeader("Access-Control-Expose-Headers", "X-TTS-Voice, X-TTS-Legacy-Voice, X-TTS-Persona");
       res.setHeader("X-TTS-Voice", selectedVoice);
+      res.setHeader("X-TTS-Legacy-Voice", personaConfig.legacyAlias);
       res.setHeader("X-TTS-Persona", personaShortName);
       return res.status(200).send(audioBuffer);
     } catch (err: any) {

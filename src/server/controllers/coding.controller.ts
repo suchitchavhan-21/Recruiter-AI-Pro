@@ -7,6 +7,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { findCodingQuestions, findCodingQuestionById, insertCodingAttempt, findCodingAttemptsByUserId, generateUUID } from "../db/repository";
+import type { CodingAttemptRecord } from "../db/schema";
 import { executeInSandbox } from "../services/codeSandbox";
 import { seedCodingQuestionsIfEmpty } from "../services/codingBank";
 
@@ -109,6 +110,33 @@ export async function submitCodingSolutionHandler(req: Request, res: Response) {
       question.expectedComplexity
     );
 
+    // Compute comprehensive coding metrics
+    const priorAttempts = (await findCodingAttemptsByUserId(userId)).filter(a => a.questionId === questionId);
+    const attemptNumber = priorAttempts.length + 1;
+    const testPassRate = sandboxResult.totalTests > 0 
+      ? Math.round((sandboxResult.passedTests / sandboxResult.totalTests) * 100) 
+      : 0;
+    
+    const edgeCasesPassed = (sandboxResult.results || []).filter(r => r.hidden && r.passed).length;
+    const totalEdgeCases = (question.testCases || []).filter(tc => tc.hidden).length;
+
+    // First working solution and final solution metrics
+    const firstPassedPrior = priorAttempts.find(a => a.status === "PASSED");
+    const isFirstWorkingSolution = sandboxResult.status === "PASSED" && !firstPassedPrior;
+    const timeToFirstWorkingSolution = isFirstWorkingSolution 
+      ? (timeToSolveSeconds || 0) 
+      : (firstPassedPrior?.timeToSolveSeconds || (sandboxResult.status === "PASSED" ? (timeToSolveSeconds || 0) : null));
+    
+    const priorSolveTime = priorAttempts.reduce((acc, a) => acc + (a.timeToSolveSeconds || 0), 0);
+    const timeToFinalSolution = priorSolveTime + (timeToSolveSeconds || 0);
+
+    // Code Quality & Communication heuristic indicators
+    const hasComments = /\/\*[\s\S]*?\*\/|\/\/.*/.test(code);
+    const codeQuality = sandboxResult.complexityAssessment.isOptimal
+      ? (hasComments ? 95 : 85)
+      : (hasComments ? 80 : 70);
+    const communication = hasComments ? "Clear in-code documentation and comments" : "Standard implementation; recommend documenting edge-case handling";
+
     // Save attempt record
     const attemptRecord = {
       id: generateUUID(),
@@ -116,7 +144,9 @@ export async function submitCodingSolutionHandler(req: Request, res: Response) {
       questionId,
       code,
       language,
-      status: sandboxResult.status,
+      status: ((sandboxResult.status === "PASSED" || sandboxResult.status === "FAILED" || sandboxResult.status === "TIMEOUT")
+        ? sandboxResult.status
+        : "ERROR") as CodingAttemptRecord["status"],
       passedTests: sandboxResult.passedTests,
       totalTests: sandboxResult.totalTests,
       runtimeMs: sandboxResult.runtimeMs,
@@ -135,10 +165,19 @@ export async function submitCodingSolutionHandler(req: Request, res: Response) {
       status: sandboxResult.status,
       passedTests: sandboxResult.passedTests,
       totalTests: sandboxResult.totalTests,
+      testPassRate,
+      executionTimeMs: sandboxResult.runtimeMs,
+      memoryUsage: sandboxResult.memoryBytes,
+      attempts: attemptNumber,
+      hintsUsed,
+      timeToFirstWorkingSolution,
+      timeToFinalSolution,
+      edgeCasesPassed,
+      totalEdgeCases,
+      algorithmicComplexity: sandboxResult.complexityAssessment,
+      codeQuality,
+      communication,
       results: sandboxResult.results,
-      runtimeMs: sandboxResult.runtimeMs,
-      memoryBytes: sandboxResult.memoryBytes,
-      complexityAssessment: sandboxResult.complexityAssessment,
       interviewerFeedback: sandboxResult.interviewerFeedback
     });
   } catch (err: any) {
@@ -168,18 +207,35 @@ export async function getCodingAnalyticsHandler(req: Request, res: Response) {
     const avgSolveTimeSeconds = passedAttempts.length > 0
       ? Math.round(passedAttempts.reduce((acc, a) => acc + (a.timeToSolveSeconds || 0), 0) / passedAttempts.length)
       : 0;
+    const totalHintsUsed = attempts.reduce((acc, a) => acc + (a.hintsUsed || 0), 0);
 
     // Category breakdown
     const categoryStats: Record<string, { attempts: number; passed: number; accuracy: number }> = {};
+    // Difficulty breakdown
+    const difficultyStats: Record<string, { attempts: number; passed: number; accuracy: number }> = {
+      Easy: { attempts: 0, passed: 0, accuracy: 0 },
+      Medium: { attempts: 0, passed: 0, accuracy: 0 },
+      Hard: { attempts: 0, passed: 0, accuracy: 0 }
+    };
+
     for (const a of attempts) {
       const q = questionMap.get(a.questionId);
       const cat = q?.category || "general";
+      const diff = q?.difficulty || "Medium";
+
       if (!categoryStats[cat]) {
         categoryStats[cat] = { attempts: 0, passed: 0, accuracy: 0 };
       }
       categoryStats[cat].attempts++;
+      if (difficultyStats[diff]) {
+        difficultyStats[diff].attempts++;
+      }
+
       if (a.status === "PASSED") {
         categoryStats[cat].passed++;
+        if (difficultyStats[diff]) {
+          difficultyStats[diff].passed++;
+        }
       }
     }
 
@@ -187,16 +243,33 @@ export async function getCodingAnalyticsHandler(req: Request, res: Response) {
       const stat = categoryStats[cat];
       stat.accuracy = Math.round((stat.passed / stat.attempts) * 100);
     }
+    for (const diff of Object.keys(difficultyStats)) {
+      const stat = difficultyStats[diff];
+      stat.accuracy = stat.attempts > 0 ? Math.round((stat.passed / stat.attempts) * 100) : 0;
+    }
 
     // Identify weak & strong categories
     const categoryEntries = Object.entries(categoryStats);
     const strongCategories = categoryEntries.filter(([_, s]) => s.accuracy >= 70).map(([cat]) => cat);
     const weakCategories = categoryEntries.filter(([_, s]) => s.accuracy < 60).map(([cat]) => cat);
 
+    // Trend assessment (recent 5 attempts vs older)
+    let trend: "improving" | "stable" | "needs_attention" = "stable";
+    if (attempts.length >= 6) {
+      const recent = attempts.slice(0, Math.floor(attempts.length / 2));
+      const older = attempts.slice(Math.floor(attempts.length / 2));
+      const recentAcc = recent.filter(a => a.status === "PASSED").length / recent.length;
+      const olderAcc = older.filter(a => a.status === "PASSED").length / older.length;
+      if (recentAcc > olderAcc + 0.1) trend = "improving";
+      else if (recentAcc < olderAcc - 0.1) trend = "needs_attention";
+    }
+
     // Recommended practice area
     let recommendedPractice = "Solve medium algorithmic questions";
     if (weakCategories.length > 0) {
       recommendedPractice = `Practice more questions in '${weakCategories[0]}' to improve edge-case handling`;
+    } else if (difficultyStats.Medium.accuracy < 60 && difficultyStats.Medium.attempts > 0) {
+      recommendedPractice = "Focus on Medium-difficulty questions in dynamic programming and tree traversal";
     } else if (uniqueSolved < 3) {
       recommendedPractice = "Complete initial problem set across arrays, strings, and search";
     }
@@ -207,7 +280,10 @@ export async function getCodingAnalyticsHandler(req: Request, res: Response) {
         uniqueQuestionsSolved: uniqueSolved,
         overallAccuracy,
         avgSolveTimeSeconds,
+        totalHintsUsed,
+        trend,
         categoryStats,
+        difficultyStats,
         strongCategories,
         weakCategories,
         recommendedPractice,

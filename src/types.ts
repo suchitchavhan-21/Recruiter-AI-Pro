@@ -61,8 +61,18 @@ export interface FeedbackReport {
   hiringRecommendation?: string;
   practicePlan?: string[];
   decisionBadge?: "Strong evidence" | "Moderate evidence" | "Insufficient evidence" | "Needs improvement";
+  decisionSupportBadge?: "Strong evidence" | "Moderate evidence" | "Insufficient evidence" | "Needs improvement";
   badgeRationale?: string;
+  overallScore?: number;
+  overallConfidence?: number;
   competencyScores?: Record<string, any>;
+  technicalScore?: any;
+  problemSolvingScore?: any;
+  systemDesignScore?: any;
+  communicationScore?: any;
+  behavioralScore?: any;
+  roleFitScore?: any;
+  codingScore?: any;
   actionableRecommendations?: string[];
 }
 

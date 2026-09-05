@@ -37,6 +37,37 @@ export function createSilentMp3Buffer(frameCount = 25): Buffer {
   return buffer;
 }
 
+export interface TTSTelemetryRecord {
+  timestamp: string;
+  provider: string;
+  persona: string;
+  voice: string;
+  locale: string;
+  gender: string;
+  latencyMs: number;
+  success: boolean;
+  fallbackSource: string | null;
+  errorClass: string | null;
+}
+
+const telemetryRingBuffer: TTSTelemetryRecord[] = [];
+const MAX_TELEMETRY_ITEMS = 50;
+
+export function recordTTSTelemetry(record: TTSTelemetryRecord): void {
+  telemetryRingBuffer.push(record);
+  if (telemetryRingBuffer.length > MAX_TELEMETRY_ITEMS) {
+    telemetryRingBuffer.shift();
+  }
+}
+
+export function getRecentTTSTelemetry(): TTSTelemetryRecord[] {
+  return [...telemetryRingBuffer];
+}
+
+export function clearTTSTelemetry(): void {
+  telemetryRingBuffer.length = 0;
+}
+
 export class MockTTSProvider implements TTSProvider {
   name = "MockGoogleTTS";
 
@@ -44,7 +75,35 @@ export class MockTTSProvider implements TTSProvider {
     const start = Date.now();
     // Generate ~83.4 KB of valid MPEG audio frames (approx 5.22 seconds of 44.1kHz audio)
     const buf = createSilentMp3Buffer(200);
-    setLastSynthesisLatency(Date.now() - start);
+    const latency = Date.now() - start;
+    setLastSynthesisLatency(latency);
+
+    let personaName = "Interviewer";
+    let locale = "en-US";
+    let gender = "female";
+    const normalized = voiceId.toLowerCase();
+    for (const p of Object.values(PERSONA_VOICE_MAP)) {
+      if (p.voiceId.toLowerCase() === normalized || p.legacyAlias.toLowerCase() === normalized) {
+        personaName = p.personaName;
+        locale = p.locale;
+        gender = p.gender;
+        break;
+      }
+    }
+
+    recordTTSTelemetry({
+      timestamp: new Date().toISOString(),
+      provider: this.name,
+      persona: personaName,
+      voice: voiceId,
+      locale,
+      gender,
+      latencyMs: latency,
+      success: true,
+      fallbackSource: null,
+      errorClass: null
+    });
+
     return buf;
   }
 }
@@ -57,10 +116,15 @@ export class GoogleCloudTTSProvider implements TTSProvider {
     for (const persona of Object.values(PERSONA_VOICE_MAP)) {
       if (
         persona.voiceId.toLowerCase() === normalized ||
+        persona.legacyAlias.toLowerCase() === normalized ||
         persona.googleVoice.name.toLowerCase() === normalized ||
         persona.personaName.toLowerCase().includes(normalized)
       ) {
-        return persona.googleVoice;
+        return {
+          ...persona.googleVoice,
+          personaName: persona.personaName,
+          gender: persona.gender
+        };
       }
     }
 
@@ -68,7 +132,9 @@ export class GoogleCloudTTSProvider implements TTSProvider {
     return {
       languageCode: "en-US",
       name: "en-US-Neural2-F",
-      ssmlGender: "FEMALE" as const
+      ssmlGender: "FEMALE" as const,
+      personaName: "Sarah Jenkins",
+      gender: "female" as const
     };
   }
 
@@ -127,7 +193,20 @@ export class GoogleCloudTTSProvider implements TTSProvider {
           throw new Error("Google Cloud TTS response missing audioContent field");
         }
 
-        setLastSynthesisLatency(Date.now() - start);
+        const latency = Date.now() - start;
+        setLastSynthesisLatency(latency);
+        recordTTSTelemetry({
+          timestamp: new Date().toISOString(),
+          provider: this.name,
+          persona: voiceConfig.personaName,
+          voice: voiceId,
+          locale: voiceConfig.languageCode,
+          gender: voiceConfig.gender,
+          latencyMs: latency,
+          success: true,
+          fallbackSource: null,
+          errorClass: null
+        });
         return Buffer.from(json.audioContent, "base64");
       } catch (err: any) {
         const sanitizedMsg = (err?.message || "Unknown error").replace(/key=[^&\s]+/gi, "key=[REDACTED]");
@@ -138,6 +217,20 @@ export class GoogleCloudTTSProvider implements TTSProvider {
         }
       }
     }
+
+    const failureLatency = Date.now() - start;
+    recordTTSTelemetry({
+      timestamp: new Date().toISOString(),
+      provider: this.name,
+      persona: voiceConfig.personaName,
+      voice: voiceId,
+      locale: voiceConfig.languageCode,
+      gender: voiceConfig.gender,
+      latencyMs: failureLatency,
+      success: false,
+      fallbackSource: null,
+      errorClass: lastError?.name || "TTSError"
+    });
 
     // Fail explicitly so the HTTP layer returns 503 TTS_UNAVAILABLE instead of masking failure with fake audio
     throw new Error(`Google Cloud TTS synthesis failed: ${lastError?.message || "Service unavailable"}`);
@@ -188,6 +281,7 @@ export interface TTSDiagnosticsReport {
   credentialType: "api_key" | "access_token" | "none";
   personas: import("./interviewerVoices").VoiceDiagnosticsItem[];
   lastLatencyMs: number;
+  recentTelemetry: TTSTelemetryRecord[];
 }
 
 export function getTTSDiagnostics(): TTSDiagnosticsReport {
@@ -201,6 +295,7 @@ export function getTTSDiagnostics(): TTSDiagnosticsReport {
     credentialsConfigured: hasCredentials,
     credentialType: accessToken ? "access_token" : apiKey ? "api_key" : "none",
     personas: getPersonaVoiceDiagnostics(),
-    lastLatencyMs: lastSynthesisLatencyMs
+    lastLatencyMs: lastSynthesisLatencyMs,
+    recentTelemetry: getRecentTTSTelemetry()
   };
 }

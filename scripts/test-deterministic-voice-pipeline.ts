@@ -176,57 +176,60 @@ async function runDeterministicVoiceTests() {
       allPassed = false;
     }
 
-    // --- TEST 4: AUTHORITATIVE SARAH JENKINS (persona=0 -> Salli) ---
-    console.log("--- TEST 4: SARAH JENKINS (persona=0 -> Salli -> Female) ---");
+    // --- TEST 4: AUTHORITATIVE SARAH JENKINS (persona=0 -> en-US-Neural2-F / Salli) ---
+    console.log("--- TEST 4: SARAH JENKINS (persona=0 -> en-US-Neural2-F / Salli -> Female) ---");
     const res4 = await fetch(`http://localhost:${port}/api/tts?text=Welcome+candidate&persona=0`, { headers: authHeaders });
     const voice4 = res4.headers.get("X-TTS-Voice");
+    const legacyVoice4 = res4.headers.get("X-TTS-Legacy-Voice");
     const persona4 = res4.headers.get("X-TTS-Persona");
     const ct4 = res4.headers.get("Content-Type");
     const bytes4 = (await res4.arrayBuffer()).byteLength;
-    console.log(`  Status: HTTP ${res4.status} | X-TTS-Voice: ${voice4} | X-TTS-Persona: ${persona4} | Bytes: ${bytes4}`);
-    if (res4.status === 200 && voice4 === "Salli" && persona4 === "Sarah" && ct4?.includes("audio") && bytes4 > 5000) {
-      console.log("  ✓ PASS: Sarah Jenkins resolves strictly to Salli (Female)\n");
+    console.log(`  Status: HTTP ${res4.status} | X-TTS-Voice: ${voice4} | X-TTS-Legacy-Voice: ${legacyVoice4} | X-TTS-Persona: ${persona4} | Bytes: ${bytes4}`);
+    if (res4.status === 200 && (voice4 === "en-US-Neural2-F" || voice4 === "Salli") && persona4 === "Sarah" && ct4?.includes("audio") && bytes4 > 5000) {
+      console.log("  ✓ PASS: Sarah Jenkins resolves strictly to en-US-Neural2-F / Salli (Female)\n");
     } else {
-      console.log("  ✗ FAIL: Sarah Jenkins did not resolve to Salli\n");
+      console.log("  ✗ FAIL: Sarah Jenkins did not resolve to authoritative voice\n");
       allPassed = false;
     }
 
-    // --- TEST 5: AUTHORITATIVE DAVID CHEN (persona=1 -> Matthew) ---
-    console.log("--- TEST 5: DAVID CHEN (persona=1 -> Matthew -> Male) ---");
+    // --- TEST 5: AUTHORITATIVE DAVID CHEN (persona=1 -> en-US-Neural2-D / Matthew) ---
+    console.log("--- TEST 5: DAVID CHEN (persona=1 -> en-US-Neural2-D / Matthew -> Male) ---");
     const res5 = await fetch(`http://localhost:${port}/api/tts?text=Welcome+candidate&persona=1`, { headers: authHeaders });
     const voice5 = res5.headers.get("X-TTS-Voice");
+    const legacyVoice5 = res5.headers.get("X-TTS-Legacy-Voice");
     const persona5 = res5.headers.get("X-TTS-Persona");
     const ct5 = res5.headers.get("Content-Type");
     const bytes5 = (await res5.arrayBuffer()).byteLength;
-    console.log(`  Status: HTTP ${res5.status} | X-TTS-Voice: ${voice5} | X-TTS-Persona: ${persona5} | Bytes: ${bytes5}`);
-    if (res5.status === 200 && voice5 === "Matthew" && persona5 === "David" && ct5?.includes("audio") && bytes5 > 5000) {
-      console.log("  ✓ PASS: David Chen resolves strictly to Matthew (Male)\n");
+    console.log(`  Status: HTTP ${res5.status} | X-TTS-Voice: ${voice5} | X-TTS-Legacy-Voice: ${legacyVoice5} | X-TTS-Persona: ${persona5} | Bytes: ${bytes5}`);
+    if (res5.status === 200 && (voice5 === "en-US-Neural2-D" || voice5 === "Matthew") && persona5 === "David" && ct5?.includes("audio") && bytes5 > 5000) {
+      console.log("  ✓ PASS: David Chen resolves strictly to en-US-Neural2-D / Matthew (Male)\n");
     } else {
-      console.log("  ✗ FAIL: David Chen did not resolve to Matthew\n");
+      console.log("  ✗ FAIL: David Chen did not resolve to authoritative voice\n");
       allPassed = false;
     }
 
-    // --- TEST 6: AUTHORITATIVE MARCUS BRODY (persona=2 -> Brian) ---
-    console.log("--- TEST 6: MARCUS BRODY (persona=2 -> Brian -> Male) ---");
+    // --- TEST 6: AUTHORITATIVE MARCUS BRODY (persona=2 -> en-GB-Neural2-B / Brian) ---
+    console.log("--- TEST 6: MARCUS BRODY (persona=2 -> en-GB-Neural2-B / Brian -> Male) ---");
     const res6 = await fetch(`http://localhost:${port}/api/tts?text=Welcome+candidate&persona=2`, { headers: authHeaders });
     const voice6 = res6.headers.get("X-TTS-Voice");
+    const legacyVoice6 = res6.headers.get("X-TTS-Legacy-Voice");
     const persona6 = res6.headers.get("X-TTS-Persona");
     const ct6 = res6.headers.get("Content-Type");
     const bytes6 = (await res6.arrayBuffer()).byteLength;
-    console.log(`  Status: HTTP ${res6.status} | X-TTS-Voice: ${voice6} | X-TTS-Persona: ${persona6} | Bytes: ${bytes6}`);
-    if (res6.status === 200 && voice6 === "Brian" && persona6 === "Marcus" && ct6?.includes("audio") && bytes6 > 5000) {
-      console.log("  ✓ PASS: Marcus Brody resolves strictly to Brian (Male)\n");
+    console.log(`  Status: HTTP ${res6.status} | X-TTS-Voice: ${voice6} | X-TTS-Legacy-Voice: ${legacyVoice6} | X-TTS-Persona: ${persona6} | Bytes: ${bytes6}`);
+    if (res6.status === 200 && (voice6 === "en-GB-Neural2-B" || voice6 === "Brian") && persona6 === "Marcus" && ct6?.includes("audio") && bytes6 > 5000) {
+      console.log("  ✓ PASS: Marcus Brody resolves strictly to en-GB-Neural2-B / Brian (Male)\n");
     } else {
-      console.log("  ✗ FAIL: Marcus Brody did not resolve to Brian\n");
+      console.log("  ✗ FAIL: Marcus Brody did not resolve to authoritative voice\n");
       allPassed = false;
     }
 
     // --- TEST 7: CONCURRENT ISOLATION (Sarah + David + Marcus in parallel) ---
     console.log("--- TEST 7: CONCURRENT PERSONA ISOLATION (Sarah, David, Marcus parallel) ---");
     const testSentences = [
-      { persona: 0, expectedVoice: "Salli", expectedPersona: "Sarah", text: "Sarah speaking concurrently." },
-      { persona: 1, expectedVoice: "Matthew", expectedPersona: "David", text: "David speaking concurrently." },
-      { persona: 2, expectedVoice: "Brian", expectedPersona: "Marcus", text: "Marcus speaking concurrently." }
+      { persona: 0, canonicalVoice: "en-US-Neural2-F", legacyVoice: "Salli", expectedPersona: "Sarah", text: "Sarah speaking concurrently." },
+      { persona: 1, canonicalVoice: "en-US-Neural2-D", legacyVoice: "Matthew", expectedPersona: "David", text: "David speaking concurrently." },
+      { persona: 2, canonicalVoice: "en-GB-Neural2-B", legacyVoice: "Brian", expectedPersona: "Marcus", text: "Marcus speaking concurrently." }
     ];
 
     const concurrentResults = await Promise.all(testSentences.map(async req => {
@@ -236,7 +239,8 @@ async function runDeterministicVoiceTests() {
       const ab = await resp.arrayBuffer();
       return {
         personaId: req.persona,
-        expectedVoice: req.expectedVoice,
+        canonicalVoice: req.canonicalVoice,
+        legacyVoice: req.legacyVoice,
         returnedVoice: v,
         expectedPersona: req.expectedPersona,
         returnedPersona: p,
@@ -247,8 +251,9 @@ async function runDeterministicVoiceTests() {
 
     let concurrentPassed = true;
     for (const cr of concurrentResults) {
-      console.log(`  Persona ${cr.personaId} (${cr.expectedPersona}): HTTP ${cr.status} | Expected Voice: ${cr.expectedVoice} | Returned Voice: ${cr.returnedVoice} | Bytes: ${cr.bytes}`);
-      if (cr.status !== 200 || cr.returnedVoice !== cr.expectedVoice || cr.returnedPersona !== cr.expectedPersona || cr.bytes < 3000) {
+      const voiceMatched = cr.returnedVoice === cr.canonicalVoice || cr.returnedVoice === cr.legacyVoice;
+      console.log(`  Persona ${cr.personaId} (${cr.expectedPersona}): HTTP ${cr.status} | Authoritative Voice: ${cr.canonicalVoice} (${cr.legacyVoice}) | Returned Voice: ${cr.returnedVoice} | Bytes: ${cr.bytes}`);
+      if (cr.status !== 200 || !voiceMatched || cr.returnedPersona !== cr.expectedPersona || cr.bytes < 3000) {
         concurrentPassed = false;
       }
     }
@@ -319,7 +324,8 @@ async function runDeterministicVoiceTests() {
 
       for (const p of [0, 1, 2]) {
         const pName = p === 0 ? "Sarah Jenkins" : (p === 1 ? "David Chen" : "Marcus Brody");
-        const expectedVoice = p === 0 ? "Salli" : (p === 1 ? "Matthew" : "Brian");
+        const canonicalVoice = p === 0 ? "en-US-Neural2-F" : (p === 1 ? "en-US-Neural2-D" : "en-GB-Neural2-B");
+        const legacyVoice = p === 0 ? "Salli" : (p === 1 ? "Matthew" : "Brian");
 
         const audioInfo = await page.evaluate(async (port, persona, sentence, bearerToken) => {
           const url = `http://localhost:${port}/api/tts?text=${encodeURIComponent(sentence)}&persona=${persona}`;
@@ -329,6 +335,7 @@ async function runDeterministicVoiceTests() {
             }
           });
           const voiceHeader = res.headers.get("X-TTS-Voice");
+          const legacyVoiceHeader = res.headers.get("X-TTS-Legacy-Voice");
           const personaHeader = res.headers.get("X-TTS-Persona");
           const ab = await res.arrayBuffer();
           const rawBytes = ab.byteLength;
@@ -349,6 +356,7 @@ async function runDeterministicVoiceTests() {
           return {
             status: res.status,
             voiceHeader,
+            legacyVoiceHeader,
             personaHeader,
             bytes: rawBytes,
             duration: decoded.duration,
@@ -357,12 +365,13 @@ async function runDeterministicVoiceTests() {
           };
         }, port, p, fullSentence, token);
 
-        console.log(`  [${pName}] Decoded Duration: ${audioInfo.duration.toFixed(2)}s | Peak: ${audioInfo.peak.toFixed(3)} | Active Ratio: ${(audioInfo.activeRatio * 100).toFixed(1)}% | Voice: ${audioInfo.voiceHeader} | Bytes: ${audioInfo.bytes}`);
-        const cond = audioInfo.status === 200 && audioInfo.voiceHeader === expectedVoice && audioInfo.duration >= 5.0 && audioInfo.bytes > 10000;
-        console.log(`  Check: status200=${audioInfo.status === 200}, voiceMatch=${audioInfo.voiceHeader === expectedVoice} ('${audioInfo.voiceHeader}' === '${expectedVoice}'), dur>=5=${audioInfo.duration >= 5.0}, bytes>10k=${audioInfo.bytes > 10000}`);
+        console.log(`  [${pName}] Decoded Duration: ${audioInfo.duration.toFixed(2)}s | Peak: ${audioInfo.peak.toFixed(3)} | Active Ratio: ${(audioInfo.activeRatio * 100).toFixed(1)}% | Voice: ${audioInfo.voiceHeader} | Legacy: ${audioInfo.legacyVoiceHeader} | Bytes: ${audioInfo.bytes}`);
+        const voiceMatched = audioInfo.voiceHeader === canonicalVoice || audioInfo.voiceHeader === legacyVoice;
+        const cond = audioInfo.status === 200 && voiceMatched && audioInfo.duration >= 5.0 && audioInfo.bytes > 10000;
+        console.log(`  Check: status200=${audioInfo.status === 200}, voiceMatch=${voiceMatched} ('${audioInfo.voiceHeader}' in ['${canonicalVoice}', '${legacyVoice}']), dur>=5=${audioInfo.duration >= 5.0}, bytes>10k=${audioInfo.bytes > 10000}`);
 
         if (cond) {
-          console.log(`  ✓ PASS: ${pName} voice verified in browser (${expectedVoice})\n`);
+          console.log(`  ✓ PASS: ${pName} voice verified in browser (${canonicalVoice} / ${legacyVoice})\n`);
         } else {
           console.log(`  ✗ FAIL: ${pName} voice verification failed in browser\n`);
           allPassed = false;
