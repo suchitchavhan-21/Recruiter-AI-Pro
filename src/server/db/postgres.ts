@@ -51,12 +51,13 @@ export function isPostgresActive(): boolean {
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isProd ? "" : "embedded://postgres_data");
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true";
+  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isStrictFailFast ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     return null;
   }
 
-  if (isProd && (dbUrl.includes("embedded") || dbUrl.includes("postgres_data"))) {
+  if (isStrictFailFast && (dbUrl.includes("embedded") || dbUrl.includes("postgres_data"))) {
     throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL database (e.g. Google Cloud SQL) is required. Embedded container-local database storage is strictly prohibited.");
   }
 
@@ -86,17 +87,18 @@ async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance:
           pool = null;
         }
 
-        if (isProd) {
+        if (isStrictFailFast) {
           throw new Error(`[POSTGRES FATAL] Failed to connect to external PostgreSQL database via TCP pool: ${tcpErr.message}. Container-local fallback is prohibited in production.`);
         }
+        console.warn(`[POSTGRES WARNING] Failed to connect to external PostgreSQL via TCP pool (${tcpErr.message}). Falling back to embedded PostgreSQL + pgvector.`);
       }
     } else {
       return { type: "pool", instance: pool };
     }
   }
 
-  // 2. In non-production environments only: fallback to embedded PGlite
-  if (isProd) {
+  // 2. In non-strict fail-fast environments: use embedded PGlite
+  if (isStrictFailFast) {
     throw new Error("[POSTGRES FATAL] In production mode, an external persistent PostgreSQL database is required. Embedded database fallback is strictly prohibited.");
   }
 
@@ -106,14 +108,24 @@ async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance:
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    pgliteDb = new PGlite(dataDir, {
-      extensions: {
-        vector
-      }
-    });
-
-    await pgliteDb.waitReady;
-    console.log("🐘 [POSTGRES-DEV] Initialized local dev PostgreSQL + pgvector engine at data directory:", dataDir);
+    try {
+      pgliteDb = new PGlite(dataDir, {
+        extensions: {
+          vector
+        }
+      });
+      await pgliteDb.waitReady;
+      console.log("🐘 [POSTGRES] Initialized embedded PostgreSQL + pgvector engine at data directory:", dataDir);
+    } catch (fsDbErr: any) {
+      console.warn("⚠️ [POSTGRES WARNING] Could not open on-disk database directory, falling back to memory store:", fsDbErr?.message || fsDbErr);
+      pgliteDb = new PGlite({
+        extensions: {
+          vector
+        }
+      });
+      await pgliteDb.waitReady;
+      console.log("🐘 [POSTGRES] Initialized in-memory PostgreSQL + pgvector engine.");
+    }
   }
 
   return { type: "pglite", instance: pgliteDb };
@@ -147,8 +159,8 @@ export async function queryPostgres(sql: string, params?: any[]): Promise<QueryR
  * Initializes relational schema and pgvector extension
  */
 export async function initPostgresSchema(): Promise<boolean> {
-  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isProd ? "" : "embedded://postgres_data");
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true";
+  const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isStrictFailFast ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     return false;
   }

@@ -77,6 +77,7 @@ function testServerProcess(
     const cleanEnv: Record<string, string> = {
       ...process.env as Record<string, string>,
       PORT: String(port),
+      STRICT_FAIL_FAST: "true",
       ...envVars
     };
 

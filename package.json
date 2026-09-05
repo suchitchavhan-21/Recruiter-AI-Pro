@@ -20,7 +20,8 @@
     "test:voice": "tsx scripts/test-deterministic-voice-pipeline.ts",
     "test:rag": "tsx scripts/test-rag-evaluation.ts",
     "verify:production": "tsx scripts/verify-production-environment.ts",
-    "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts"
+    "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts",
+    "verify-deployment": "tsx scripts/verify-deployment.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

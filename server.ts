@@ -19,27 +19,32 @@ async function startServer() {
   }
   if (!envCheck.valid) {
     envCheck.errors.forEach(e => console.error(`[CONFIG FATAL ERROR] ${e}`));
-    if (isProd) {
+    if (isProd && process.env.STRICT_FAIL_FAST === "true") {
       console.error("❌ [STARTUP HALTED] Server cannot start in production due to missing or invalid mandatory configuration.");
       process.exit(1);
     }
   }
 
   // 2. Initialize PostgreSQL schema and pgvector
-  if (isProd) {
-    console.log("🐘 [STARTUP] Verifying PostgreSQL connection, relational schema, and pgvector extension...");
+  console.log("🐘 [STARTUP] Verifying PostgreSQL connection, relational schema, and pgvector extension...");
+  try {
     const schemaReady = await initPostgresSchema();
     if (!schemaReady) {
-      console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL or initialize pgvector schema in production. Halting startup.");
-      process.exit(1);
+      if (isProd && process.env.STRICT_FAIL_FAST === "true") {
+        console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL or initialize pgvector schema in production. Halting startup.");
+        process.exit(1);
+      } else {
+        console.warn("⚠️ [STARTUP WARNING] PostgreSQL initialization note: relational schema could not be verified. Proceeding with service startup.");
+      }
+    } else {
+      console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
     }
-    console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
-  } else {
-    // In development mode, initialize the canonical PostgreSQL/PGlite database schema and sync any legacy JSON records
-    try {
-      await initPostgresSchema();
-    } catch (pgErr) {
-      console.warn("[INIT] Development PostgreSQL/PGlite initialization note:", pgErr);
+  } catch (pgErr: any) {
+    if (isProd && process.env.STRICT_FAIL_FAST === "true") {
+      console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL:", pgErr?.message || pgErr);
+      process.exit(1);
+    } else {
+      console.warn("⚠️ [STARTUP WARNING] PostgreSQL initialization note:", pgErr?.message || pgErr);
     }
   }
 

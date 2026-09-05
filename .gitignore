@@ -16,6 +16,9 @@ data/pgdata_*/
 data/recruiter_ai_prod.json
 data/local_database.json
 data/*.json
+data/.*
+data/.jwt_secrets.json
+.jwt_secrets.json
 data/*.json.*
 data/*.tmp.*
 *.tmp.*
