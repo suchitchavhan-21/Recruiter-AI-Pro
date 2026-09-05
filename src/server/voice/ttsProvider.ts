@@ -70,27 +70,27 @@ export class GoogleCloudTTSProvider implements TTSProvider {
   }
 
   async synthesizeSpeech(text: string, voiceId: string): Promise<Buffer> {
-    const apiKey = process.env.GOOGLE_CLOUD_API_KEY || process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY;
+    const apiKey = (process.env.GOOGLE_CLOUD_API_KEY || process.env.GOOGLE_CLOUD_TTS_API_KEY || "").trim();
+    const accessToken = (process.env.GOOGLE_CLOUD_ACCESS_TOKEN || "").trim();
     const voiceConfig = this.getVoiceConfig(voiceId);
 
-    // If no Google Cloud API key is configured, fallback to offline mock provider
-    if (!apiKey) {
-      console.warn("[TTS NOTICE] No Google Cloud API key configured. Using offline mock audio synthesis.");
-      const mock = new MockTTSProvider();
-      return mock.synthesizeSpeech(text, voiceId);
+    // Dedicated Google Cloud credentials are strictly required; Gemini API key fallback is prohibited
+    if (!apiKey && !accessToken) {
+      throw new Error("Google Cloud TTS credentials are not configured. Dedicated GOOGLE_CLOUD_API_KEY or GOOGLE_CLOUD_TTS_API_KEY is required; GEMINI_API_KEY cannot be used as an implicit substitute.");
     }
 
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(apiKey)}`;
+        const queryParam = apiKey ? `?key=${encodeURIComponent(apiKey)}` : "";
+        const url = `https://texttospeech.googleapis.com/v1/text:synthesize${queryParam}`;
         const headers: Record<string, string> = {
           "Content-Type": "application/json"
         };
 
-        if (process.env.GOOGLE_CLOUD_ACCESS_TOKEN) {
-          headers["Authorization"] = `Bearer ${process.env.GOOGLE_CLOUD_ACCESS_TOKEN}`;
+        if (accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
         }
 
         const requestBody = {
@@ -115,8 +115,7 @@ export class GoogleCloudTTSProvider implements TTSProvider {
         });
 
         if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          throw new Error(`Google Cloud TTS returned HTTP status ${response.status}: ${errText.slice(0, 150)}`);
+          throw new Error(`Google Cloud TTS returned HTTP status ${response.status}`);
         }
 
         const json: any = await response.json();
@@ -126,25 +125,26 @@ export class GoogleCloudTTSProvider implements TTSProvider {
 
         return Buffer.from(json.audioContent, "base64");
       } catch (err: any) {
-        lastError = err;
-        console.warn(`[GOOGLE CLOUD TTS RETRY]: Attempt ${attempt} for voice '${voiceId}' failed:`, err?.message);
+        const sanitizedMsg = (err?.message || "Unknown error").replace(/key=[^&\s]+/gi, "key=[REDACTED]");
+        lastError = new Error(sanitizedMsg);
+        console.warn(`[GOOGLE CLOUD TTS RETRY]: Attempt ${attempt} for voice '${voiceId}' failed:`, sanitizedMsg);
         if (attempt === 1) {
           await new Promise(r => setTimeout(r, 400));
         }
       }
     }
 
-    // If Google Cloud API encounters an issue (e.g. quota limit or unauthenticated key), gracefully fallback to mock audio
-    console.warn(`[TTS FALLBACK NOTICE] Google Cloud TTS API unavailable (${lastError?.message}). Falling back to local synthesizer.`);
-    const mock = new MockTTSProvider();
-    return mock.synthesizeSpeech(text, voiceId);
+    // Fail explicitly so the HTTP layer returns 503 TTS_UNAVAILABLE instead of masking failure with fake audio
+    throw new Error(`Google Cloud TTS synthesis failed: ${lastError?.message || "Service unavailable"}`);
   }
 }
 
 // Backward-compatible alias
 export const ProductionTTSProvider = GoogleCloudTTSProvider;
 
-let activeTTSProvider: TTSProvider = new GoogleCloudTTSProvider();
+let activeTTSProvider: TTSProvider = (process.env.MOCK_TTS === "true" || process.env.USE_MOCK_TTS === "true")
+  ? new MockTTSProvider()
+  : new GoogleCloudTTSProvider();
 
 export function getTTSProvider(): TTSProvider {
   return activeTTSProvider;
@@ -152,4 +152,10 @@ export function getTTSProvider(): TTSProvider {
 
 export function setTTSProvider(provider: TTSProvider): void {
   activeTTSProvider = provider;
+}
+
+export function resetTTSProvider(): void {
+  activeTTSProvider = (process.env.MOCK_TTS === "true" || process.env.USE_MOCK_TTS === "true")
+    ? new MockTTSProvider()
+    : new GoogleCloudTTSProvider();
 }

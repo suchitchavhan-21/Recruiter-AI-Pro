@@ -11,10 +11,10 @@ const rateLimitStore = new Map<string, RateLimitRecord>();
 // Clean up stale rate limit entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, record] of rateLimitStore.entries()) {
+  for (const [entryKey, record] of rateLimitStore.entries()) {
     const validTimestamps = record.timestamps.filter(t => now - t < 300000);
     if (validTimestamps.length === 0) {
-      rateLimitStore.delete(ip);
+      rateLimitStore.delete(entryKey);
     } else {
       record.timestamps = validTimestamps;
     }
@@ -26,6 +26,7 @@ export interface RateLimitOptions {
   max: number;
   message: string;
   keyPrefix?: string;
+  userAware?: boolean;
 }
 
 export function createRateLimiter(options: RateLimitOptions) {
@@ -33,7 +34,8 @@ export function createRateLimiter(options: RateLimitOptions) {
     const forwarded = req.headers["x-forwarded-for"];
     const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown_ip";
     const prefix = options.keyPrefix || "rl";
-    const key = `${prefix}:${ip}`;
+    const userId = options.userAware ? (req as any).user?.userId : undefined;
+    const key = userId ? `${prefix}:u:${userId}` : `${prefix}:${ip}`;
     const now = Date.now();
 
     // 1. Shared PostgreSQL rate limiter for multi-instance Cloud Run deployment
@@ -209,6 +211,7 @@ export const ttsLimiter = createRateLimiter({
   windowMs: ENV.RATE_LIMIT_WINDOW_MS || 60000,
   max: 60,
   keyPrefix: "tts",
+  userAware: true,
   message: "Speech synthesis rate limit exceeded. Please wait a moment."
 });
 

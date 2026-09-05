@@ -182,7 +182,7 @@ export function createExpressApp(): express.Application {
   // - David Chen (persona=1): Matthew (Male, US Technical Architect)
   // - Marcus Brody (persona=2): Brian (Male, UK Engineering Leadership)
   // ----------------------------------------------------
-  app.get("/api/tts", ttsLimiter, async (req, res) => {
+  app.get("/api/tts", requireAuth, ttsLimiter, async (req, res) => {
     try {
       const text = String(req.query.text || "").trim();
       if (!text) {
@@ -220,7 +220,8 @@ export function createExpressApp(): express.Application {
         const ttsProvider = getTTSProvider();
         audioBuffer = await ttsProvider.synthesizeSpeech(text, selectedVoice);
       } catch (synthErr: any) {
-        console.error(`[TTS UNAVAILABLE]: Persona '${personaConfig.personaName}' voice '${selectedVoice}' failed:`, synthErr?.message);
+        const sanitizedErrMsg = (synthErr?.message || "").replace(/key=[^&\s]+/gi, "key=[REDACTED]");
+        console.error(`[TTS UNAVAILABLE]: Persona '${personaConfig.personaName}' voice '${selectedVoice}' failed:`, sanitizedErrMsg);
         return res.status(503).json({
           error: "TTS_UNAVAILABLE",
           message: `Speech synthesis currently unavailable for ${personaConfig.personaName} (voice: ${selectedVoice})`

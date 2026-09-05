@@ -11,6 +11,8 @@
  * 6. Drives HumanAvatar continuous photographic mesh deformation
  */
 
+import { apiFetch } from "../../lib/api";
+
 export interface AudioAcousticMetrics {
   isPlaying: boolean;
   rms: number;             // Real-time RMS amplitude (0.0 to 1.0)
@@ -146,7 +148,7 @@ class SpeechAudioSyncEngine {
       const voiceId = personaId === 0 ? "Salli" : (personaId === 1 ? "Matthew" : "Brian");
 
       // Fetch natural human speech audio from neural TTS endpoint
-      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${personaId}&voice=${voiceId}`, {
+      const res = await apiFetch(`/api/tts?text=${encodeURIComponent(text)}&persona=${personaId}&voice=${voiceId}`, {
         signal: this.currentAbortController.signal
       });
 
