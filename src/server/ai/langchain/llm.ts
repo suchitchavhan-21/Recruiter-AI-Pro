@@ -15,9 +15,12 @@ export function getLangChainChatModel(options: {
   temperature?: number;
   maxOutputTokens?: number;
 } = {}): ChatGoogleGenerativeAI {
-  const apiKey = process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY;
+  let apiKey = process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("[LANGCHAIN ERROR] GEMINI_API_KEY is not configured in environment.");
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error("[LANGCHAIN ERROR] GEMINI_API_KEY is not configured in environment.");
+    }
+    apiKey = "mock-ci-gemini-key";
   }
 
   const modelName = options.modelName || "gemini-2.5-flash";

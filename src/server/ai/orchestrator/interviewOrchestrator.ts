@@ -516,21 +516,25 @@ export class InterviewOrchestrator {
 
     // LangChain Multi-Agent Execution:
     // Execute the selected specialist agent (Sarah Jenkins, David Chen, or Marcus Brody)
-    const { executeInterviewerAgent } = await import("../langchain/agents");
-    const agentResult = await executeInterviewerAgent(nextPersona.role, {
-      userId: params.userId,
-      targetRole: state.targetRole,
-      company: state.company,
-      difficulty: state.difficulty,
-      turnNumber: nextTurnIndex,
-      previousQuestion: state.history[activeTurnIndex]?.questionText || "",
-      previousAnswer: params.candidateAnswer,
-      targetCompetency: nextCompetency,
-      candidateMemory: state.candidateMemorySnapshot
-    });
+    try {
+      const { executeInterviewerAgent } = await import("../langchain/agents");
+      const agentResult = await executeInterviewerAgent(nextPersona.role, {
+        userId: params.userId,
+        targetRole: state.targetRole,
+        company: state.company,
+        difficulty: state.difficulty,
+        turnNumber: nextTurnIndex,
+        previousQuestion: state.history[activeTurnIndex]?.questionText || "",
+        previousAnswer: params.candidateAnswer,
+        targetCompetency: nextCompetency,
+        candidateMemory: state.candidateMemorySnapshot
+      });
 
-    if (agentResult && agentResult.nextQuestion) {
-      nextQuestionText = agentResult.nextQuestion;
+      if (agentResult && agentResult.nextQuestion) {
+        nextQuestionText = agentResult.nextQuestion;
+      }
+    } catch (agentErr: any) {
+      console.warn(`[ORCHESTRATOR] Specialist agent execution fell back to blueprint question: ${agentErr?.message || agentErr}`);
     }
 
     const newTurn: InterviewTurn = {

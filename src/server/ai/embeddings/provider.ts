@@ -29,7 +29,34 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
     };
   }
 
-  const client = getGeminiClient();
+  const apiKey = process.env.GEMINI_API_KEY || ENV.GEMINI_API_KEY;
+  if (!apiKey) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw new Error("[EMBEDDING FATAL] GEMINI_API_KEY is not configured in production. Synthetic fallbacks are strictly prohibited in production.");
+    }
+    const fallbackVector = generateDeterministicVector(clean, EXPECTED_DIMENSION);
+    return {
+      embedding: fallbackVector,
+      dimension: EXPECTED_DIMENSION,
+      model: "deterministic_projection_fallback"
+    };
+  }
+
+  let client: any;
+  try {
+    client = getGeminiClient();
+  } catch (err: any) {
+    if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
+      throw err;
+    }
+    const fallbackVector = generateDeterministicVector(clean, EXPECTED_DIMENSION);
+    return {
+      embedding: fallbackVector,
+      dimension: EXPECTED_DIMENSION,
+      model: "deterministic_projection_fallback"
+    };
+  }
+
   const modelsToTry = [PRIMARY_EMBEDDING_MODEL, ...FALLBACK_EMBEDDING_MODELS];
   let lastError: any = null;
 
