@@ -284,6 +284,7 @@ async function runAdversarialBoundaryTests() {
     queryVector: queryEmbA.embedding,
     userId: candidateAId,
     scope: "candidate_private",
+    minSimilarity: -1.0,
     topK: 5
   });
 
@@ -297,6 +298,7 @@ async function runAdversarialBoundaryTests() {
     queryVector: queryEmbB.embedding,
     userId: candidateBId,
     scope: "candidate_private",
+    minSimilarity: -1.0,
     topK: 5
   });
 
