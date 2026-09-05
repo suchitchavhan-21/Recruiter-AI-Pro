@@ -259,6 +259,12 @@ async function runLangChainSuite() {
     // -------------------------------------------------------------------------
     console.log("\n[TEST 12] Interview Concurrency & Turn Deduplication Serialization...");
     const concurrencyUser = `concurrent_user_${Date.now()}`;
+    await queryPostgres(
+      `INSERT INTO users (id, email, password_hash, full_name, role)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO NOTHING`,
+      [concurrencyUser, `${concurrencyUser}@test.com`, "hash_test", "Concurrent User", "candidate"]
+    );
     const session = await InterviewOrchestrator.startSession({
       userId: concurrencyUser,
       targetRole: "Senior Backend Engineer",

@@ -1,8 +1,9 @@
 import http from "http";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { spawn, ChildProcess } from "child_process";
-import { queryPostgres, isPgVectorAvailable, initPostgresSchema } from "../src/server/db/postgres";
+import { queryPostgres, isPgVectorAvailable, initPostgresSchema, closePostgresPool } from "../src/server/db/postgres";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,9 +52,36 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function terminateProcess(proc: ChildProcess): Promise<void> {
+  if (!proc || !proc.pid) return Promise.resolve();
+  return new Promise((resolve) => {
+    try {
+      proc.stdout?.destroy();
+      proc.stderr?.destroy();
+      proc.stdin?.destroy();
+    } catch {}
+
+    if (process.platform === "win32") {
+      const killer = spawn("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { shell: true, stdio: "ignore" });
+      killer.on("close", () => resolve());
+      killer.on("error", () => {
+        try { proc.kill("SIGKILL"); } catch {}
+        resolve();
+      });
+    } else {
+      try { proc.kill("SIGKILL"); } catch {}
+      resolve();
+    }
+  });
+}
+
 async function startServer(port: number): Promise<ChildProcess> {
-  const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
-  const proc = spawn(npxCmd, ["tsx", "server.ts"], {
+  const tsxCli = path.resolve(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
+  const isTsxCli = fs.existsSync(tsxCli);
+  const execCmd = isTsxCli ? process.execPath : (process.platform === "win32" ? "npx.cmd" : "npx");
+  const execArgs = isTsxCli ? [tsxCli, "server.ts"] : ["tsx", "server.ts"];
+
+  const proc = spawn(execCmd, execArgs, {
     env: {
       ...process.env,
       NODE_ENV: "development",
@@ -63,7 +91,7 @@ async function startServer(port: number): Promise<ChildProcess> {
     },
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
-    shell: true
+    shell: false
   });
 
   for (let i = 0; i < 40; i++) {
@@ -78,7 +106,7 @@ async function startServer(port: number): Promise<ChildProcess> {
     }
   }
 
-  proc.kill();
+  await terminateProcess(proc);
   throw new Error(`Server failed to start on port ${port}`);
 }
 
@@ -141,6 +169,8 @@ async function runPersistenceVerification() {
     assert(queryRes.rows.length >= 2, "pgvector cosine distance query returns matching vectors");
     assert(queryRes.rows[0].id === "vec-1" && Math.abs(queryRes.rows[0].distance) < 0.001, "Nearest neighbor vector distance is ~0");
     await queryPostgres(`DROP TABLE IF EXISTS test_vector_persistence;`);
+    await closePostgresPool();
+    await delay(1000);
 
     // 2. Cross-Process Persistence: Process A creates records
     console.log("\n[STAGE 2] Starting Process A (Port 3020) to create records...");
@@ -217,8 +247,8 @@ async function runPersistenceVerification() {
 
     // Terminate Process A
     console.log("\n[STAGE 3] Terminating Process A completely...");
-    procA.kill();
-    await delay(1000);
+    await terminateProcess(procA);
+    await delay(1500);
     console.log("  ✓ Process A is terminated.");
 
     // 3. Process B spawns fresh on Port 3021 and verifies persistence
@@ -255,7 +285,7 @@ async function runPersistenceVerification() {
     assert(starResB.status === 200 && starResB.data?.stories?.some((s: any) => s.id === storyId), "Process B: STAR story persisted across server restart");
 
     // Terminate Process B
-    procB.kill();
+    await terminateProcess(procB);
     await delay(500);
 
     console.log("\n================================================================================");

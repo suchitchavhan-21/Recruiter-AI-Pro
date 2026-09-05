@@ -170,7 +170,7 @@ async function runAllVerifications() {
     results.push({
       name: "Authenticated login works",
       passed: loginOk,
-      details: `Login response status: ${loginRes.statusCode}, User: ${loginRes.json?.user?.email}`
+      details: `Login response status: ${loginRes.statusCode}, User: ${loginRes.json?.user?.email}, Body: ${loginRes.body}, Output: ${serverOutput}`
     });
   } catch (err: any) {
     results.push({

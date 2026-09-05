@@ -38,6 +38,9 @@ export async function isPgVectorAvailable(): Promise<boolean> {
  * In production, requires external PostgreSQL TCP pool or valid connection string.
  */
 export function isPostgresActive(): boolean {
+  if (pool || pgliteDb) {
+    return true;
+  }
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
   if (isProd) {
     const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
