@@ -101,6 +101,7 @@ export function isAllowedNonFeatureFile(filePath: string): boolean {
     "readme.md",
     "package.json",
     "package-lock.json",
+    "bun.lock",
     "tsconfig.json",
     "vite.config.ts",
     ".gitignore",
