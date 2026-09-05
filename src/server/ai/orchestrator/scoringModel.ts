@@ -37,16 +37,21 @@ export interface CandidateScoringReport {
   strengths: string[];
   growthAreas: string[];
   actionableRecommendations: string[];
-  weightsUsed: Record<CompetencyType, number>;
+  weightsUsed: Record<string, number>;
+  jobFamily?: string;
+  practicalAssessmentType?: string;
+  codingRequired?: boolean;
 }
 
 /**
- * Computes deterministic weighted score across all 7 competency dimensions.
+ * Computes deterministic weighted score across any dynamic competency dimensions.
+ * Falls back to canonical 7-D engineering weights if customWeights is omitted.
  */
 export function calculateWeightedInterviewScore(
-  scores: Record<CompetencyType, CompetencyScore>
-): { overallScore: number; weightsUsed: Record<CompetencyType, number> } {
-  const weights: Record<CompetencyType, number> = {
+  scores: Record<CompetencyType, CompetencyScore>,
+  customWeights?: Record<string, number>
+): { overallScore: number; weightsUsed: Record<string, number> } {
+  const weights: Record<string, number> = customWeights || {
     technical: COMPETENCY_DEFINITIONS.technical.weight,
     problem_solving: COMPETENCY_DEFINITIONS.problem_solving.weight,
     system_design: COMPETENCY_DEFINITIONS.system_design.weight,
@@ -59,12 +64,9 @@ export function calculateWeightedInterviewScore(
   let weightedSum = 0;
   let totalWeight = 0;
 
-  for (const [key, def] of Object.entries(COMPETENCY_DEFINITIONS)) {
-    const compKey = key as CompetencyType;
-    const scoreItem = scores[compKey];
+  for (const [key, weight] of Object.entries(weights)) {
+    const scoreItem = scores[key];
     const scoreVal = scoreItem ? scoreItem.score : 50; // Fallback median if unassessed
-    const weight = def.weight;
-
     weightedSum += scoreVal * weight;
     totalWeight += weight;
   }
@@ -81,11 +83,19 @@ export function calculateWeightedInterviewScore(
  * Generates transparent decision-support badge and personalized recommendations.
  */
 export function generateScoringReport(
-  scores: Record<CompetencyType, CompetencyScore>
+  scores: Record<CompetencyType, CompetencyScore>,
+  customWeights?: Record<string, number>,
+  metadata?: {
+    jobFamily?: string;
+    practicalAssessmentType?: string;
+    codingRequired?: boolean;
+    learningFocus?: string;
+    targetRole?: string;
+  }
 ): CandidateScoringReport {
-  const { overallScore, weightsUsed } = calculateWeightedInterviewScore(scores);
+  const { overallScore, weightsUsed } = calculateWeightedInterviewScore(scores, customWeights);
 
-  // Check confidence metrics across core competencies
+  // Check confidence metrics across competencies
   const scoreValues = Object.values(scores);
   const lowConfidenceCount = scoreValues.filter(s => s.confidence < 0.4 || s.status === "INSUFFICIENT_EVIDENCE").length;
   const avgConfidence = scoreValues.length > 0 
@@ -95,18 +105,22 @@ export function generateScoringReport(
   let decisionBadge: DecisionSupportBadge = "Moderate evidence";
   let badgeRationale = "";
 
+  const domainLabel = metadata?.jobFamily === "engineering" || !metadata?.jobFamily
+    ? "technical and architectural"
+    : `${metadata.jobFamily.replace(/_/g, " ")} domain`;
+
   if (lowConfidenceCount >= 3) {
     decisionBadge = "Insufficient evidence";
     badgeRationale = `The session did not gather sufficient observable evidence across ${lowConfidenceCount} competencies to form a definitive assessment.`;
   } else if (overallScore >= 80 && avgConfidence >= 0.60) {
     decisionBadge = "Strong evidence";
-    badgeRationale = `Consistent, verifiable demonstration of high-level proficiency across technical depth, problem-solving, and communication (Overall Score: ${overallScore}/100).`;
+    badgeRationale = `Consistent, verifiable demonstration of high-level proficiency across ${domainLabel} depth, problem-solving, and communication (Overall Score: ${overallScore}/100).`;
   } else if (overallScore >= 65 && avgConfidence >= 0.5) {
     decisionBadge = "Moderate evidence";
-    badgeRationale = `Demonstrates sound foundational engineering capabilities with specific opportunities for deeper architectural or STAR detail (Overall Score: ${overallScore}/100).`;
+    badgeRationale = `Demonstrates sound foundational capabilities with specific opportunities for deeper concrete detail or STAR metrics (Overall Score: ${overallScore}/100).`;
   } else {
     decisionBadge = "Needs improvement";
-    badgeRationale = `Several key competency areas scored below the target threshold or lacked requisite technical depth (Overall Score: ${overallScore}/100).`;
+    badgeRationale = `Several key competency areas scored below the target threshold or lacked requisite depth (Overall Score: ${overallScore}/100).`;
   }
 
   // Derive verifiable strengths and growth areas
@@ -125,14 +139,32 @@ export function generateScoringReport(
     }
   }
 
-  // Always supply at least 2 constructive recommendations
+  // Domain-aware recommendations fallback
+  if (metadata?.learningFocus) {
+    actionableRecommendations.unshift(metadata.learningFocus);
+  }
+
   if (actionableRecommendations.length < 2) {
     actionableRecommendations.push(
-      "Practice STAR responses emphasizing individual contribution metrics ('I achieved a 35% latency reduction' instead of 'We improved the system')."
+      "Practice STAR responses emphasizing individual contribution metrics ('I achieved a 35% improvement' instead of 'We improved the system')."
     );
-    actionableRecommendations.push(
-      "In technical architecture questions, explicitly discuss failure modes, circuit breakers, and data consistency models."
-    );
+
+    if (metadata?.jobFamily && metadata.jobFamily !== "engineering") {
+      const familyRecs: Record<string, string> = {
+        marketing: "Practice campaign measurement, customer acquisition cost (CAC) payback, and audience segmentation.",
+        sales: "Practice diagnostic discovery questions, MEDDPICC qualification, and objection handling.",
+        human_resources: "Practice employment scenario responses, workplace conflict mediation, and policy compliance.",
+        education: "Practice classroom-management scenarios, differentiated instruction, and lesson planning.",
+        finance: "Practice variance analysis, cash flow forecasting, and financial reasoning.",
+        data_analytics: "Practice complex SQL window functions, statistical hypothesis testing, and dashboard storytelling.",
+        product: "Practice customer discovery interviews, North Star metrics, and RICE prioritization."
+      };
+      actionableRecommendations.push(familyRecs[metadata.jobFamily] || "Deepen domain-specific case studies with quantifiable outcomes.");
+    } else {
+      actionableRecommendations.push(
+        "In technical architecture questions, explicitly discuss failure modes, circuit breakers, and data consistency models."
+      );
+    }
   }
 
   return {
@@ -145,6 +177,9 @@ export function generateScoringReport(
     strengths,
     growthAreas,
     actionableRecommendations,
-    weightsUsed
+    weightsUsed,
+    jobFamily: metadata?.jobFamily,
+    practicalAssessmentType: metadata?.practicalAssessmentType,
+    codingRequired: metadata?.codingRequired
   };
 }

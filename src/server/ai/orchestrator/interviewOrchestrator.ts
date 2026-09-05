@@ -3,6 +3,7 @@ import { InterviewSessionRecord } from "../../db/schema";
 import { evaluateInterviewSession, InterviewEvaluationResult } from "../../services/gemini.service";
 import { retrieveCandidateEvidence } from "../agents/tools";
 import { formatCandidateMemoryContext, updateCandidateMemoryFromInterview } from "../memory/candidateMemory";
+import { generateInterviewBlueprint, InterviewBlueprint } from "./roleIntelligence";
 
 export interface InterviewTurn {
   turnIndex: number;
@@ -36,6 +37,7 @@ export interface AdaptiveInterviewState {
   competenciesCovered: string[];
   candidateMemorySnapshot?: string;
   evaluation?: InterviewEvaluationResult;
+  blueprint?: InterviewBlueprint;
   createdAt: string;
   updatedAt: string;
 }
@@ -146,14 +148,24 @@ export class InterviewOrchestrator {
     // Load candidate memory context
     const memoryContext = await formatCandidateMemoryContext(params.userId);
 
+    // Generate role-specific interview blueprint
+    const blueprint = generateInterviewBlueprint({
+      targetRole: params.targetRole,
+      company: params.company,
+      seniority: diff,
+      candidateResume: memoryContext
+    });
+
     const firstQuestion = params.initialQuestions?.[0] || {
-      id: 1,
-      text: `Can you walk me through your background and the most complex architecture you designed for ${params.targetRole}?`,
-      type: "technical" as const,
-      expectedFocus: "System architecture, trade-offs, ownership"
+      id: blueprint.firstQuestion.id,
+      text: blueprint.firstQuestion.text,
+      type: blueprint.firstQuestion.type,
+      expectedFocus: blueprint.firstQuestion.expectedFocus
     };
 
-    const initialPersona = count > 1 ? INTERVIEWER_PERSONAS.HR : INTERVIEWER_PERSONAS.Technical;
+    const initialPersona = count > 1 
+      ? blueprint.interviewers.hr 
+      : (blueprint.firstQuestion.interviewerRole === "HR" ? blueprint.interviewers.hr : blueprint.interviewers.domain);
 
     const initialTurn: InterviewTurn = {
       turnIndex: 1,
@@ -163,7 +175,7 @@ export class InterviewOrchestrator {
       interviewerTitle: initialPersona.title,
       questionText: firstQuestion.text,
       questionType: firstQuestion.type,
-      expectedCompetency: firstQuestion.expectedFocus || "System Architecture",
+      expectedCompetency: firstQuestion.expectedFocus || blueprint.competencies[0]?.name || "Core Competency",
       evaluationRubric: initialPersona.rubric,
       timestamp: new Date().toISOString()
     };
@@ -181,8 +193,9 @@ export class InterviewOrchestrator {
       hardTurnLimit: 8,
       status: "IN_PROGRESS",
       history: [initialTurn],
-      competenciesCovered: ["System Architecture"],
+      competenciesCovered: [firstQuestion.expectedFocus || blueprint.competencies[0]?.name || "Core Competency"],
       candidateMemorySnapshot: memoryContext,
+      blueprint,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -362,17 +375,29 @@ export class InterviewOrchestrator {
         answerText: h.candidateAnswer || ""
       }));
 
+
+
+      // Ensure blueprint exists
+      const blueprint = state.blueprint || generateInterviewBlueprint({
+        targetRole: state.targetRole,
+        company: state.company,
+        seniority: state.difficulty,
+        candidateResume: state.candidateMemorySnapshot
+      });
+      state.blueprint = blueprint;
+
       const evaluation = await evaluateInterviewSession({
         role: state.targetRole,
         company: state.company,
         difficulty: state.difficulty,
         interviewerCount: state.interviewerCount,
-        qaPairs
+        qaPairs,
+        blueprint
       });
 
       state.evaluation = evaluation;
 
-      // Persist structured 7-dimensional competency scores in PostgreSQL
+      // Persist structured competency scores in PostgreSQL
       if (evaluation.competencyScores) {
         for (const [compKey, compScore] of Object.entries(evaluation.competencyScores)) {
           try {
@@ -425,54 +450,51 @@ export class InterviewOrchestrator {
     state.currentTurn += 1;
     const nextTurnIndex = state.currentTurn;
 
-    const lastAnswer = params.candidateAnswer.toLowerCase();
-    const answerWordCount = params.candidateAnswer.trim().split(/\s+/).length;
+    // Ensure blueprint exists
+    const blueprint = state.blueprint || generateInterviewBlueprint({
+      targetRole: state.targetRole,
+      company: state.company,
+      seniority: state.difficulty,
+      candidateResume: state.candidateMemorySnapshot
+    });
+    state.blueprint = blueprint;
 
-    let nextPersona: { role: "HR" | "Technical" | "HiringManager"; name: string; title: string; focus: string; rubric: string } = INTERVIEWER_PERSONAS.Technical;
-    let nextType: "technical" | "behavioral" = "technical";
-    let nextCompetency = "Distributed Systems & Reliability";
+    // Identify next unresolved competency from blueprint
+    const uncoveredComps = blueprint.competencies.filter(
+      c => !state.competenciesCovered.some(cov => cov.toLowerCase().includes(c.name.toLowerCase()) || cov.toLowerCase().includes(c.id.toLowerCase()))
+    );
+    const targetComp = uncoveredComps[0] || blueprint.competencies[(nextTurnIndex - 1) % blueprint.competencies.length];
+    const nextCompetency = targetComp ? targetComp.name : "Role Proficiency & Core Fundamentals";
+
+    let nextPersona: { role: "HR" | "Technical" | "HiringManager"; name: string; title: string; focus: string; rubric: string } = blueprint.interviewers.domain;
+    let nextType: "technical" | "behavioral" = targetComp?.category === "universal" ? "behavioral" : "technical";
 
     if (state.interviewerCount === 1) {
-      // Single interviewer adapts between technical depth and architectural trade-offs
-      if (nextTurnIndex === 2) {
-        nextCompetency = "Fault Tolerance & High Concurrency";
-      } else if (nextTurnIndex === 3) {
-        nextCompetency = "Production Incident Triage & Root Cause Analysis";
-      } else {
-        nextCompetency = "System Scalability & Performance Optimization";
-      }
+      nextPersona = blueprint.interviewers.domain;
+      nextType = targetComp?.category === "universal" ? "behavioral" : "technical";
     } else if (state.interviewerCount === 2) {
-      // Panel of 2: HR and Lead Architect
+      // Panel of 2: HR and Domain Lead
       if (nextTurnIndex % 2 === 0) {
-        nextPersona = INTERVIEWER_PERSONAS.Technical;
+        nextPersona = blueprint.interviewers.domain;
         nextType = "technical";
-        nextCompetency = "Scalable Architecture & Technical Trade-offs";
       } else {
-        nextPersona = INTERVIEWER_PERSONAS.HR;
+        nextPersona = blueprint.interviewers.hr;
         nextType = "behavioral";
-        nextCompetency = "Cross-Functional Collaboration & Conflict Resolution";
       }
     } else {
-      // Panel of 3: Adaptive rotation based on candidate response analysis
+      // Panel of 3: Adaptive rotation (HR, Domain Lead, Hiring Manager)
       if (nextTurnIndex === 2) {
-        // Deepen technical inspection
-        nextPersona = INTERVIEWER_PERSONAS.Technical;
+        nextPersona = blueprint.interviewers.domain;
         nextType = "technical";
-        nextCompetency = "Data Consistency & Microservices Communication";
       } else if (nextTurnIndex === 3) {
-        // Evaluate hiring manager execution and delivery ownership
-        nextPersona = INTERVIEWER_PERSONAS.HiringManager;
+        nextPersona = blueprint.interviewers.hiringManager;
         nextType = "behavioral";
-        nextCompetency = "Pragmatic Prioritization & Technical Debt vs Delivery";
       } else if (nextTurnIndex === 4) {
-        // Evaluate cultural fit and behavioral alignment
-        nextPersona = INTERVIEWER_PERSONAS.HR;
+        nextPersona = blueprint.interviewers.hr;
         nextType = "behavioral";
-        nextCompetency = "Mentorship, Culture & Stakeholder Communication";
       } else {
-        nextPersona = INTERVIEWER_PERSONAS.HiringManager;
+        nextPersona = blueprint.interviewers.hiringManager;
         nextType = "behavioral";
-        nextCompetency = "High-Stakes Decision Making Under Ambiguity";
       }
     }
 
@@ -485,15 +507,11 @@ export class InterviewOrchestrator {
     // Generate adaptive question tailored to the active persona and candidate answer quality
     let nextQuestionText = "";
     if (nextPersona.role === "Technical") {
-      if (answerWordCount < 30) {
-        nextQuestionText = `${contextHook}Could you elaborate on the technical internals? How would you handle database bottlenecks, replication lag, and cache invalidation under 10x traffic surge?`;
-      } else {
-        nextQuestionText = `${contextHook}How do you architect distributed fault-tolerance and handle failover scenarios in high-concurrency production systems?`;
-      }
+      nextQuestionText = `${contextHook}${targetComp?.sampleQuestion || `How do you approach core methodologies and operational trade-offs for ${state.targetRole}?`}`;
     } else if (nextPersona.role === "HiringManager") {
-      nextQuestionText = `${contextHook}Tell me about a time you had to make a difficult trade-off between shipping on a tight executive deadline versus addressing critical technical debt. How did you align stakeholders?`;
+      nextQuestionText = `${contextHook}Tell me about a time you had to make a difficult trade-off under ambiguity to deliver business impact in ${state.targetRole}. How did you align key stakeholders?`;
     } else {
-      nextQuestionText = `${contextHook}Tell me about a time you had to resolve a technical or priority disagreement with a cross-functional partner (e.g. Product or Design). How did you reach consensus?`;
+      nextQuestionText = `${contextHook}Tell me about a time you had to resolve a priority disagreement or collaborate across teams in your role. How did you navigate the situation?`;
     }
 
     // LangChain Multi-Agent Execution:

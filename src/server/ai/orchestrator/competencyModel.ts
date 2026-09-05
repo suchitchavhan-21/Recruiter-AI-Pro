@@ -5,7 +5,7 @@
  * confidence scoring, and zero-hallucination guarantees.
  */
 
-export type CompetencyType = 
+export type StandardCompetencyType = 
   | "technical"
   | "problem_solving"
   | "system_design"
@@ -13,6 +13,8 @@ export type CompetencyType =
   | "behavioral"
   | "role_fit"
   | "coding";
+
+export type CompetencyType = StandardCompetencyType | (string & {});
 
 export interface CompetencyDefinition {
   type: CompetencyType;
@@ -166,6 +168,7 @@ export interface CompetencyScore {
   missingEvidence: string[];
   recommendedFollowUp: string;
   status: "CONFIRMED" | "MODERATE" | "INSUFFICIENT_EVIDENCE";
+  evidenceClassification?: "DIRECT_EVIDENCE" | "TRANSFERABLE_EVIDENCE" | "INSUFFICIENT_EVIDENCE";
 }
 
 /**
@@ -179,9 +182,14 @@ export function normalizeCompetencyScore(
   rawEvidence: string,
   positiveSignals: string[] = [],
   negativeSignals: string[] = [],
-  missingEvidence: string[] = []
+  missingEvidence: string[] = [],
+  customDefinition?: { name?: string; defaultFollowUp?: string },
+  evidenceClassification?: "DIRECT_EVIDENCE" | "TRANSFERABLE_EVIDENCE" | "INSUFFICIENT_EVIDENCE"
 ): CompetencyScore {
-  const def = COMPETENCY_DEFINITIONS[competency];
+  const def = (COMPETENCY_DEFINITIONS as any)[competency] || {
+    name: customDefinition?.name || competency.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+    defaultFollowUp: customDefinition?.defaultFollowUp || `Can you provide a concrete example illustrating your proficiency in ${competency.replace(/_/g, " ")}?`
+  };
   const evidenceTrimmed = (rawEvidence || "").trim();
 
   // If candidate didn't address or provided empty/negligible evidence
@@ -200,6 +208,10 @@ export function normalizeCompetencyScore(
     status = "INSUFFICIENT_EVIDENCE";
   }
 
+  const determinedClassification = evidenceClassification || (
+    isEvidenceSparse ? "INSUFFICIENT_EVIDENCE" : "DIRECT_EVIDENCE"
+  );
+
   return {
     competency,
     name: def.name,
@@ -212,9 +224,10 @@ export function normalizeCompetencyScore(
     negativeSignals: negativeSignals.filter(Boolean),
     missingEvidence: missingEvidence.length > 0 
       ? missingEvidence 
-      : (isEvidenceSparse ? ["Concrete technical implementation details", "Measurable outcomes"] : []),
+      : (isEvidenceSparse ? ["Concrete implementation details", "Measurable outcomes"] : []),
     recommendedFollowUp: def.defaultFollowUp,
-    status
+    status,
+    evidenceClassification: determinedClassification
   };
 }
 

@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { ENV } from "../config/env";
 import { CompetencyScore, CompetencyType, normalizeCompetencyScore } from "../ai/orchestrator/competencyModel";
 import { generateScoringReport, DecisionSupportBadge } from "../ai/orchestrator/scoringModel";
+import { InterviewBlueprint, generateInterviewBlueprint, classifyRole, JobFamily, PracticalAssessmentType } from "../ai/orchestrator/roleIntelligence";
 
 let aiClient: GoogleGenAI | null = null;
 
@@ -125,43 +126,70 @@ export interface JDAnalysisResult {
     type: "technical" | "behavioral";
     expectedFocus: string;
   }>;
+  jobFamily?: JobFamily;
+  practicalAssessmentType?: PracticalAssessmentType;
+  codingRequired?: boolean;
+  interviewBlueprint?: InterviewBlueprint;
 }
 
-export async function analyzeJobDescription(params: {
-  jd: string;
-  role?: string;
-  companyName?: string;
-  persona?: string;
-  interviewerCount?: number;
-}): Promise<JDAnalysisResult> {
-  const companyContext = params.companyName ? `at '${params.companyName}'` : "at a top technology firm";
+export async function analyzeJobDescription(
+  paramsOrJd: string | {
+    jd: string;
+    role?: string;
+    companyName?: string;
+    persona?: string;
+    interviewerCount?: number;
+  },
+  roleArg?: string,
+  companyNameArg?: string
+): Promise<JDAnalysisResult> {
+  const params = typeof paramsOrJd === "string"
+    ? { jd: paramsOrJd, role: roleArg, companyName: companyNameArg }
+    : paramsOrJd;
+  const jdText = params.jd || "";
+
+  const classification = classifyRole({
+    targetRole: params.role || "",
+    jobDescription: jdText,
+    industry: params.companyName
+  });
+  const blueprint = generateInterviewBlueprint({
+    targetRole: params.role || classification.jobFamily.replace(/_/g, " "),
+    jobDescription: jdText,
+    industry: params.companyName,
+    seniority: classification.seniority
+  });
+
+  const companyContext = params.companyName ? `at '${params.companyName}'` : `in the ${classification.industry} industry`;
   const count = params.interviewerCount || 1;
 
   let panelContext = "";
   if (count === 2) {
     panelContext = `
 Panel Members:
-- Sarah Jenkins (HR Director): Focus on behavioral, teamwork, and culture alignment.
-- David Chen (Lead Architect): Focus on deep technical architecture, system design, and algorithms.
-Questions 1, 3, 5 are asked by Sarah (behavioral); Questions 2, 4 are asked by David (technical).`;
+- Sarah Jenkins (${blueprint.interviewers.hr.title}): ${blueprint.interviewers.hr.focus}
+- David Chen (${blueprint.interviewers.domain.title}): ${blueprint.interviewers.domain.focus}
+Questions 1, 3, 5 are asked by Sarah (behavioral/cultural); Questions 2, 4 are asked by David (${blueprint.jobFamily === "engineering" ? "technical" : "domain-depth"}).`;
   } else if (count === 3) {
     panelContext = `
 Panel Members:
-- Sarah Jenkins (HR Director): Behavioral and culture.
-- David Chen (Lead Architect): Technical architecture, code quality, distributed systems.
-- Marcus Brody (VP of Engineering): Leadership, product strategy, prioritization, and scale.
+- Sarah Jenkins (${blueprint.interviewers.hr.title}): ${blueprint.interviewers.hr.focus}
+- David Chen (${blueprint.interviewers.domain.title}): ${blueprint.interviewers.domain.focus}
+- Marcus Brody (${blueprint.interviewers.hiringManager.title}): ${blueprint.interviewers.hiringManager.focus}
 Question 1: Sarah, Question 2: David, Question 3: Marcus, Question 4: Sarah, Question 5: David.`;
   }
 
   const prompt = `
-You are an Executive Technical Recruiter & Hiring Committee Lead analyzing this Job Description ${companyContext}.
+You are an Executive Recruiter & Hiring Committee Lead analyzing this Job Description ${companyContext}.
+Job Family: ${classification.jobFamily}
+Practical Assessment Type: ${blueprint.practicalAssessmentType}
 ${panelContext}
 
 Instructions:
 1. Identify the role difficulty level (Entry, Mid, Senior, Expert).
-2. Extract the 5-10 most critical hard and soft skills.
+2. Extract the 5-10 most critical hard and soft skills for this specific profession (do not assume software engineering unless the JD is an engineering role).
 3. Summarize current industry hiring trends and evaluation benchmarks ${companyContext}.
-4. Generate exactly 5 challenging, highly realistic interview questions tailored to the specified panel and role.
+4. Generate exactly 5 challenging, highly realistic interview questions tailored to the specified panel, profession, and role.
 
 CRITICAL: Return ONLY a valid JSON object matching this exact schema:
 {
@@ -180,7 +208,7 @@ CRITICAL: Return ONLY a valid JSON object matching this exact schema:
 
 Job Description:
 """
-${params.jd.substring(0, 15000)}
+${jdText.substring(0, 15000)}
 """
 `;
 
@@ -197,35 +225,43 @@ ${params.jd.substring(0, 15000)}
     });
 
     const parsed = extractAndParseJSON<JDAnalysisResult>(response.text || "", {
-      difficulty: "Senior",
-      skills: ["System Design", "TypeScript", "Distributed Systems", "Communication"],
-      companyTrends: "High focus on ownership, scalable infrastructure, and clear architectural trade-offs.",
-      questions: [
-        { id: 1, text: "Can you describe a complex system architecture you designed and the critical trade-offs you made?", type: "technical", expectedFocus: "Architecture clarity, database selection, failure modes" },
-        { id: 2, text: "Tell me about a time you had a significant disagreement with a stakeholder or engineer and how you resolved it.", type: "behavioral", expectedFocus: "Empathy, conflict resolution, business focus" },
-        { id: 3, text: "How do you approach monitoring, alerting, and incident recovery in high-throughput production environments?", type: "technical", expectedFocus: "Observability, SLOs, root cause analysis" },
-        { id: 4, text: "Describe a project where requirements shifted dramatically midway through. How did you adapt?", type: "behavioral", expectedFocus: "Agility, team communication, prioritization" },
-        { id: 5, text: "How would you design a rate-limiting and caching layer for a public API handling 100k requests/second?", type: "technical", expectedFocus: "Redis, token bucket, latency optimization" }
-      ]
+      difficulty: classification.seniority,
+      skills: blueprint.competencies.map(c => c.name),
+      companyTrends: `High focus on ${blueprint.competencies[0]?.name.toLowerCase()}, ${blueprint.competencies[1]?.name.toLowerCase()}, and measurable execution ${companyContext}.`,
+      questions: blueprint.competencies.slice(0, 5).map((comp, idx) => ({
+        id: idx + 1,
+        text: comp.sampleQuestion,
+        type: (comp.category === "universal" ? "behavioral" : "technical") as "technical" | "behavioral",
+        expectedFocus: comp.name
+      }))
     });
 
-    return parsed;
+    return {
+      ...parsed,
+      jobFamily: classification.jobFamily,
+      practicalAssessmentType: blueprint.practicalAssessmentType,
+      codingRequired: blueprint.codingRequired,
+      interviewBlueprint: blueprint
+    };
   } catch (err: any) {
     if (process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production") {
       throw new Error(`[AI_PROVIDER_UNAVAILABLE] Gemini job description analysis failed: ${err?.message || "Service unavailable"}. Synthetic fallbacks are prohibited in production.`);
     }
     console.warn("[GEMINI WARN] analyzeJobDescription utilizing high-fidelity fallback:", err?.message || err);
     return {
-      difficulty: "Senior",
-      skills: ["System Design", "TypeScript", "Node.js", "Distributed Systems", "Incident Management", "Communication"],
-      companyTrends: `Focus on ownership, robust engineering fundamentals, and scalability ${companyContext}.`,
-      questions: [
-        { id: 1, text: `Can you describe a complex system architecture you designed for ${params.role || "this position"} and the critical trade-offs you made?`, type: "technical", expectedFocus: "Architecture clarity, database selection, failure modes" },
-        { id: 2, text: "Tell me about a time you had a significant disagreement with a stakeholder or engineer and how you resolved it.", type: "behavioral", expectedFocus: "Empathy, conflict resolution, business focus" },
-        { id: 3, text: "How do you approach monitoring, alerting, and incident recovery in high-throughput production environments?", type: "technical", expectedFocus: "Observability, SLOs, root cause analysis" },
-        { id: 4, text: "Describe a project where requirements shifted dramatically midway through. How did you adapt?", type: "behavioral", expectedFocus: "Agility, team communication, prioritization" },
-        { id: 5, text: "How would you design a rate-limiting and caching layer for a public API handling 100k requests/second?", type: "technical", expectedFocus: "Redis, token bucket, latency optimization" }
-      ]
+      difficulty: classification.seniority,
+      skills: blueprint.competencies.map(c => c.name),
+      companyTrends: `Focus on ownership, robust ${classification.jobFamily.replace(/_/g, " ")} fundamentals, and measurable business outcomes ${companyContext}.`,
+      questions: blueprint.competencies.slice(0, 5).map((comp, idx) => ({
+        id: idx + 1,
+        text: comp.sampleQuestion,
+        type: (comp.category === "universal" ? "behavioral" : "technical") as "technical" | "behavioral",
+        expectedFocus: comp.name
+      })),
+      jobFamily: classification.jobFamily,
+      practicalAssessmentType: blueprint.practicalAssessmentType,
+      codingRequired: blueprint.codingRequired,
+      interviewBlueprint: blueprint
     };
   }
 }
@@ -284,9 +320,12 @@ export interface InterviewEvaluationResult {
     feedback?: string;
   }>;
   panelFeedback?: {
-    hr?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
-    technical?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
-    hiringManager?: { score: number; feedback: string; strengths: string[]; weaknesses: string[] };
+    hr?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
+    sarah?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
+    technical?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
+    david?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
+    hiringManager?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
+    marcus?: { score: number; feedback: string; text?: string; strengths: string[]; weaknesses: string[] };
   };
 }
 
@@ -368,13 +407,15 @@ export function validateInterviewEvidenceGrounding(
 }
 
 /**
- * Derives objective 7-dimensional competency breakdown and decision-support report.
+ * Derives objective competency breakdown and decision-support report.
+ * Profession-agnostic: Evaluates role-specific competencies from blueprint when provided.
  */
 export function deriveCompetencyBreakdown(
   qaPairs: Array<{ questionId?: number; questionText?: string; type?: string; answerText?: string }>,
-  baseScore: number
+  baseScore: number,
+  blueprint?: InterviewBlueprint
 ): {
-  competencyScores: Record<CompetencyType, CompetencyScore>;
+  competencyScores: Record<string, CompetencyScore>;
   scoringReport: ReturnType<typeof generateScoringReport>;
 } {
   const technicalAnswers = qaPairs.filter(q => q.type === "technical").map(q => q.answerText).filter(Boolean);
@@ -384,8 +425,95 @@ export function deriveCompetencyBreakdown(
   const behavSnippet = behavioralAnswers.join(" ");
   const allSnippet = qaPairs.map(q => q.answerText).filter(Boolean).join(" ");
 
+  const hasMetrics = /\b\d+(%|\$|k|m|gb|tb|qps|rps|x|users|clients|students|revenue|roi)\b/i.test(allSnippet);
+  const hasSTARAction = /\b(I |my |created|designed|led|built|debugged|optimized|refactored|organized|taught|analyzed|closed|negotiated)\b/i.test(behavSnippet);
+
+  // If a blueprint with dynamic competencies is provided, evaluate dynamically
+  if (blueprint && blueprint.competencies && blueprint.competencies.length > 0) {
+    const dynamicScores: Record<string, CompetencyScore> = {};
+
+    for (const comp of blueprint.competencies) {
+      let compEvidence = allSnippet.slice(0, 300);
+      const positiveSignals: string[] = [];
+      const negativeSignals: string[] = [];
+      let compRawScore = baseScore;
+
+      if (comp.category === "domain" || comp.category === "practical") {
+        compEvidence = techSnippet.length > 0 ? techSnippet.slice(0, 300) : allSnippet.slice(0, 300);
+        if (hasMetrics) {
+          positiveSignals.push("Referenced concrete quantitative metrics and measurable outcomes");
+          compRawScore = Math.min(100, baseScore + 3);
+        } else {
+          negativeSignals.push("Could provide more specific quantitative metrics");
+        }
+      } else if (comp.category === "leadership") {
+        compEvidence = behavSnippet.slice(0, 300);
+        if (hasSTARAction) {
+          positiveSignals.push("Clear personal ownership and strategic leadership perspective");
+          compRawScore = Math.min(100, baseScore + 4);
+        } else {
+          negativeSignals.push("Could articulate personal leadership impact more distinctly");
+        }
+      } else {
+        // universal
+        if (comp.id === "communication") {
+          compRawScore = allSnippet.length > 150 ? Math.min(100, baseScore + 5) : Math.max(20, baseScore - 15);
+          if (allSnippet.length > 150) positiveSignals.push("Articulate and structured response cadence");
+          if (allSnippet.length < 60) negativeSignals.push("Responses were brief or fragmented");
+        } else if (comp.id === "behavioral") {
+          compRawScore = hasSTARAction ? Math.min(100, baseScore + 4) : Math.max(30, baseScore - 10);
+          if (hasSTARAction) positiveSignals.push("Clear personal agency and ownership demonstrated");
+          if (!hasSTARAction && behavioralAnswers.length > 0) negativeSignals.push("Passive delivery ('we' instead of 'I')");
+        } else {
+          if (allSnippet.length > 100) positiveSignals.push("Demonstrated systematic problem decomposition");
+        }
+      }
+
+      // Check for career switcher transferable evidence
+      let evidenceClassification: "DIRECT_EVIDENCE" | "TRANSFERABLE_EVIDENCE" | "INSUFFICIENT_EVIDENCE" = "DIRECT_EVIDENCE";
+      if (blueprint.isCareerSwitcher) {
+        evidenceClassification = "TRANSFERABLE_EVIDENCE";
+        positiveSignals.push("Demonstrated strong transferable foundational capabilities from prior career");
+      }
+
+      dynamicScores[comp.id] = normalizeCompetencyScore(
+        comp.id,
+        compRawScore,
+        compEvidence,
+        positiveSignals,
+        negativeSignals,
+        [],
+        { name: comp.name, defaultFollowUp: comp.sampleQuestion },
+        evidenceClassification
+      );
+    }
+
+    // Populate standard keys for backward compatibility
+    const fallbackFirst = Object.values(dynamicScores)[0];
+    const fullScores: Record<string, CompetencyScore> = {
+      ...dynamicScores,
+      technical: dynamicScores.technical || fallbackFirst,
+      problem_solving: dynamicScores.problem_solving || Object.values(dynamicScores)[1] || fallbackFirst,
+      system_design: dynamicScores.system_design || Object.values(dynamicScores)[2] || fallbackFirst,
+      communication: dynamicScores.communication || dynamicScores.communication_clarity || fallbackFirst,
+      behavioral: dynamicScores.behavioral || fallbackFirst,
+      role_fit: dynamicScores.role_fit || fallbackFirst,
+      coding: dynamicScores.coding || fallbackFirst
+    };
+
+    const scoringReport = generateScoringReport(fullScores, blueprint.scoringWeights, {
+      jobFamily: blueprint.jobFamily,
+      practicalAssessmentType: blueprint.practicalAssessmentType,
+      codingRequired: blueprint.codingRequired,
+      learningFocus: blueprint.recommendedLearningFocus,
+      targetRole: blueprint.subFamily
+    });
+
+    return { competencyScores: fullScores, scoringReport };
+  }
+
+  // Canonical 7-D fallback for engineering backward-compatibility
   const hasTechMetrics = /\b\d+(%|ms|s|k|m|gb|tb|qps|rps)\b/i.test(techSnippet);
-  const hasSTARAction = /\b(I |my |created|designed|led|built|debugged|optimized|refactored)\b/i.test(behavSnippet);
 
   // 1. Technical Depth (weight: 0.25)
   const technicalScore = normalizeCompetencyScore(
@@ -470,14 +598,34 @@ export function deriveCompetencyBreakdown(
 }
 
 export async function evaluateInterviewSession(params: {
-
-  role: string;
-  company: string;
-  difficulty: string;
+  role?: string;
+  company?: string;
+  difficulty?: string;
+  targetRole?: string;
   interviewerCount?: number;
-  qaPairs: Array<{ questionId: number; questionText: string; type: string; answerText: string }>;
+  qaPairs?: Array<{ questionId: number; questionText: string; type: string; answerText: string }>;
+  transcript?: Array<{ turnIndex?: number; questionId?: number; questionText: string; questionType?: string; type?: string; candidateAnswer?: string; answerText?: string }>;
+  blueprint?: InterviewBlueprint;
 }): Promise<InterviewEvaluationResult> {
+  const roleName = params.role || params.targetRole || "Target Role";
+  const companyName = params.company || "Target Company";
+  const difficultyLevel = params.difficulty || "Senior";
+  const qaPairs: Array<{ questionId: number; questionText: string; type: string; answerText: string }> = 
+    params.qaPairs || 
+    params.transcript?.map((t, i) => ({
+      questionId: t.questionId || t.turnIndex || (i + 1),
+      questionText: t.questionText || `Question ${i + 1}`,
+      type: t.type || t.questionType || "technical",
+      answerText: t.answerText || t.candidateAnswer || ""
+    })) || 
+    [];
+
   const count = params.interviewerCount || 1;
+  const blueprint = params.blueprint || generateInterviewBlueprint({
+    targetRole: roleName,
+    company: companyName,
+    seniority: (difficultyLevel as any) || "Senior"
+  });
 
   // Helper to evaluate answer quality heuristics
   const evaluateAnswerHeuristic = (text?: string) => {
@@ -509,15 +657,15 @@ export async function evaluateInterviewSession(params: {
     return { isEmpty: false, words, score: Math.round(baseScore) };
   };
 
-  const answerMetrics = params.qaPairs.map(qa => evaluateAnswerHeuristic(qa.answerText));
+  const answerMetrics = qaPairs.map(qa => evaluateAnswerHeuristic(qa.answerText));
   const answeredCount = answerMetrics.filter(m => !m.isEmpty).length;
-  const totalQuestions = params.qaPairs.length || 1;
+  const totalQuestions = qaPairs.length || 1;
 
   const prompt = `
-You are the Hiring Committee Chairperson evaluating a candidate's complete interview for the role of ${params.role} at ${params.company} (${params.difficulty} level).
+You are the Hiring Committee Chairperson evaluating a candidate's complete interview for the role of ${roleName} at ${companyName} (${difficultyLevel} level).
 
 Interview Transcript:
-${params.qaPairs.map((qa, i) => `[Question ${i + 1}] (${qa.type}): ${qa.questionText}\n[Candidate Answer]: ${qa.answerText || "(Candidate gave no response)"}\n`).join("\n")}
+${qaPairs.map((qa, i) => `[Question ${i + 1}] (${qa.type}): ${qa.questionText}\n[Candidate Answer]: ${qa.answerText || "(Candidate gave no response)"}\n`).join("\n")}
 
 Evaluation Guidelines:
 1. Score each answer objectively from 0 to 100 based on technical depth, STAR structure, concrete metrics, and clarity. If an answer was skipped or empty, give it 0-10.
@@ -617,32 +765,52 @@ Return ONLY valid JSON matching this schema:
       ? Math.round(behavioralQuestions.reduce((a, b) => a + b.score, 0) / behavioralQuestions.length)
       : finalScore;
 
+    const hrObj = {
+      score: Math.max(0, Math.min(100, parsed?.panelFeedback?.hr?.score ? Math.round((parsed.panelFeedback.hr.score + behavAvg) / 2) : behavAvg)),
+      feedback: parsed?.panelFeedback?.hr?.feedback || (answeredCount > 0 ? "Demonstrated clear communication and team alignment." : "No behavioral answers recorded."),
+      text: parsed?.panelFeedback?.hr?.feedback || (answeredCount > 0 ? "Demonstrated clear communication and team alignment." : "No behavioral answers recorded."),
+      strengths: parsed?.panelFeedback?.hr?.strengths || (answeredCount > 0 ? ["Clear communication", "Structured narrative"] : []),
+      weaknesses: parsed?.panelFeedback?.hr?.weaknesses || (answeredCount > 0 ? ["Elaborate on cross-team conflict resolution"] : ["No answers provided"])
+    };
+
+    const techObj = {
+      score: Math.max(0, Math.min(100, parsed?.panelFeedback?.technical?.score ? Math.round((parsed.panelFeedback.technical.score + techAvg) / 2) : techAvg)),
+      feedback: parsed?.panelFeedback?.technical?.feedback || (answeredCount > 0
+        ? (blueprint.jobFamily === "engineering" ? "Demonstrated domain knowledge with architecture awareness." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge and strategic methodology.`)
+        : "No domain responses provided."),
+      text: parsed?.panelFeedback?.technical?.feedback || (answeredCount > 0
+        ? (blueprint.jobFamily === "engineering" ? "Demonstrated domain knowledge with architecture awareness." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge and strategic methodology.`)
+        : "No domain responses provided."),
+      strengths: parsed?.panelFeedback?.technical?.strengths || (answeredCount > 0
+        ? (blueprint.jobFamily === "engineering" ? ["Domain terminology", "System design concepts"] : ["Domain terminology", "Methodological framework"])
+        : []),
+      weaknesses: parsed?.panelFeedback?.technical?.weaknesses || (answeredCount > 0
+        ? (blueprint.jobFamily === "engineering" ? ["Quantify scalability bottlenecks deeper"] : ["Quantify business and operational impact metrics deeper"])
+        : ["No answers provided"])
+    };
+
+    const hmObj = {
+      score: Math.max(0, Math.min(100, parsed?.panelFeedback?.hiringManager?.score ? Math.round((parsed.panelFeedback.hiringManager.score + finalScore) / 2) : finalScore)),
+      feedback: parsed?.panelFeedback?.hiringManager?.feedback || (answeredCount > 0 ? `Overall consensus supports candidate trajectory for ${roleName}.` : "Incomplete interview session."),
+      text: parsed?.panelFeedback?.hiringManager?.feedback || (answeredCount > 0 ? `Overall consensus supports candidate trajectory for ${roleName}.` : "Incomplete interview session."),
+      strengths: parsed?.panelFeedback?.hiringManager?.strengths || (answeredCount > 0 ? ["Ownership mindset", "Problem solving"] : []),
+      weaknesses: parsed?.panelFeedback?.hiringManager?.weaknesses || (answeredCount > 0 ? ["Provide concrete impact metrics"] : ["Session was not completed"])
+    };
+
     const panelFeedback = {
-      hr: {
-        score: Math.max(0, Math.min(100, parsed?.panelFeedback?.hr?.score ? Math.round((parsed.panelFeedback.hr.score + behavAvg) / 2) : behavAvg)),
-        feedback: parsed?.panelFeedback?.hr?.feedback || (answeredCount > 0 ? "Demonstrated clear communication and team alignment." : "No behavioral answers recorded."),
-        strengths: parsed?.panelFeedback?.hr?.strengths || (answeredCount > 0 ? ["Clear communication", "Structured narrative"] : []),
-        weaknesses: parsed?.panelFeedback?.hr?.weaknesses || (answeredCount > 0 ? ["Elaborate on cross-team conflict resolution"] : ["No answers provided"])
-      },
-      technical: {
-        score: Math.max(0, Math.min(100, parsed?.panelFeedback?.technical?.score ? Math.round((parsed.panelFeedback.technical.score + techAvg) / 2) : techAvg)),
-        feedback: parsed?.panelFeedback?.technical?.feedback || (answeredCount > 0 ? "Demonstrated domain knowledge with architecture awareness." : "No technical responses provided."),
-        strengths: parsed?.panelFeedback?.technical?.strengths || (answeredCount > 0 ? ["Domain terminology", "System design concepts"] : []),
-        weaknesses: parsed?.panelFeedback?.technical?.weaknesses || (answeredCount > 0 ? ["Quantify scalability bottlenecks deeper"] : ["No answers provided"])
-      },
-      hiringManager: {
-        score: Math.max(0, Math.min(100, parsed?.panelFeedback?.hiringManager?.score ? Math.round((parsed.panelFeedback.hiringManager.score + finalScore) / 2) : finalScore)),
-        feedback: parsed?.panelFeedback?.hiringManager?.feedback || (answeredCount > 0 ? `Overall consensus supports candidate trajectory for ${params.role}.` : "Incomplete interview session."),
-        strengths: parsed?.panelFeedback?.hiringManager?.strengths || (answeredCount > 0 ? ["Ownership mindset", "Problem solving"] : []),
-        weaknesses: parsed?.panelFeedback?.hiringManager?.weaknesses || (answeredCount > 0 ? ["Provide concrete impact metrics"] : ["Session was not completed"])
-      }
+      hr: hrObj,
+      sarah: hrObj,
+      technical: techObj,
+      david: techObj,
+      hiringManager: hmObj,
+      marcus: hmObj
     };
 
     const finalStrengths = parsed?.strengths?.length ? parsed.strengths : (answeredCount > 0 ? ["Clear articulation of key concepts", "Structured response approach"] : []);
     const claimsToValidate = finalStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
-    const evidenceGrounding = validateInterviewEvidenceGrounding(params.qaPairs, claimsToValidate);
+    const evidenceGrounding = validateInterviewEvidenceGrounding(qaPairs, claimsToValidate);
 
-    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(params.qaPairs, finalScore);
+    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(qaPairs, finalScore, blueprint);
 
     return {
       overallRating: finalRating,
@@ -665,10 +833,16 @@ Return ONLY valid JSON matching this schema:
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
         : `Candidate completed ${answeredCount} of ${totalQuestions} questions with an overall assessment score of ${scoringReport.overallScore || finalScore}%.`),
       strengths: finalStrengths,
-      improvements: parsed?.improvements?.length ? parsed.improvements : (scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate on edge case trade-offs", "Quantify business and latency impact metrics"]),
+      improvements: parsed?.improvements?.length ? parsed.improvements : (scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate on edge case trade-offs", "Quantify measurable business and operational impact metrics"]),
       mistakesMade: parsed?.mistakesMade || (answeredCount === 0 ? ["Questions skipped without response"] : ["Could provide more concrete numbers earlier in the response"]),
-      idealAnswers: parsed?.idealAnswers || ["Include explicit architectural diagrams and metric before/after benchmarks."],
-      hiringRecommendation: parsed?.hiringRecommendation || (finalScore >= 85 ? `Strongly recommend hire for ${params.role}.` : finalScore >= 70 ? `Recommend lean hire with follow-up on system design.` : `Recommend further preparation before re-interviewing.`),
+      idealAnswers: parsed?.idealAnswers || (blueprint.jobFamily === "engineering" 
+        ? ["Include explicit architectural diagrams and metric before/after benchmarks."]
+        : ["Include explicit project examples and measurable before/after business metrics."]),
+      hiringRecommendation: parsed?.hiringRecommendation || (finalScore >= 85
+        ? `Strongly recommend hire for ${params.role}.`
+        : finalScore >= 70
+          ? `Recommend lean hire with follow-up on ${blueprint.competencies[0]?.name || "core competencies"}.`
+          : `Recommend further preparation before re-interviewing.`),
       practicePlan: parsed?.practicePlan || scoringReport.actionableRecommendations,
       evidenceGrounding,
       questionBreakdown,
@@ -681,7 +855,7 @@ Return ONLY valid JSON matching this schema:
     console.warn("[GEMINI WARN] evaluateInterviewSession utilizing high-fidelity fallback:", err?.message || err);
     
     // Dynamic calculation from candidate's actual input
-    const fallbackBreakdown = params.qaPairs.map((qa, i) => {
+    const fallbackBreakdown = qaPairs.map((qa, i) => {
       const metric = answerMetrics[i];
       return {
         questionText: qa.questionText || `Question ${i + 1}`,
@@ -703,16 +877,16 @@ Return ONLY valid JSON matching this schema:
     const calculatedRating: "Strong Hire" | "Lean Hire" | "No Hire" = 
       calculatedScore >= 85 ? "Strong Hire" : calculatedScore >= 70 ? "Lean Hire" : "No Hire";
 
-    const techQ = fallbackBreakdown.filter((_, idx) => params.qaPairs[idx]?.type === "technical");
-    const behavQ = fallbackBreakdown.filter((_, idx) => params.qaPairs[idx]?.type === "behavioral");
+    const techQ = fallbackBreakdown.filter((_, idx) => qaPairs[idx]?.type === "technical");
+    const behavQ = fallbackBreakdown.filter((_, idx) => qaPairs[idx]?.type === "behavioral");
     const techScore = techQ.length > 0 ? Math.round(techQ.reduce((a, b) => a + b.score, 0) / techQ.length) : calculatedScore;
     const behavScore = behavQ.length > 0 ? Math.round(behavQ.reduce((a, b) => a + b.score, 0) / behavQ.length) : calculatedScore;
 
     const fallbackStrengths = answeredCount > 0 ? ["Structured response approach", "Good architecture concepts cited", "Logical trade-off reasoning"] : [];
     const fallbackClaims = fallbackStrengths.map((s, idx) => ({ claim: s, sourceTurnIndex: idx + 1 }));
-    const fallbackGrounding = validateInterviewEvidenceGrounding(params.qaPairs, fallbackClaims);
+    const fallbackGrounding = validateInterviewEvidenceGrounding(qaPairs, fallbackClaims);
 
-    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(params.qaPairs, calculatedScore);
+    const { competencyScores, scoringReport } = deriveCompetencyBreakdown(qaPairs, calculatedScore, blueprint);
 
     return {
       overallRating: calculatedRating,
@@ -735,17 +909,26 @@ Return ONLY valid JSON matching this schema:
         ? "No responses were provided during this interview simulation. All questions were skipped or left blank."
         : `The candidate completed ${answeredCount} of ${totalQuestions} questions with a calibrated score of ${scoringReport.overallScore || calculatedScore}%.`,
       strengths: fallbackStrengths,
-      improvements: scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate further on concrete edge case scenarios", "Provide more depth on distributed resilience patterns and metrics"],
-      mistakesMade: answeredCount === 0 ? ["All questions skipped."] : ["Could quantify throughput metrics earlier in the transcript."],
-      idealAnswers: ["Highlight multi-region active-active replication with distributed caching and p99 metrics."],
-      hiringRecommendation: calculatedScore >= 85 ? `Recommend hire for ${params.role || "Software Engineering"} role.` : calculatedScore >= 70 ? `Recommend lean hire with system design follow-up.` : `Recommend further practice before candidate interview.`,
+      improvements: scoringReport.growthAreas.length > 0 ? scoringReport.growthAreas : ["Elaborate further on concrete edge case scenarios", "Provide more depth on quantitative metrics and trade-offs"],
+      mistakesMade: answeredCount === 0 ? ["All questions skipped."] : ["Could quantify impact metrics earlier in the transcript."],
+      idealAnswers: blueprint.jobFamily === "engineering" 
+        ? ["Highlight multi-region active-active replication with distributed caching and p99 metrics."]
+        : ["Include concrete project examples with measurable before/after metrics."],
+      hiringRecommendation: calculatedScore >= 85
+        ? `Recommend hire for ${params.role || "Target Role"}.`
+        : calculatedScore >= 70
+          ? `Recommend lean hire with follow-up on ${blueprint.competencies[0]?.name || "domain competencies"}.`
+          : `Recommend further practice before candidate interview.`,
       practicePlan: scoringReport.actionableRecommendations,
       evidenceGrounding: fallbackGrounding,
       questionBreakdown: fallbackBreakdown,
       panelFeedback: {
-        hr: { score: behavScore, feedback: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", strengths: answeredCount > 0 ? ["Clear communication"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper teamwork examples"] },
-        technical: { score: techScore, feedback: answeredCount > 0 ? "Demonstrated solid engineering depth." : "No technical answers.", strengths: answeredCount > 0 ? ["Technical terminology"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper failure modes"] },
-        hiringManager: { score: calculatedScore, feedback: answeredCount > 0 ? "Good ownership and delivery impact." : "Incomplete session.", strengths: answeredCount > 0 ? ["Problem solving"] : [], weaknesses: answeredCount === 0 ? ["Incomplete interview"] : ["Expand on team mentoring"] }
+        hr: { score: behavScore, feedback: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", text: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", strengths: answeredCount > 0 ? ["Clear communication"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper teamwork examples"] },
+        sarah: { score: behavScore, feedback: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", text: answeredCount > 0 ? "Strong culture fit and clear articulation." : "No behavioral answers.", strengths: answeredCount > 0 ? ["Clear communication"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper teamwork examples"] },
+        technical: { score: techScore, feedback: answeredCount > 0 ? (blueprint.jobFamily === "engineering" ? "Demonstrated solid engineering depth." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge.`) : "No domain answers.", text: answeredCount > 0 ? (blueprint.jobFamily === "engineering" ? "Demonstrated solid engineering depth." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge.`) : "No domain answers.", strengths: answeredCount > 0 ? ["Domain terminology"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper practical examples"] },
+        david: { score: techScore, feedback: answeredCount > 0 ? (blueprint.jobFamily === "engineering" ? "Demonstrated solid engineering depth." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge.`) : "No domain answers.", text: answeredCount > 0 ? (blueprint.jobFamily === "engineering" ? "Demonstrated solid engineering depth." : `Demonstrated ${blueprint.jobFamily.replace(/_/g, " ")} knowledge.`) : "No domain answers.", strengths: answeredCount > 0 ? ["Domain terminology"] : [], weaknesses: answeredCount === 0 ? ["No response"] : ["Could cite deeper practical examples"] },
+        hiringManager: { score: calculatedScore, feedback: answeredCount > 0 ? "Good ownership and delivery impact." : "Incomplete session.", text: answeredCount > 0 ? "Good ownership and delivery impact." : "Incomplete session.", strengths: answeredCount > 0 ? ["Problem solving"] : [], weaknesses: answeredCount === 0 ? ["Incomplete interview"] : ["Expand on strategic leadership"] },
+        marcus: { score: calculatedScore, feedback: answeredCount > 0 ? "Good ownership and delivery impact." : "Incomplete session.", text: answeredCount > 0 ? "Good ownership and delivery impact." : "Incomplete session.", strengths: answeredCount > 0 ? ["Problem solving"] : [], weaknesses: answeredCount === 0 ? ["Incomplete interview"] : ["Expand on strategic leadership"] }
       }
     };
   }
