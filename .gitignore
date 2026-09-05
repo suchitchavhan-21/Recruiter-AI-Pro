@@ -24,3 +24,5 @@ data/*.tmp.*
 *.tmp.*
 local_database.json
 *.local.json
+data/test_fresh_db/
+bun.lock

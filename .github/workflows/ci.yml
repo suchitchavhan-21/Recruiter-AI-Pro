@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Install Dependencies
@@ -31,9 +31,35 @@ jobs:
 
       - name: Build Application & Server
         run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Verify Feature Update Lock
         run: npm run verify:feature-freeze
 
       - name: Run Feature Freeze Regression Tests
         run: npm run test:feature-freeze
+
+      - name: Run Voice Pipeline Tests
+        run: npm run test:voice
+
+      - name: Run Voice Persona Matrix Tests
+        run: npx tsx scripts/test-voice-persona-matrix.ts
+
+      - name: Run Coding Practice & Sandbox Tests
+        run: npx tsx scripts/test-coding-practice.ts
+
+      - name: Run Evidence-Based Adaptive Interview Tests
+        run: npx tsx scripts/test-evidence-adaptive-interview.ts
+
+      - name: Run Universal Role Intelligence Tests
+        run: npx tsx scripts/test-universal-role-intelligence.ts
+
+      - name: Run Multi-Tenant Security Tests
+        run: npm run test:security
+
+      - name: Run Database Persistence Tests
+        run: npm run test:db-persistence
+
+      - name: Run LangChain Multi-Agent Tests
+        run: npm run test:langchain
