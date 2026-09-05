@@ -59,21 +59,39 @@ async function startServer() {
 
   const publicDir = path.join(process.cwd(), "public");
   const publicAssetsDir = path.join(publicDir, "assets");
+  const publicMediapipeDir = path.join(publicDir, "mediapipe");
   const distDir = path.join(process.cwd(), "dist");
   const distAssetsDir = path.join(distDir, "assets");
+  const distMediapipeDir = path.join(distDir, "mediapipe");
+
+  // Common static options ensuring correct MIME type for WebAssembly binaries
+  const staticOptions = {
+    setHeaders: (res: express.Response, filePath: string) => {
+      if (filePath.endsWith(".wasm")) {
+        res.setHeader("Content-Type", "application/wasm");
+      }
+    }
+  };
+
+  // Mount dedicated mediapipe assets route first
+  if (fs.existsSync(publicMediapipeDir)) {
+    app.use("/mediapipe", express.static(publicMediapipeDir, staticOptions));
+  } else if (fs.existsSync(distMediapipeDir)) {
+    app.use("/mediapipe", express.static(distMediapipeDir, staticOptions));
+  }
 
   // Mount static asset directories for all environments
   if (fs.existsSync(distDir)) {
-    app.use(express.static(distDir));
+    app.use(express.static(distDir, staticOptions));
   }
   if (fs.existsSync(distAssetsDir)) {
-    app.use("/assets", express.static(distAssetsDir));
+    app.use("/assets", express.static(distAssetsDir, staticOptions));
   }
   if (fs.existsSync(publicDir)) {
-    app.use(express.static(publicDir));
+    app.use(express.static(publicDir, staticOptions));
   }
   if (fs.existsSync(publicAssetsDir)) {
-    app.use("/assets", express.static(publicAssetsDir));
+    app.use("/assets", express.static(publicAssetsDir, staticOptions));
   }
 
   if (ENV.NODE_ENV !== "production") {
@@ -96,7 +114,7 @@ async function startServer() {
 
     // 3. SPA catch-all navigation handler (prevents returning index.html for missing static files)
     app.get("*", (req, res) => {
-      if (req.path.startsWith("/api/") || req.path.startsWith("/assets/") || path.extname(req.path)) {
+      if (req.path.startsWith("/api/") || req.path.startsWith("/assets/") || req.path.startsWith("/mediapipe/") || path.extname(req.path)) {
         return res.status(404).json({
           success: false,
           error: {

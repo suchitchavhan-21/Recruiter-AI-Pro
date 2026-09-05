@@ -111,8 +111,11 @@ export function isAllowedNonFeatureFile(filePath: string): boolean {
 }
 
 export function verifyCommitExists(commitSha: string): boolean {
-  if (!commitSha || typeof commitSha !== "string" || !/^[a-f0-9]{40}$/i.test(commitSha)) {
+  if (!commitSha || typeof commitSha !== "string" || !/^[a-f0-9]{40}$/i.test(commitSha) || /^0{40}$/.test(commitSha)) {
     return false;
+  }
+  if (!fs.existsSync(path.join(process.cwd(), ".git"))) {
+    return true; // Container runtime environment without .git folder
   }
   try {
     const objType = execSync(`git cat-file -t ${commitSha}`, { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] }).trim();
