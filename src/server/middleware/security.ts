@@ -181,7 +181,7 @@ export function applyCorsMiddleware(req: Request, res: Response, next: NextFunct
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Refresh-Token");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Refresh-Token, X-CSRF-Token");
       if (req.method === "OPTIONS") {
         return res.sendStatus(204);
       }
@@ -193,6 +193,74 @@ export function applyCorsMiddleware(req: Request, res: Response, next: NextFunct
     }
   } else if (req.method === "OPTIONS") {
     return res.sendStatus(204);
+  }
+
+  next();
+}
+
+/**
+ * Enterprise CSRF Defense Middleware
+ * 1. Validates Origin/Referer against allowed origins on all state-changing requests.
+ * 2. Enforces presence of custom anti-CSRF header (X-Requested-With / X-CSRF-Token)
+ *    on ambient cookie-authenticated mutating requests to eliminate cross-site forgeability.
+ */
+export function csrfProtection(req: Request, res: Response, next: NextFunction) {
+  // Safe idempotent methods do not alter state
+  const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
+  if (safeMethods.has(req.method)) {
+    return next();
+  }
+
+  const origin = req.headers.origin;
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
+  const host = req.get("host");
+
+  // 1. Origin verification when Origin header is provided by browser
+  if (origin) {
+    const configuredOrigins = [
+      ...(process.env.CORS_ALLOWED_ORIGINS || "").split(","),
+      ...(process.env.ALLOWED_ORIGINS || "").split(",")
+    ].map(s => s.trim()).filter(Boolean);
+
+    const allowedOriginsSet = new Set<string>();
+    if (ENV.APP_URL) allowedOriginsSet.add(ENV.APP_URL);
+    for (const o of configuredOrigins) allowedOriginsSet.add(o);
+    if (!isProd) {
+      allowedOriginsSet.add("http://localhost:3000");
+      allowedOriginsSet.add("http://localhost:5173");
+      allowedOriginsSet.add("http://127.0.0.1:3000");
+      allowedOriginsSet.add("http://127.0.0.1:5173");
+    }
+    if (host) {
+      allowedOriginsSet.add(`http://${host}`);
+      allowedOriginsSet.add(`https://${host}`);
+    }
+
+    if (!allowedOriginsSet.has(origin)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: "CSRF_ORIGIN_DENIED", message: "Cross-site request forgery protection: Origin not allowed." }
+      });
+    }
+  }
+
+  // 2. Custom header verification on cookie-authenticated mutating requests
+  const hasCookieAuth = !!(req.cookies?.access_token || req.cookies?.refresh_token);
+  const hasAuthHeader = !!req.headers.authorization;
+  const hasExplicitBodyToken = Boolean(req.body && (req.body.refreshToken || req.body.token));
+
+  // If request relies solely on ambient cookie credentials rather than explicit Authorization header or explicit payload token
+  if (hasCookieAuth && !hasAuthHeader && !hasExplicitBodyToken) {
+    const customHeader = req.headers["x-requested-with"] || req.headers["x-csrf-token"];
+    if (!customHeader) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: "CSRF_TOKEN_MISSING",
+          message: "Cross-site request forgery protection: Missing required anti-CSRF header."
+        }
+      });
+    }
   }
 
   next();

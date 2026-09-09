@@ -11,6 +11,7 @@ export interface User {
   verificationToken?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: string;
+  tokenVersion?: number;
   lastLogin?: string;
   accountStatus: "active" | "inactive" | "blocked";
   createdAt: string;

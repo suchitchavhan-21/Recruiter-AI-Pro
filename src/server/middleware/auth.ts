@@ -16,6 +16,7 @@ export interface AccessTokenPayload {
   userId: string;
   email: string;
   role: "candidate" | "admin";
+  tokenVersion?: number;
   iat?: number;
   exp?: number;
 }
@@ -36,8 +37,12 @@ function getJwtRefreshSecret(): string {
   return secret;
 }
 
-export function signAccessToken(payload: { userId: string; email: string; role: "candidate" | "admin" }): string {
-  return jwt.sign(payload, getJwtSecret(), {
+export function signAccessToken(payload: { userId: string; email: string; role: "candidate" | "admin"; tokenVersion?: number }): string {
+  const tokenPayload = {
+    ...payload,
+    tokenVersion: payload.tokenVersion ?? 1
+  };
+  return jwt.sign(tokenPayload, getJwtSecret(), {
     algorithm: "HS256",
     expiresIn: "15m",
     issuer: "recruiter-ai-pro",
@@ -161,6 +166,18 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
         error: {
           code: "ACCOUNT_SUSPENDED",
           message: "This account has been deactivated or suspended."
+        }
+      });
+    }
+
+    const currentVersion = user.tokenVersion ?? 1;
+    const tokenVersion = payload.tokenVersion ?? 1;
+    if (tokenVersion < currentVersion) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "TOKEN_REVOKED",
+          message: "This session token has been revoked. Please sign in again."
         }
       });
     }

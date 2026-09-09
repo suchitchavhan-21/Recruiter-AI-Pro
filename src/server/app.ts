@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import { applySecurityHeaders, applyCorsMiddleware, ttsLimiter, authLimiter, aiLimiter } from "./middleware/security";
+import { applySecurityHeaders, applyCorsMiddleware, csrfProtection, ttsLimiter, authLimiter, aiLimiter } from "./middleware/security";
 import { getTTSProvider, getTTSDiagnostics } from "./voice/ttsProvider";
 import { centralErrorHandler } from "./middleware/errorHandler";
 import { authRouter } from "./routes/auth.routes";
@@ -97,6 +97,7 @@ export function createExpressApp(): express.Application {
   // Security Headers Middleware
   app.use(applySecurityHeaders);
   app.use(applyCorsMiddleware);
+  app.use(csrfProtection);
 
   // Minimal Liveness Probe
   app.get("/api/health", (_req, res) => {

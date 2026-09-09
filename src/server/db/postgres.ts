@@ -204,6 +204,7 @@ export async function initPostgresSchema(): Promise<boolean> {
         verification_token TEXT,
         reset_password_token TEXT,
         reset_password_expires TEXT,
+        token_version INTEGER DEFAULT 1,
         last_login TEXT,
         account_status TEXT DEFAULT 'active',
         created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -375,7 +376,14 @@ export async function initPostgresSchema(): Promise<boolean> {
       // Ignored if vector_chunks was just created
     }
 
-    // 12. Shared Rate Limits Table for Multi-Instance Cloud Run Deployments
+    // 12. Migration: ensure token_version column exists on users table for immediate JWT revocation
+    try {
+      await queryPostgres(`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 1;`);
+    } catch {
+      // Ignored if column already exists
+    }
+
+    // 13. Shared Rate Limits Table for Multi-Instance Cloud Run Deployments
     await queryPostgres(`
       CREATE TABLE IF NOT EXISTS rate_limits (
         key VARCHAR(255) PRIMARY KEY,

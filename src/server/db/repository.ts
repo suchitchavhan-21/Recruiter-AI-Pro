@@ -141,6 +141,7 @@ export async function findUserById(id: string): Promise<User | null> {
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -149,7 +150,8 @@ export async function findUserById(id: string): Promise<User | null> {
   }
 
   const db = loadDatabase();
-  return db.users.find(u => u.id === id) || null;
+  const u = db.users.find(u => u.id === id);
+  return u ? { ...u, tokenVersion: u.tokenVersion ?? 1 } : null;
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
@@ -171,6 +173,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -179,7 +182,8 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   }
 
   const db = loadDatabase();
-  return db.users.find(u => u.email.toLowerCase() === clean) || null;
+  const u = db.users.find(u => u.email.toLowerCase() === clean);
+  return u ? { ...u, tokenVersion: u.tokenVersion ?? 1 } : null;
 }
 
 export async function findUserByPhone(phone: string): Promise<User | null> {
@@ -201,6 +205,7 @@ export async function findUserByPhone(phone: string): Promise<User | null> {
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -209,7 +214,8 @@ export async function findUserByPhone(phone: string): Promise<User | null> {
   }
 
   const db = loadDatabase();
-  return db.users.find(u => u.phoneNumber === clean) || null;
+  const u = db.users.find(u => u.phoneNumber === clean);
+  return u ? { ...u, tokenVersion: u.tokenVersion ?? 1 } : null;
 }
 
 export async function findUserByVerificationToken(token: string): Promise<User | null> {
@@ -230,6 +236,7 @@ export async function findUserByVerificationToken(token: string): Promise<User |
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -238,13 +245,19 @@ export async function findUserByVerificationToken(token: string): Promise<User |
   }
 
   const db = loadDatabase();
-  return db.users.find(u => u.verificationToken === token) || null;
+  const u = db.users.find(u => u.verificationToken === token);
+  return u ? { ...u, tokenVersion: u.tokenVersion ?? 1 } : null;
 }
 
 export async function findUserByResetToken(token: string): Promise<User | null> {
   const now = new Date().toISOString();
+  const hashedToken = hashToken(token);
+
   if (isPostgresActive()) {
-    const res = await queryPostgres("SELECT * FROM users WHERE reset_password_token = $1 AND reset_password_expires > $2;", [token, now]);
+    const res = await queryPostgres(
+      "SELECT * FROM users WHERE (reset_password_token = $1 OR reset_password_token = $2) AND reset_password_expires > $3;",
+      [hashedToken, token, now]
+    );
     if (res.rows.length === 0) return null;
     const r = res.rows[0];
     return {
@@ -260,6 +273,7 @@ export async function findUserByResetToken(token: string): Promise<User | null> 
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -268,11 +282,12 @@ export async function findUserByResetToken(token: string): Promise<User | null> 
   }
 
   const db = loadDatabase();
-  return db.users.find(u => 
-    u.resetPasswordToken === token && 
+  const u = db.users.find(u => 
+    (u.resetPasswordToken === hashedToken || u.resetPasswordToken === token) && 
     u.resetPasswordExpires && 
     u.resetPasswordExpires > now
-  ) || null;
+  );
+  return u ? { ...u, tokenVersion: u.tokenVersion ?? 1 } : null;
 }
 
 export async function insertUser(user: User): Promise<User> {
@@ -281,8 +296,8 @@ export async function insertUser(user: User): Promise<User> {
       INSERT INTO users (
         id, full_name, email, phone_number, password_hash, profile_photo,
         role, provider, email_verified, verification_token, reset_password_token,
-        reset_password_expires, last_login, account_status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+        reset_password_expires, token_version, last_login, account_status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         full_name = EXCLUDED.full_name,
         email = EXCLUDED.email,
@@ -291,13 +306,18 @@ export async function insertUser(user: User): Promise<User> {
         profile_photo = EXCLUDED.profile_photo,
         role = EXCLUDED.role,
         email_verified = EXCLUDED.email_verified,
+        verification_token = EXCLUDED.verification_token,
+        reset_password_token = EXCLUDED.reset_password_token,
+        reset_password_expires = EXCLUDED.reset_password_expires,
+        token_version = EXCLUDED.token_version,
+        last_login = EXCLUDED.last_login,
         account_status = EXCLUDED.account_status,
         updated_at = NOW();
     `, [
       user.id, user.fullName, user.email, user.phoneNumber, user.passwordHash,
       user.profilePhoto, user.role, user.provider, user.emailVerified,
       user.verificationToken, user.resetPasswordToken, user.resetPasswordExpires,
-      user.lastLogin, user.accountStatus
+      user.tokenVersion ?? 1, user.lastLogin, user.accountStatus
     ]);
     return user;
   }
@@ -372,6 +392,7 @@ export async function listAllUsers(): Promise<User[]> {
       verificationToken: r.verification_token,
       resetPasswordToken: r.reset_password_token,
       resetPasswordExpires: r.reset_password_expires,
+      tokenVersion: r.token_version != null ? Number(r.token_version) : 1,
       lastLogin: r.last_login,
       accountStatus: r.account_status,
       createdAt: r.created_at,
@@ -380,7 +401,34 @@ export async function listAllUsers(): Promise<User[]> {
   }
 
   const db = loadDatabase();
-  return [...db.users];
+  return db.users.map(u => ({ ...u, tokenVersion: u.tokenVersion ?? 1 }));
+}
+
+/**
+ * Increment user's tokenVersion.
+ * Instantly invalidates all outstanding JWT access tokens for this user.
+ */
+export async function incrementUserTokenVersion(userId: string): Promise<number> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres(
+      "UPDATE users SET token_version = COALESCE(token_version, 1) + 1, updated_at = NOW() WHERE id = $1 RETURNING token_version;",
+      [userId]
+    );
+    if (res.rows.length > 0) {
+      return Number(res.rows[0].token_version);
+    }
+    return 1;
+  }
+
+  const db = loadDatabase();
+  const user = db.users.find(u => u.id === userId);
+  if (user) {
+    user.tokenVersion = (user.tokenVersion ?? 1) + 1;
+    user.updatedAt = new Date().toISOString();
+    await persistDatabaseAsync();
+    return user.tokenVersion;
+  }
+  return 1;
 }
 
 // ----------------------------------------------------

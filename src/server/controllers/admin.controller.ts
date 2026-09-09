@@ -9,6 +9,7 @@ import {
   listAllActivities, 
   resetDatabaseState, 
   revokeAllUserSessions,
+  incrementUserTokenVersion,
   insertAuditLog, 
   insertActivity 
 } from "../db/repository";
@@ -68,6 +69,7 @@ export async function adminToggleUserStatusHandler(req: AuthenticatedRequest, re
 
   // If user is deactivated or blocked, revoke all active sessions immediately
   if (status !== "active") {
+    await incrementUserTokenVersion(id);
     await revokeAllUserSessions(id);
   }
 
@@ -107,7 +109,8 @@ export async function adminResetUserPasswordHandler(req: AuthenticatedRequest, r
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await updateUserById(id, { passwordHash });
 
-  // Invalidate all active sessions for security upon admin password reset
+  // Invalidate all active sessions and access tokens for security upon admin password reset
+  await incrementUserTokenVersion(id);
   await revokeAllUserSessions(id);
 
   await insertAuditLog({

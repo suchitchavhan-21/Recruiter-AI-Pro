@@ -15,6 +15,7 @@ import {
   revokeSessionById, 
   revokeAllUserSessions,
   rotateSessionAtomically,
+  incrementUserTokenVersion,
   hashToken, 
   generateUUID, 
   insertActivity 
@@ -223,7 +224,8 @@ export async function loginHandler(req: Request, res: Response) {
   const accessToken = signAccessToken({
     userId: user.id,
     email: user.email,
-    role: user.role
+    role: user.role,
+    tokenVersion: user.tokenVersion ?? 1
   });
 
   const refreshToken = signRefreshToken({ userId: user.id });
@@ -286,6 +288,10 @@ export async function logoutHandler(req: AuthenticatedRequest, res: Response) {
   }
 
   if (req.user?.userId) {
+    // Invalidate any outstanding access tokens immediately via tokenVersion
+    await incrementUserTokenVersion(req.user.userId);
+    await revokeAllUserSessions(req.user.userId);
+
     await insertActivity({
       userId: req.user.userId,
       activityType: "USER_LOGOUT",
@@ -333,7 +339,8 @@ export async function refreshTokenHandler(req: Request, res: Response) {
   const newAccessToken = signAccessToken({
     userId: user.id,
     email: user.email,
-    role: user.role
+    role: user.role,
+    tokenVersion: user.tokenVersion ?? 1
   });
   const newRefreshToken = signRefreshToken({ userId: user.id });
 
@@ -420,10 +427,11 @@ export async function forgotPasswordHandler(req: Request, res: Response) {
   }
 
   const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenHash = hashToken(resetToken);
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
   await updateUserById(user.id, {
-    resetPasswordToken: resetToken,
+    resetPasswordToken: resetTokenHash,
     resetPasswordExpires: expiresAt
   });
 
@@ -472,6 +480,8 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     resetPasswordExpires: undefined
   });
 
+  // Increment tokenVersion so all existing access tokens are revoked immediately
+  await incrementUserTokenVersion(user.id);
   // Invalidate all existing sessions on password reset for security
   await revokeAllUserSessions(user.id);
 

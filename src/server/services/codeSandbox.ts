@@ -30,6 +30,7 @@ import { execFile } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import ts from "typescript";
 
 export const RUNNER_CLASSIFICATIONS = {
   DEV_TEST: "Restricted In-Process Runner (Development/Testing Mode)",
@@ -185,6 +186,7 @@ export const FORBIDDEN_EXECUTION_PATTERNS = [
  * Validates candidate code against restricted system access patterns.
  */
 export function checkRestrictedCodePatterns(code: string): { valid: boolean; violation?: string } {
+  // 1. Regex check for forbidden direct identifiers
   for (const pattern of FORBIDDEN_EXECUTION_PATTERNS) {
     if (pattern.test(code)) {
       return {
@@ -193,6 +195,76 @@ export function checkRestrictedCodePatterns(code: string): { valid: boolean; vio
       };
     }
   }
+
+  // 2. Regex check for dynamic string concatenation / hex evasion targeting sensitive properties
+  const dynamicObfuscationPattern = /(?:["'`]\s*con\s*["'`]\s*\+\s*["'`]\s*structor\s*["'`]|["'`]\s*__pro\s*["'`]\s*\+\s*["'`]\s*to__\s*["'`]|["'`]\s*proto\s*["'`]\s*\+\s*["'`]\s*type\s*["'`]|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4})/i;
+  if (dynamicObfuscationPattern.test(code)) {
+    return {
+      valid: false,
+      violation: "Dynamic property obfuscation or escape sequences are strictly prohibited."
+    };
+  }
+
+  // 3. Static AST analysis for property access & calls
+  try {
+    const sourceFile = ts.createSourceFile("submission.ts", code, ts.ScriptTarget.Latest, true);
+    let violation: string | undefined;
+
+    function visit(node: ts.Node) {
+      if (violation) return;
+
+      // Check element access e.g. obj["constructor"] or obj["con"+"structor"]
+      if (ts.isElementAccessExpression(node)) {
+        const arg = node.argumentExpression;
+        if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) {
+          const propName = arg.text.toLowerCase();
+          if (["constructor", "__proto__", "prototype", "process", "require", "global", "globalthis"].includes(propName)) {
+            violation = `Dynamic access to property '${arg.text}' is prohibited.`;
+            return;
+          }
+        } else if (ts.isBinaryExpression(arg)) {
+          // Check for string concatenation
+          const combined = arg.getText().replace(/["'`+\s]/g, "").toLowerCase();
+          if (["constructor", "__proto__", "prototype", "process", "require", "global"].some(k => combined.includes(k))) {
+            violation = `Concatenated property access to restricted property '${combined}' is prohibited.`;
+            return;
+          }
+        }
+      }
+
+      // Check property access e.g. obj.constructor
+      if (ts.isPropertyAccessExpression(node)) {
+        const propName = node.name.text.toLowerCase();
+        if (["constructor", "__proto__", "prototype"].includes(propName)) {
+          violation = `Direct access to prototype property '${node.name.text}' is prohibited.`;
+          return;
+        }
+      }
+
+      // Check call expressions to forbidden globals
+      if (ts.isCallExpression(node)) {
+        const expr = node.expression;
+        if (ts.isIdentifier(expr)) {
+          if (["eval", "function"].includes(expr.text.toLowerCase())) {
+            violation = `Calling '${expr.text}' is prohibited.`;
+            return;
+          }
+        }
+      }
+
+      ts.forEachChild(node, visit);
+    }
+
+    visit(sourceFile);
+
+    if (violation) {
+      return { valid: false, violation };
+    }
+  } catch {
+    // If AST parsing fails, fallback to rejection
+    return { valid: false, violation: "Failed to parse code syntax for security validation." };
+  }
+
   return { valid: true };
 }
 
@@ -226,10 +298,22 @@ export async function executeInRestrictedDevRunner(
   const sandbox = {
     console: { log: () => {}, error: () => {}, warn: () => {} },
     Math, Array, Object, String, Number, Boolean, Map, Set,
-    parseInt, parseFloat, isNaN, isFinite
+    parseInt, parseFloat, isNaN, isFinite,
+    process: undefined,
+    global: undefined,
+    globalThis: undefined,
+    require: undefined,
+    module: undefined,
+    exports: undefined,
+    eval: undefined,
+    Function: undefined,
+    Reflect: undefined,
+    Proxy: undefined
   };
+  (sandbox as any).globalThis = sandbox;
+  (sandbox as any).global = sandbox;
 
-  const context = vm.createContext(sandbox);
+  const context = vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } });
 
   try {
     const compiledScript = new vm.Script(`
@@ -390,10 +474,30 @@ try {
   const sandbox = {
     console: { log: () => {}, error: () => {}, warn: () => {} },
     Math, Array, Object, String, Number, Boolean, Map, Set,
-    parseInt, parseFloat, isNaN, isFinite
+    parseInt, parseFloat, isNaN, isFinite,
+    process: undefined,
+    global: undefined,
+    globalThis: undefined,
+    require: undefined,
+    module: undefined,
+    exports: undefined,
+    eval: undefined,
+    Function: undefined,
+    Reflect: undefined,
+    Proxy: undefined
   };
+  sandbox.globalThis = sandbox;
+  sandbox.global = sandbox;
 
-  const context = vm.createContext(sandbox);
+  try {
+    Object.defineProperty(Function.prototype, "constructor", {
+      get() { throw new Error("[SECURITY VIOLATION] Dynamic Function constructor access is prohibited."); },
+      set() { throw new Error("[SECURITY VIOLATION] Dynamic Function constructor modification is prohibited."); },
+      configurable: false
+    });
+  } catch (_) {}
+
+  const context = vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } });
   const compiledScript = new vm.Script(
     '"use strict";\\n' + userCode + ';\\nif (typeof ' + entryFunctionName + ' !== "function") { throw new Error("Function \\'' + entryFunctionName + '\\' is not defined"); }'
   );
@@ -623,9 +727,54 @@ try {
   }
 }
 
+async function executeInExternalSandbox(
+  endpointUrl: string,
+  userCode: string,
+  entryFunctionName: string,
+  testCases: TestCase[],
+  expectedOptimal: { time: string; space: string }
+): Promise<SandboxExecutionResult> {
+  const patternCheck = checkRestrictedCodePatterns(userCode);
+  const complexity = analyzeCodeComplexity(userCode, expectedOptimal);
+  if (!patternCheck.valid) {
+    return {
+      status: "INVALID_SUBMISSION",
+      passedTests: 0,
+      totalTests: testCases.length,
+      results: [],
+      runtimeMs: 0,
+      memoryBytes: 0,
+      complexityAssessment: complexity,
+      interviewerFeedback: `Execution rejected: ${patternCheck.violation}`,
+      runnerMode: "isolated_subprocess"
+    };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(endpointUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userCode, entryFunctionName, testCases, expectedOptimal }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!response.ok) {
+      throw new Error(`External sandbox responded with HTTP ${response.status}`);
+    }
+    return (await response.json()) as SandboxExecutionResult;
+  } catch (err: any) {
+    clearTimeout(timer);
+    throw new Error(`[EXTERNAL_SANDBOX_ERROR] Failed to execute in external sandbox: ${err?.message || err}`);
+  }
+}
+
 /**
  * Authoritative sandbox execution entry point.
  * By default executes via isolated subprocess worker outside the Express process.
+ * In production mode, strictly requires an external isolated container sandbox;
+ * in-process and local execution are disabled.
  */
 export async function executeInSandbox(
   userCode: string,
@@ -637,6 +786,15 @@ export async function executeInSandbox(
   const useInProcess = process.env.USE_IN_PROCESS_SANDBOX === "true";
   if (isProd && useInProcess) {
     throw new Error("[SECURITY FATAL] In-process sandbox execution is strictly forbidden in production mode.");
+  }
+  if (isProd) {
+    const externalSandboxUrl = process.env.EXTERNAL_SANDBOX_URL?.trim();
+    if (!externalSandboxUrl) {
+      throw new Error(
+        "[SECURITY FATAL] Untrusted code execution in production requires an external isolated sandbox (EXTERNAL_SANDBOX_URL is not configured). In-process and local execution are disabled."
+      );
+    }
+    return executeInExternalSandbox(externalSandboxUrl, userCode, entryFunctionName, testCases, expectedOptimal);
   }
   if (useInProcess) {
     return executeInRestrictedDevRunner(userCode, entryFunctionName, testCases, expectedOptimal);

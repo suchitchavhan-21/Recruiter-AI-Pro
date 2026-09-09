@@ -9,6 +9,7 @@ import {
   listActiveSessionsByUserId, 
   revokeSessionById,
   revokeAllUserSessions,
+  incrementUserTokenVersion,
   insertSession,
   generateUUID,
   hashToken, 
@@ -101,6 +102,7 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
   const updatedUser = await updateUserById(user.id, updates);
 
   if (updates.passwordHash) {
+    const newVersion = await incrementUserTokenVersion(user.id);
     await revokeAllUserSessions(user.id);
     const refreshToken = signRefreshToken({ userId: user.id });
     const newSession: UserSession = {
@@ -117,7 +119,7 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     };
     await insertSession(newSession);
-    const accessToken = signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    const accessToken = signAccessToken({ userId: user.id, email: user.email, role: user.role, tokenVersion: newVersion });
     setAuthCookies(res, accessToken, refreshToken);
   }
 

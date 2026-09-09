@@ -15,6 +15,7 @@ async function executeTokenRefresh(): Promise<boolean> {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
       }
     });
 
@@ -35,6 +36,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
   // 1. Ensure credentials: 'include' for secure HttpOnly cookie authentication across all requests
   options.credentials = "include";
+
+  // Attach anti-CSRF header for state-changing cross-site defense
+  const headers = new Headers(options.headers || {});
+  if (!headers.has("X-Requested-With")) {
+    headers.set("X-Requested-With", "XMLHttpRequest");
+  }
+  options.headers = headers;
 
   // 2. Execute the fetch request
   const response = await window.fetch(input, options);
