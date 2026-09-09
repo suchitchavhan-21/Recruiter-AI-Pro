@@ -10,6 +10,8 @@
 
 import http from "http";
 import { spawn, ChildProcess } from "child_process";
+import fs from "fs";
+import path from "path";
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
