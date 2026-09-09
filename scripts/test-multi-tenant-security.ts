@@ -85,7 +85,12 @@ async function startServer(port: number): Promise<ChildProcess> {
   });
 
   proc.stdout?.on("data", d => {
-    if (process.env.DEBUG) console.log(`[SERVER STDOUT] ${d}`);
+    const text = d.toString();
+    if (process.env.DEBUG) console.log(`[SERVER STDOUT] ${text}`);
+    const matches = text.matchAll(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/g);
+    for (const match of matches) {
+      capturedLinks.push(match[1]);
+    }
   });
   proc.stderr?.on("data", d => {
     console.error(`[SERVER STDERR] ${d}`);
@@ -108,6 +113,20 @@ async function startServer(port: number): Promise<ChildProcess> {
 
   proc.kill();
   throw new Error(`Server failed to start on port ${port}`);
+}
+
+const capturedLinks: string[] = [];
+
+async function verifyLatestUser() {
+  for (let i = 0; i < 40; i++) {
+    if (capturedLinks.length > 0) {
+      const link = capturedLinks.shift()!;
+      await fetchJson(link);
+      return true;
+    }
+    await delay(100);
+  }
+  return false;
 }
 
 async function runSecurityAudit() {
@@ -136,9 +155,12 @@ async function runSecurityAudit() {
       confirmPassword: password,
       agreeTerms: true
     }));
-    if (regA.data?.verificationLink) {
-      await fetchJson(regA.data.verificationLink);
-    }
+    check(
+      regA.data?.verificationLink === undefined,
+      "Zero-Trust Security: User A registration response does NOT leak verificationLink in JSON body"
+    );
+    await verifyLatestUser();
+
     const loginA = await fetchJson(`${BASE}/api/auth/login`, { method: "POST" }, JSON.stringify({
       email: emailA,
       password
@@ -156,9 +178,12 @@ async function runSecurityAudit() {
       confirmPassword: password,
       agreeTerms: true
     }));
-    if (regB.data?.verificationLink) {
-      await fetchJson(regB.data.verificationLink);
-    }
+    check(
+      regB.data?.verificationLink === undefined,
+      "Zero-Trust Security: User B registration response does NOT leak verificationLink in JSON body"
+    );
+    await verifyLatestUser();
+
     const loginB = await fetchJson(`${BASE}/api/auth/login`, { method: "POST" }, JSON.stringify({
       email: emailB,
       password
@@ -368,6 +393,56 @@ async function runSecurityAudit() {
       legacyDocRes.status === 400,
       "Legacy binary .doc format rejected with HTTP 400 UNSUPPORTED_FORMAT",
       `Status: ${legacyDocRes.status}`
+    );
+
+    // 18. Resume Upload: Valid PDF Parsing Verification
+    console.log("\n[TEST 18] Verifying valid PDF upload and text extraction...");
+    const contentStream = "BT\n/F1 12 Tf\n50 700 Td\n(Senior Cloud Infrastructure Architect with 10 years of experience in distributed systems, Kubernetes, TypeScript, and high-throughput microservices.) Tj\nET";
+    const streamLen = Buffer.byteLength(contentStream, "utf8");
+    const h = "%PDF-1.4\n";
+    const o1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+    const o2 = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+    const o3 = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
+    const o4 = "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+    const o5 = `5 0 obj\n<< /Length ${streamLen} >>\nstream\n${contentStream}\nendstream\nendobj\n`;
+    let off = Buffer.byteLength(h, "utf8");
+    const off1 = off; off += Buffer.byteLength(o1, "utf8");
+    const off2 = off; off += Buffer.byteLength(o2, "utf8");
+    const off3 = off; off += Buffer.byteLength(o3, "utf8");
+    const off4 = off; off += Buffer.byteLength(o4, "utf8");
+    const off5 = off; off += Buffer.byteLength(o5, "utf8");
+    const xrefOff = off;
+    const p = (n: number) => String(n).padStart(10, "0");
+    const xr = `xref\n0 6\n0000000000 65535 f \n${p(off1)} 00000 n \n${p(off2)} 00000 n \n${p(off3)} 00000 n \n${p(off4)} 00000 n \n${p(off5)} 00000 n \n`;
+    const tr = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOff}\n%%EOF\n`;
+    const validPdfBuffer = Buffer.from(h + o1 + o2 + o3 + o4 + o5 + xr + tr, "utf8");
+    const validPdfBase64 = validPdfBuffer.toString("base64");
+    const validPdfRes = await fetchJson(`${BASE}/api/resumes/upload`, {
+      method: "POST",
+      headers: headersA
+    }, JSON.stringify({ base64Data: validPdfBase64, fileName: "staff_engineer_resume.pdf" }));
+    check(
+      validPdfRes.status === 200 || validPdfRes.status === 201,
+      "Valid PDF resume uploaded, parsed and accepted successfully without pdf-parse crash",
+      `Status: ${validPdfRes.status} Error: ${JSON.stringify(validPdfRes.data?.error || validPdfRes.data)}`
+    );
+
+    // 19. Rate Limiting on Bridge Routes (/api/login)
+    console.log("\n[TEST 19] Verifying rate limiter enforcement on legacy bridge /api/login...");
+    let rateLimited = false;
+    for (let i = 0; i < 35; i++) {
+      const rlRes = await fetchJson(`${BASE}/api/login`, { method: "POST" }, JSON.stringify({
+        email: "nonexistent_attacker@example.com",
+        password: "WrongPassword123!"
+      }));
+      if (rlRes.status === 429) {
+        rateLimited = true;
+        break;
+      }
+    }
+    check(
+      rateLimited,
+      "Rate limiter active on /api/login: correctly returns HTTP 429 after threshold exceeded"
     );
 
   } finally {

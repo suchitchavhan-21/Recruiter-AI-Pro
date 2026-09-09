@@ -62,14 +62,12 @@ export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
     setIsLoading(true);
     try {
       const res = await AuthService.register(data);
-      showNotification("Account created successfully! Please verify your email.", "success");
+      showNotification("Account created! Please check your email inbox to verify and activate your account.", "success");
       setTemporaryPassword(data.password);
-      if (res.verificationLink) {
-        setUnverifiedUser({
-          email: data.email,
-          verificationLink: res.verificationLink
-        });
-      }
+      setUnverifiedUser({
+        email: data.email,
+        verificationLink: res.verificationLink
+      });
       setView("login");
     } catch (err: any) {
       const msg = err.message || "Registration failed.";

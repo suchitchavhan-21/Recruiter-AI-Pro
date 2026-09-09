@@ -115,9 +115,14 @@ export async function registerHandler(req: Request, res: Response) {
   const passwordHash = await bcrypt.hash(password, 10);
   const verificationToken = crypto.randomBytes(32).toString("hex");
 
-  // Determine role safely
+  // Determine role safely (Admin escalation via key is strictly prohibited in production)
   let role: "candidate" | "admin" = "candidate";
-  if (adminKey && ENV.ADMIN_PASSCODE && adminKey.trim() === ENV.ADMIN_PASSCODE.trim()) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    adminKey &&
+    ENV.ADMIN_PASSCODE &&
+    adminKey.trim() === ENV.ADMIN_PASSCODE.trim()
+  ) {
     role = "admin";
   }
 
@@ -154,6 +159,11 @@ export async function registerHandler(req: Request, res: Response) {
     console.warn("[MAIL WARNING] Failed to deliver verification email:", mailErr);
   }
 
+  // In development, log the link exclusively to the secure server console; never leak in HTTP JSON body
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[DEV EMAIL LINK] ${appUrl}/api/auth/verify-email?token=${verificationToken}`);
+  }
+
   return res.status(201).json({
     success: true,
     message: "Registration successful. Please verify your email address to complete activation.",
@@ -163,8 +173,7 @@ export async function registerHandler(req: Request, res: Response) {
       email: newUser.email,
       role: newUser.role,
       emailVerified: false
-    },
-    verificationLink: `${appUrl}/api/auth/verify-email?token=${verificationToken}`
+    }
   });
 }
 
@@ -196,13 +205,11 @@ export async function loginHandler(req: Request, res: Response) {
   }
 
   if (!user.emailVerified) {
-    const appUrl = `${req.protocol}://${req.get("host") || "localhost:3000"}`;
     return res.status(403).json({
       success: false,
       error: { code: "EMAIL_NOT_VERIFIED", message: "Please verify your email address before logging in." },
       unverifiedUser: {
-        email: user.email,
-        verificationLink: `${appUrl}/api/auth/verify-email?token=${user.verificationToken || ""}`
+        email: user.email
       }
     });
   }
@@ -431,10 +438,14 @@ export async function forgotPasswordHandler(req: Request, res: Response) {
     console.warn("[MAIL WARNING] Failed to deliver password reset email:", err);
   }
 
+  // In development, log reset link to console; never leak in HTTP JSON body
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[DEV RESET LINK] ${appUrl}/reset-password?token=${resetToken}`);
+  }
+
   return res.status(200).json({
     success: true,
-    message: "If an account exists with this email address, password reset instructions have been sent.",
-    resetLink: `${appUrl}/reset-password?token=${resetToken}`
+    message: "If an account exists with this email address, password reset instructions have been sent."
   });
 }
 

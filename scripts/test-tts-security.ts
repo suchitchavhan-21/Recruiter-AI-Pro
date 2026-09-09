@@ -80,9 +80,7 @@ async function runTTSSecuritySuite() {
       })
     });
     const regData: any = await regRes.json();
-    if (regData?.verificationLink) {
-      await fetch(regData.verificationLink);
-    }
+    await queryPostgres("UPDATE users SET email_verified = true WHERE email = $1;", [testEmail]);
     const loginRes = await fetch(`${BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

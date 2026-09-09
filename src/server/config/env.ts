@@ -127,6 +127,14 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
     } else if (!dbUrl.startsWith("postgres://") && !dbUrl.startsWith("postgresql://")) {
       errors.push("DATABASE_URL must be a valid PostgreSQL connection string starting with 'postgres://' or 'postgresql://'.");
     }
+
+    const adminPasscode = (process.env.ADMIN_PASSCODE || ENV.ADMIN_PASSCODE || "").trim();
+    const knownWeak = ["adminsecret2026", "admin", "admin123", "password", "secret", "123456", "adminsecret"];
+    if (adminPasscode) {
+      if (knownWeak.includes(adminPasscode.toLowerCase()) || adminPasscode.length < 16) {
+        errors.push(`ADMIN_PASSCODE cannot use weak or default value in production (minimum 16 characters high-entropy secret required). Provide a secure secret or leave unset.`);
+      }
+    }
   }
 
   return {

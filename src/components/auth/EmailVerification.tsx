@@ -35,7 +35,7 @@ export function EmailVerification({
       </div>
 
       <p className="text-xs text-emerald-200/90 leading-relaxed">
-        A verification link was generated for <strong className="text-white">{email}</strong>.
+        A verification message was sent to <strong className="text-white">{email}</strong>. Please check your inbox and click the link to activate your account.
       </p>
 
       {verificationLink && (

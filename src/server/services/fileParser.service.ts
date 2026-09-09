@@ -1,12 +1,26 @@
 import mammoth from "mammoth";
 
-// Dynamic import or require for pdf-parse to avoid ESM/CJS discrepancies
+// Dynamic import for pdf-parse supporting both v2 (PDFParse class) and v1 (callable function)
 async function parsePdfBuffer(buffer: Buffer): Promise<string> {
+  let parser: any = null;
   try {
     const pdfParseModule: any = await import("pdf-parse");
-    const pdfParse = pdfParseModule.default || pdfParseModule;
-    const data = await pdfParse(buffer);
-    const text = (data?.text || "").trim();
+    const PDFParse = pdfParseModule.PDFParse || pdfParseModule.default?.PDFParse || pdfParseModule.default || pdfParseModule;
+
+    let text = "";
+    if (typeof PDFParse === "function" && PDFParse.prototype && typeof PDFParse.prototype.getText === "function") {
+      // pdf-parse v2 class API
+      parser = new PDFParse({ data: buffer });
+      const result = await parser.getText();
+      text = (result?.text || "").trim();
+    } else if (typeof PDFParse === "function") {
+      // pdf-parse v1 function API fallback
+      const result = await PDFParse(buffer);
+      text = (result?.text || "").trim();
+    } else {
+      throw new Error("PDF parser class or function not available in loaded module");
+    }
+
     if (!text) {
       throw new Error("EMPTY_TEXT: PDF parsed successfully but contains no selectable text layer (e.g. scanned image).");
     }
@@ -14,6 +28,12 @@ async function parsePdfBuffer(buffer: Buffer): Promise<string> {
   } catch (err: any) {
     console.error("[FILE PARSE] PDF parsing error:", err?.message || err);
     throw new Error(`PARSING_FAILED: Malformed or unreadable PDF document (${err?.message || "unrecognized structure"}).`);
+  } finally {
+    if (parser && typeof parser.destroy === "function") {
+      try {
+        await parser.destroy();
+      } catch {}
+    }
   }
 }
 

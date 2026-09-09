@@ -453,19 +453,24 @@ export async function initPostgresSchema(): Promise<boolean> {
       }
     }
 
-    try {
-      await queryPostgres(`
-        CREATE INDEX IF NOT EXISTS idx_vector_chunks_user_domain 
-        ON vector_chunks (user_id, knowledge_domain);
-        CREATE INDEX IF NOT EXISTS idx_vector_chunks_doc 
-        ON vector_chunks (document_id);
-        CREATE INDEX IF NOT EXISTS idx_coding_attempts_user
-        ON coding_attempts (user_id, question_id);
-        CREATE INDEX IF NOT EXISTS idx_competency_scores_session
-        ON interview_competency_scores (session_id, user_id);
-      `);
-    } catch (idxErr: any) {
-      console.warn("[POSTGRES NOTE] Multi-tenant index creation notice:", idxErr.message);
+    const multiTenantIndexStatements = [
+      `CREATE INDEX IF NOT EXISTS idx_vector_chunks_user_domain ON vector_chunks (user_id, knowledge_domain);`,
+      `CREATE INDEX IF NOT EXISTS idx_vector_chunks_doc ON vector_chunks (document_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_coding_attempts_user ON coding_attempts (user_id, question_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_competency_scores_session ON interview_competency_scores (session_id, user_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_interviews_user ON interviews (user_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_resumes_user ON resumes (user_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_applications_user ON applications (user_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_star_stories_user ON star_stories (user_id);`
+    ];
+
+    for (const stmt of multiTenantIndexStatements) {
+      try {
+        await queryPostgres(stmt);
+      } catch (idxErr: any) {
+        console.warn("[POSTGRES NOTE] Multi-tenant index creation notice:", idxErr.message);
+      }
     }
 
     isInitialized = true;

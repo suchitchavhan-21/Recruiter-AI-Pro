@@ -61,6 +61,8 @@ function delay(ms: number) {
 
 let serverProcess: ChildProcess | null = null;
 
+const capturedE2ELinks: string[] = [];
+
 async function startServer(): Promise<void> {
   const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
   serverProcess = spawn(npxCmd, ["tsx", "server.ts"], {
@@ -68,6 +70,14 @@ async function startServer(): Promise<void> {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     shell: true
+  });
+
+  serverProcess.stdout?.on("data", (data) => {
+    const text = data.toString();
+    const match = text.match(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/);
+    if (match) {
+      capturedE2ELinks.push(match[1]);
+    }
   });
 
   for (let i = 0; i < 40; i++) {
@@ -143,8 +153,12 @@ async function runEndToEndTests() {
     }));
     assert(dupRegRes.status === 400 || dupRegRes.status === 409, "Failure Case: Duplicate email registration rejected");
 
-    if (regResA.data?.verificationLink) {
-      await fetchJson(regResA.data.verificationLink);
+    for (let i = 0; i < 30; i++) {
+      if (capturedE2ELinks.length > 0) {
+        await fetchJson(capturedE2ELinks.shift()!);
+        break;
+      }
+      await delay(100);
     }
 
     const loginResA = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, { method: "POST" }, JSON.stringify({
@@ -166,8 +180,12 @@ async function runEndToEndTests() {
       confirmPassword: passwordB,
       agreeTerms: true
     }));
-    if (regResB.data?.verificationLink) {
-      await fetchJson(regResB.data.verificationLink);
+    for (let i = 0; i < 30; i++) {
+      if (capturedE2ELinks.length > 0) {
+        await fetchJson(capturedE2ELinks.shift()!);
+        break;
+      }
+      await delay(100);
     }
     const loginResB = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, { method: "POST" }, JSON.stringify({
       email: emailB,

@@ -265,9 +265,7 @@ async function runProductionVerification() {
       confirmPassword: passwordA,
       agreeTerms: true
     }));
-    if (regResA.data?.verificationLink) {
-      await fetchJson(regResA.data.verificationLink);
-    }
+    await queryPostgres("UPDATE users SET email_verified = true WHERE email = $1;", [emailA]);
 
     const loginResA = await fetchJson(`${baseA}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailA, password: passwordA }));
     const tokenA = loginResA.data?.accessToken;
@@ -456,7 +454,7 @@ Responsibilities:
       confirmPassword: passwordA,
       agreeTerms: true
     }));
-    if (regResB.data?.verificationLink) await fetchJson(regResB.data.verificationLink);
+    await queryPostgres("UPDATE users SET email_verified = true WHERE email = $1;", [emailB]);
 
     const loginUserB = await fetchJson(`${baseB}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailB, password: passwordA }));
     const tokenUserB = loginUserB.data?.accessToken;

@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import { applySecurityHeaders, applyCorsMiddleware, ttsLimiter } from "./middleware/security";
+import { applySecurityHeaders, applyCorsMiddleware, ttsLimiter, authLimiter, aiLimiter } from "./middleware/security";
 import { getTTSProvider, getTTSDiagnostics } from "./voice/ttsProvider";
 import { centralErrorHandler } from "./middleware/errorHandler";
 import { authRouter } from "./routes/auth.routes";
@@ -263,13 +263,13 @@ export function createExpressApp(): express.Application {
   // (Guarantees every frontend button & fetch url continues working instantly)
   // ----------------------------------------------------
   // Auth Bridges
-  app.post("/api/register", validateBody(registerSchema), registerHandler);
-  app.post("/api/login", validateBody(loginSchema), loginHandler);
+  app.post("/api/register", authLimiter, validateBody(registerSchema), registerHandler);
+  app.post("/api/login", authLimiter, validateBody(loginSchema), loginHandler);
   app.post("/api/logout", requireAuth, logoutHandler);
-  app.post("/api/refresh-token", refreshTokenHandler);
+  app.post("/api/refresh-token", authLimiter, refreshTokenHandler);
   app.get("/api/verify-email", verifyEmailHandler);
-  app.post("/api/forgot-password", validateBody(forgotPasswordSchema), forgotPasswordHandler);
-  app.post("/api/reset-password", validateBody(resetPasswordSchema), resetPasswordHandler);
+  app.post("/api/forgot-password", authLimiter, validateBody(forgotPasswordSchema), forgotPasswordHandler);
+  app.post("/api/reset-password", authLimiter, validateBody(resetPasswordSchema), resetPasswordHandler);
   app.get("/api/me", requireAuth, getMeHandler);
 
   // Profile Bridges
@@ -284,10 +284,10 @@ export function createExpressApp(): express.Application {
   app.get("/api/interviews", requireAuth, listInterviewsHandler);
   app.get("/api/interviews/history", requireAuth, listInterviewsHandler);
   app.get("/api/interview/history", requireAuth, listInterviewsHandler);
-  app.post("/api/analyze-jd", requireAuth, validateBody(analyzeJdSchema), analyzeJdHandler);
-  app.post("/api/evaluate-interview", requireAuth, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
-  app.post("/api/generate-draft-answer", requireAuth, generateDraftAnswerHandler);
-  app.post("/api/evaluate-star", requireAuth, validateBody(evaluateStarSchema), evaluateStarHandler);
+  app.post("/api/analyze-jd", requireAuth, aiLimiter, validateBody(analyzeJdSchema), analyzeJdHandler);
+  app.post("/api/evaluate-interview", requireAuth, aiLimiter, validateBody(evaluateInterviewSchema), evaluateInterviewHandler);
+  app.post("/api/generate-draft-answer", requireAuth, aiLimiter, generateDraftAnswerHandler);
+  app.post("/api/evaluate-star", requireAuth, aiLimiter, validateBody(evaluateStarSchema), evaluateStarHandler);
   app.get("/api/star-stories", requireAuth, listStarStoriesHandler);
   app.post("/api/star-stories", requireAuth, validateBody(saveStarSchema), saveStarStoryHandler);
   app.delete("/api/star-stories/:id", requireAuth, deleteStarStoryHandler);
@@ -296,15 +296,15 @@ export function createExpressApp(): express.Application {
   app.delete("/api/interview/star-stories/:id", requireAuth, deleteStarStoryHandler);
 
   // Adaptive Interview Bridges
-  app.post("/api/interview/adaptive/start", requireAuth, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
-  app.post("/api/interview/adaptive/turn", requireAuth, validateBody(processTurnSchema), processAdaptiveTurnHandler);
+  app.post("/api/interview/adaptive/start", requireAuth, aiLimiter, validateBody(startAdaptiveSchema), startAdaptiveInterviewHandler);
+  app.post("/api/interview/adaptive/turn", requireAuth, aiLimiter, validateBody(processTurnSchema), processAdaptiveTurnHandler);
   app.get("/api/interview/adaptive/state/:sessionId", requireAuth, getAdaptiveInterviewStateHandler);
 
   // Resume Bridges
-  app.post("/api/scan-resume", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
-  app.post("/api/resumes", requireAuth, resumeUploadMiddleware, uploadAndScanResumeHandler);
-  app.post("/api/resumes/match-jd", requireAuth, matchJDEvidenceHandler);
-  app.post("/api/resumes/ats-score", requireAuth, calculateATSScoreHandler);
+  app.post("/api/scan-resume", requireAuth, aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
+  app.post("/api/resumes", requireAuth, aiLimiter, resumeUploadMiddleware, uploadAndScanResumeHandler);
+  app.post("/api/resumes/match-jd", requireAuth, aiLimiter, matchJDEvidenceHandler);
+  app.post("/api/resumes/ats-score", requireAuth, aiLimiter, calculateATSScoreHandler);
   app.get("/api/resumes", requireAuth, listResumesHandler);
   app.delete("/api/resumes/:id", requireAuth, deleteResumeHandler);
 

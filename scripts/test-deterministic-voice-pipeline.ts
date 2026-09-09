@@ -61,6 +61,15 @@ async function runDeterministicVoiceTests() {
     shell: false
   });
 
+  const devVerificationLinks: string[] = [];
+  serverProcess.stdout?.on("data", (data) => {
+    const text = data.toString();
+    const match = text.match(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/);
+    if (match) {
+      devVerificationLinks.push(match[1]);
+    }
+  });
+
   let serverReady = false;
   for (let i = 0; i < 60; i++) {
     await new Promise(r => setTimeout(r, 500));
@@ -119,8 +128,13 @@ async function runDeterministicVoiceTests() {
       })
     });
     const regData: any = await regRes.json();
-    if (regData?.verificationLink) {
-      await fetch(regData.verificationLink);
+    for (let i = 0; i < 30; i++) {
+      if (devVerificationLinks.length > 0) {
+        const link = devVerificationLinks.shift()!;
+        await fetch(link);
+        break;
+      }
+      await new Promise(r => setTimeout(r, 100));
     }
     const loginRes = await fetch(`http://localhost:${port}/api/auth/login`, {
       method: "POST",

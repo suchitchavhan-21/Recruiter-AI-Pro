@@ -129,16 +129,18 @@ async function runFailFastTests() {
   console.log("🛡️ PRODUCTION FAIL-FAST & MANDATORY CONFIGURATION AUDIT");
   console.log("=================================================================");
 
-  // Overall suite hard timeout (60 seconds max)
+  // Overall suite hard timeout (120 seconds max)
   const watchdog = setTimeout(() => {
-    console.error("\n❌ [FATAL TIMEOUT] Fail-Fast Suite exceeded 60s hard deadline! Terminating.");
+    console.error("\n❌ [FATAL TIMEOUT] Fail-Fast Suite exceeded 120s hard deadline! Terminating.");
     process.exit(1);
-  }, 60000);
+  }, 120000);
   watchdog.unref();
 
   const originalEnv = { ...process.env };
+  const TIMEOUT_MS = process.platform === "win32" ? 25000 : 10000;
 
   try {
+
     // -------------------------------------------------------------
     // Test 1: Production with NO JWT_SECRET -> Process must exit 1
     // -------------------------------------------------------------
@@ -149,7 +151,7 @@ async function runFailFastTests() {
       JWT_SECRET: "",
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db"
-    }, 3091, 5000);
+    }, 3091, TIMEOUT_MS);
     check(
       proc1.exitCode === 1 && (proc1.output.includes("JWT_SECRET") || proc1.output.includes("CONFIG FATAL")),
       "Missing JWT_SECRET strictly halts production process with exit code 1",
@@ -167,7 +169,7 @@ async function runFailFastTests() {
       JWT_SECRET: "ValidAccessSecret1234567890!",
       JWT_REFRESH_SECRET: "",
       DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db"
-    }, 3092, 5000);
+    }, 3092, TIMEOUT_MS);
     check(
       proc2.exitCode === 1 && (proc2.output.includes("JWT_REFRESH_SECRET") || proc2.output.includes("CONFIG FATAL")),
       "Missing JWT_REFRESH_SECRET strictly halts production process with exit code 1",
@@ -185,7 +187,7 @@ async function runFailFastTests() {
       JWT_SECRET: "ValidAccessSecret1234567890!",
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: ""
-    }, 3093, 5000);
+    }, 3093, TIMEOUT_MS);
     check(
       proc3.exitCode === 1 && (proc3.output.includes("DATABASE_URL") || proc3.output.includes("CONFIG FATAL")),
       "Missing DATABASE_URL strictly halts production process with exit code 1 (no silent fallback)",
@@ -203,7 +205,7 @@ async function runFailFastTests() {
       JWT_SECRET: "ValidAccessSecret1234567890!",
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: "embedded://postgres_data"
-    }, 3094, 5000);
+    }, 3094, TIMEOUT_MS);
     check(
       proc4.exitCode === 1 && proc4.output.includes("Embedded container-local database storage is strictly prohibited"),
       "Embedded DATABASE_URL in production strictly halts startup with exit code 1",
@@ -221,7 +223,7 @@ async function runFailFastTests() {
       JWT_SECRET: "ValidAccessSecret1234567890!",
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: "mysql://localhost:3306/db"
-    }, 3095, 5000);
+    }, 3095, TIMEOUT_MS);
     check(
       proc5.exitCode === 1 && proc5.output.includes("DATABASE_URL must be a valid PostgreSQL connection string"),
       "Invalid DATABASE_URL scheme in production strictly halts startup with exit code 1",
@@ -239,7 +241,7 @@ async function runFailFastTests() {
       JWT_SECRET: "",
       JWT_REFRESH_SECRET: "",
       DATABASE_URL: "embedded://postgres_data_test_dev"
-    }, 3096, 5000);
+    }, 3096, TIMEOUT_MS);
     check(
       !proc6.output.includes("CONFIG FATAL ERROR") && !proc6.output.includes("STARTUP HALTED"),
       "Development mode allows relaxed local testing without throwing fatal configuration errors",
@@ -258,7 +260,7 @@ async function runFailFastTests() {
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: "embedded://postgres_data_test_override",
       ALLOW_EMBEDDED_POSTGRES: "true"
-    }, 3097, 5000);
+    }, 3097, TIMEOUT_MS);
     check(
       proc7.exitCode === 1 && proc7.output.includes("Embedded container-local database storage is strictly prohibited"),
       "Production strictly rejects embedded database even if ALLOW_EMBEDDED_POSTGRES=true is provided (zero escape hatches)",
@@ -277,13 +279,32 @@ async function runFailFastTests() {
       JWT_SECRET: "",
       JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
       DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db"
-    }, 3098, 5000);
+    }, 3098, TIMEOUT_MS);
     check(
       proc8.exitCode === 1 && (proc8.output.includes("JWT_SECRET") || proc8.output.includes("CONFIG FATAL")),
       "Missing JWT_SECRET strictly halts production even if STRICT_FAIL_FAST=false (intrinsic safety)",
       `Exit code: ${proc8.exitCode}`
     );
-    console.log(`[STAGE 8/8 DONE in ${Date.now() - t8}ms]`);
+    console.log(`[STAGE 8/9 DONE in ${Date.now() - t8}ms]`);
+
+    // -------------------------------------------------------------
+    // Test 9: Production with weak/default ADMIN_PASSCODE -> MUST FAIL
+    // -------------------------------------------------------------
+    console.log("\n[STAGE 9/9 START] Testing that weak/default ADMIN_PASSCODE strictly halts production startup...");
+    const t9 = Date.now();
+    const proc9 = await testServerProcess({
+      NODE_ENV: "production",
+      JWT_SECRET: "ValidAccessSecret1234567890!",
+      JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
+      DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db",
+      ADMIN_PASSCODE: "ADMINSECRET2026"
+    }, 3099, TIMEOUT_MS);
+    check(
+      proc9.exitCode === 1 && proc9.output.includes("ADMIN_PASSCODE"),
+      "Weak default ADMIN_PASSCODE ('ADMINSECRET2026') strictly halts production startup with code 1",
+      `Exit code: ${proc9.exitCode}, Output: ${proc9.output.slice(0, 150)}`
+    );
+    console.log(`[STAGE 9/9 DONE in ${Date.now() - t9}ms]`);
 
   } finally {
     process.env = originalEnv;

@@ -65,6 +65,7 @@ function delay(ms: number) {
 }
 
 let serverProcess: ChildProcess | null = null;
+const capturedJobLinks: string[] = [];
 
 async function startServer(): Promise<void> {
   const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
@@ -76,7 +77,11 @@ async function startServer(): Promise<void> {
   });
 
   serverProcess.stdout?.on("data", (data) => {
-    // console.log("[SERVER]", data.toString().trim());
+    const text = data.toString();
+    const match = text.match(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/);
+    if (match) {
+      capturedJobLinks.push(match[1]);
+    }
   });
 
   serverProcess.stderr?.on("data", (data) => {
@@ -235,8 +240,12 @@ Skills: Go, PostgreSQL, Distributed Systems, Concurrency, Kafka, mTLS, Idempoten
   }));
 
   assert(registerARes.status === 201 && registerARes.data?.success === true, "Register User A returns HTTP 201");
-  if (registerARes.data?.verificationLink) {
-    await fetchJson(registerARes.data.verificationLink);
+  for (let i = 0; i < 30; i++) {
+    if (capturedJobLinks.length > 0) {
+      await fetchJson(capturedJobLinks.shift()!);
+      break;
+    }
+    await delay(100);
   }
 
   const loginARes = await fetchJson(`${baseUrl}/api/auth/login`, { method: "POST" }, JSON.stringify({
@@ -259,8 +268,12 @@ Skills: Go, PostgreSQL, Distributed Systems, Concurrency, Kafka, mTLS, Idempoten
   }));
 
   assert(registerBRes.status === 201 && registerBRes.data?.success === true, "Register User B returns HTTP 201");
-  if (registerBRes.data?.verificationLink) {
-    await fetchJson(registerBRes.data.verificationLink);
+  for (let i = 0; i < 30; i++) {
+    if (capturedJobLinks.length > 0) {
+      await fetchJson(capturedJobLinks.shift()!);
+      break;
+    }
+    await delay(100);
   }
 
   const loginBRes = await fetchJson(`${baseUrl}/api/auth/login`, { method: "POST" }, JSON.stringify({

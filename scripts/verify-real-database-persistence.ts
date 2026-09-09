@@ -75,6 +75,8 @@ function terminateProcess(proc: ChildProcess): Promise<void> {
   });
 }
 
+const capturedPersistenceLinks: string[] = [];
+
 async function startServer(port: number): Promise<ChildProcess> {
   const tsxCli = path.resolve(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
   const isTsxCli = fs.existsSync(tsxCli);
@@ -92,6 +94,14 @@ async function startServer(port: number): Promise<ChildProcess> {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     shell: false
+  });
+
+  proc.stdout?.on("data", (data) => {
+    const text = data.toString();
+    const match = text.match(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/);
+    if (match) {
+      capturedPersistenceLinks.push(match[1]);
+    }
   });
 
   for (let i = 0; i < 40; i++) {
@@ -188,8 +198,13 @@ async function runPersistenceVerification() {
       agreeTerms: true
     }));
     assert(regRes.status === 201, "Process A: Created user account");
-    if (regRes.data?.verificationLink) {
-      await fetchJson(regRes.data.verificationLink);
+    for (let i = 0; i < 30; i++) {
+      if (capturedPersistenceLinks.length > 0) {
+        const link = capturedPersistenceLinks.shift()!;
+        await fetchJson(link);
+        break;
+      }
+      await delay(100);
     }
 
     const loginResA = await fetchJson("http://127.0.0.1:3020/api/auth/login", { method: "POST" }, JSON.stringify({ email, password }));

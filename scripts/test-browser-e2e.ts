@@ -91,6 +91,7 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
 }
 
 let serverProcess: ChildProcess | null = null;
+const capturedBrowserLinks: string[] = [];
 
 async function startServer(): Promise<void> {
   const tsxCli = path.resolve(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
@@ -103,6 +104,14 @@ async function startServer(): Promise<void> {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     shell: false
+  });
+
+  serverProcess.stdout?.on("data", (data) => {
+    const text = data.toString();
+    const match = text.match(/\[DEV EMAIL LINK\]\s+(https?:\/\/[^\s\r\n]+)/);
+    if (match) {
+      capturedBrowserLinks.push(match[1]);
+    }
   });
 
   for (let i = 0; i < 80; i++) {
@@ -229,9 +238,13 @@ async function runBrowserE2E() {
       agreeTerms: true
     }));
 
-    if (regBackendRes.data?.verificationLink) {
-      await fetchJson(regBackendRes.data.verificationLink);
-      await delay(500);
+    for (let i = 0; i < 30; i++) {
+      if (capturedBrowserLinks.length > 0) {
+        await fetchJson(capturedBrowserLinks.shift()!);
+        await delay(500);
+        break;
+      }
+      await delay(100);
     }
 
     // --- JOURNEY 2: User Login & Session Verification via UI ---
@@ -429,7 +442,13 @@ async function runBrowserE2E() {
       confirmPassword: passwordA,
       agreeTerms: true
     }));
-    if (regResB.data?.verificationLink) await fetchJson(regResB.data.verificationLink);
+    for (let i = 0; i < 30; i++) {
+      if (capturedBrowserLinks.length > 0) {
+        await fetchJson(capturedBrowserLinks.shift()!);
+        break;
+      }
+      await delay(100);
+    }
 
     const loginResB = await fetchJson(`${baseUrl}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailB, password: passwordA }));
     const tokenB = loginResB.data?.accessToken;
