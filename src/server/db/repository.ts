@@ -358,6 +358,9 @@ export async function updateUserById(id: string, updates: Partial<User>): Promis
 
 export async function deleteUserById(id: string): Promise<boolean> {
   if (isPostgresActive()) {
+    try {
+      await queryPostgres("DELETE FROM vector_chunks WHERE user_id = $1;", [id]);
+    } catch {}
     const res = await queryPostgres("DELETE FROM users WHERE id = $1;", [id]);
     return (res.rowCount || 0) > 0;
   }
@@ -371,6 +374,15 @@ export async function deleteUserById(id: string): Promise<boolean> {
   db.resumes = db.resumes.filter(r => r.userId !== id);
   db.applications = db.applications.filter(a => a.userId !== id);
   db.starStories = db.starStories.filter(s => s.userId !== id);
+  if (db.codingAttempts) {
+    db.codingAttempts = db.codingAttempts.filter(c => c.userId !== id);
+  }
+
+  try {
+    const { getVectorStore } = await import("../ai/vectorStore");
+    const vs = await getVectorStore();
+    await vs.deleteByUserId(id);
+  } catch {}
 
   await persistDatabaseAsync();
   return db.users.length < initialLength;

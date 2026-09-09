@@ -141,6 +141,19 @@ export function applySecurityHeaders(req: Request, res: Response, next: NextFunc
   // Permissions policy for camera & microphone access
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self)");
 
+  // Content-Security-Policy (allows local self, fonts, wasm, and required API assets)
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com data:; " +
+    "img-src 'self' data: blob: https:; " +
+    "media-src 'self' blob: data:; " +
+    "connect-src 'self' https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://storage.googleapis.com; " +
+    "frame-ancestors 'self';"
+  );
+
   // HSTS in production
   if (ENV.NODE_ENV === "production") {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
