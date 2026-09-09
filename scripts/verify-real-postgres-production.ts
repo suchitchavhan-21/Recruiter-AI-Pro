@@ -42,9 +42,9 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
-          resolve({ status: res.statusCode || 200, data: parsedData, raw: data });
+          resolve({ status: res.statusCode || 200, data: parsedData, raw: data, headers: res.headers });
         } catch {
-          resolve({ status: res.statusCode || 200, data: null, raw: data });
+          resolve({ status: res.statusCode || 200, data: null, raw: data, headers: res.headers });
         }
       });
     });
@@ -55,6 +55,17 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
     }
     req.end();
   });
+}
+
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 }
 
 function delay(ms: number) {
@@ -203,9 +214,10 @@ async function runProductionVerification() {
     }));
 
     assert(loginRes.status === 200 && loginRes.data?.success === true, "Candidate logged in and session persisted to PostgreSQL");
-    const accessToken = loginRes.data?.accessToken;
+    assert(loginRes.data?.accessToken === undefined && loginRes.data?.refreshToken === undefined, "Zero-Trust: Tokens not in JSON response");
+    const accessToken = extractTokenFromCookies(loginRes.headers);
     const activeUserId = loginRes.data?.user?.id;
-    assert(!!accessToken, "Access Token generated with fixed production secret");
+    assert(!!accessToken, "Access Token generated with fixed production secret via HttpOnly cookie");
 
     // Verify authenticated profile retrieval
     const meRes = await fetchJson(`http://127.0.0.1:${PROD_PORT}/api/auth/me`, {

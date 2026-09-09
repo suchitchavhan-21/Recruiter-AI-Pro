@@ -87,7 +87,7 @@ export function createExpressApp(): express.Application {
   const app = express();
 
   // Cloud Run executes behind Google Cloud load balancers and reverse proxies
-  app.set("trust proxy", true);
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS || 1));
 
   // Basic Body Parsers (1mb default; file uploads handled by dedicated route-level multer) & Cookie Parser
   app.use(express.json({ limit: "1mb" }));

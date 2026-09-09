@@ -1,4 +1,4 @@
-import { generateUUID, findInterviewById, insertInterview, updateInterviewById, updateInterviewTurnAtomically, insertCompetencyScore } from "../../db/repository";
+import { generateUUID, findInterviewById, findInterviewByIdAndUser, insertInterview, updateInterviewById, updateInterviewTurnAtomically, insertCompetencyScore } from "../../db/repository";
 import { InterviewSessionRecord } from "../../db/schema";
 import { evaluateInterviewSession, InterviewEvaluationResult } from "../../services/gemini.service";
 import { retrieveCandidateEvidence } from "../agents/tools";
@@ -140,9 +140,16 @@ export class InterviewOrchestrator {
     const diff = params.difficulty || "Senior";
 
     // 1. Check if session already exists in DB or cache to avoid duplicate insertion
-    const existing = await this.loadOrRestoreState(sessionId);
-    if (existing) {
-      return existing;
+    if (params.sessionId) {
+      // Check if session belongs to ANOTHER user
+      const existingAny = await findInterviewById(params.sessionId);
+      if (existingAny && existingAny.userId !== params.userId) {
+        throw new Error("[ORCHESTRATOR ERROR] Unauthorized access to interview session.");
+      }
+      const existing = await this.loadOrRestoreState(sessionId, params.userId);
+      if (existing) {
+        return existing;
+      }
     }
 
     // Load candidate memory context
@@ -228,20 +235,31 @@ export class InterviewOrchestrator {
 
   /**
    * Loads session from memory cache, or recovers state from the database.
+   * If userId is supplied, enforces strict tenant ownership at both cache and DB layers.
    */
-  static async loadOrRestoreState(sessionId: string): Promise<AdaptiveInterviewState | null> {
+  static async loadOrRestoreState(sessionId: string, userId?: string): Promise<AdaptiveInterviewState | null> {
     const cached = stateCache.get(sessionId);
     if (cached) {
+      if (userId && cached.userId !== userId) {
+        return null; // Resource hiding 404, never leak another tenant's cached session
+      }
       return cached;
     }
 
-    const record = await findInterviewById(sessionId);
+    const record = userId ? await findInterviewByIdAndUser(sessionId, userId) : await findInterviewById(sessionId);
     if (!record) {
+      return null;
+    }
+
+    if (userId && record.userId !== userId) {
       return null;
     }
 
     if (record.sessionState && (record.sessionState as any).sessionId) {
       const restored = record.sessionState as AdaptiveInterviewState;
+      if (userId && restored.userId !== userId) {
+        return null;
+      }
       stateCache.set(sessionId, restored);
       return restored;
     }
@@ -317,7 +335,7 @@ export class InterviewOrchestrator {
   }): Promise<{ state: AdaptiveInterviewState; isCompleted: boolean; nextTurn?: InterviewTurn }> {
     // Evict cached copy to load authoritative state from database
     stateCache.delete(params.sessionId);
-    const state = await this.loadOrRestoreState(params.sessionId);
+    const state = await this.loadOrRestoreState(params.sessionId, params.userId);
     if (!state) {
       throw new Error(`[ORCHESTRATOR ERROR] Interview session ${params.sessionId} not found.`);
     }
@@ -440,7 +458,7 @@ export class InterviewOrchestrator {
         answers: qaPairs,
         evaluation,
         sessionState: state
-      });
+      }, params.userId);
 
       return { state, isCompleted: true };
     }
@@ -556,7 +574,7 @@ export class InterviewOrchestrator {
     }
     // Atomically persist state update in PostgreSQL (cross-container concurrency safe)
     const previousTurnNumber = nextTurnIndex - 1;
-    const saveResult = await updateInterviewTurnAtomically(state.sessionId, previousTurnNumber, state);
+    const saveResult = await updateInterviewTurnAtomically(state.sessionId, previousTurnNumber, state, state.userId);
     if (!saveResult.success && saveResult.currentState) {
       const refreshedState = saveResult.currentState;
       stateCache.set(refreshedState.sessionId, refreshedState);

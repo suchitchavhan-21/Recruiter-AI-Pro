@@ -740,8 +740,37 @@ export async function findInterviewById(id: string): Promise<InterviewSessionRec
   return db.interviews.find(i => i.id === id) || null;
 }
 
-export async function updateInterviewById(id: string, updates: Partial<InterviewSessionRecord>): Promise<InterviewSessionRecord | null> {
-  const existing = await findInterviewById(id);
+export async function findInterviewByIdAndUser(id: string, userId: string): Promise<InterviewSessionRecord | null> {
+  if (isPostgresActive()) {
+    const res = await queryPostgres("SELECT * FROM interviews WHERE id = $1 AND user_id = $2;", [id, userId]);
+    if (res.rows.length === 0) return null;
+    const r = res.rows[0];
+    return {
+      id: r.id,
+      userId: r.user_id,
+      company: r.company,
+      role: r.role,
+      difficulty: r.difficulty,
+      interviewerCount: r.interviewer_count,
+      persona: r.persona,
+      state: r.state,
+      score: r.score,
+      timeTaken: r.time_taken,
+      questions: typeof r.questions === "string" ? JSON.parse(r.questions) : (r.questions || []),
+      answers: typeof r.answers === "string" ? JSON.parse(r.answers) : (r.answers || []),
+      evaluation: typeof r.evaluation === "string" ? JSON.parse(r.evaluation) : (r.evaluation || {}),
+      sessionState: typeof r.session_state === "string" ? JSON.parse(r.session_state) : (r.session_state || {}),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    };
+  }
+
+  const db = loadDatabase();
+  return db.interviews.find(i => i.id === id && i.userId === userId) || null;
+}
+
+export async function updateInterviewById(id: string, updates: Partial<InterviewSessionRecord>, userId?: string): Promise<InterviewSessionRecord | null> {
+  const existing = userId ? await findInterviewByIdAndUser(id, userId) : await findInterviewById(id);
   if (!existing) return null;
   const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
   await insertInterview(updated);
@@ -749,30 +778,42 @@ export async function updateInterviewById(id: string, updates: Partial<Interview
 }
 
 /**
- * Optimistically and atomically advances interview turn in PostgreSQL.
+ * Optimistically and atomically advances interview turn in PostgreSQL with tenant-isolation.
  * Guarantees cross-instance correctness in multi-container Cloud Run deployments.
  */
 export async function updateInterviewTurnAtomically(
   sessionId: string,
   expectedTurn: number,
-  updatedState: any
+  updatedState: any,
+  userId?: string
 ): Promise<{ success: boolean; currentState?: any }> {
   if (isPostgresActive()) {
-    const res = await queryPostgres(
-      `UPDATE interviews
-       SET session_state = $1, updated_at = NOW()
-       WHERE id = $2 
-         AND (
-           (session_state->>'currentTurn')::int = $3
-           OR session_state->>'currentTurn' IS NULL
-         )
-       RETURNING session_state;`,
-      [JSON.stringify(updatedState), sessionId, expectedTurn]
-    );
+    const query = userId
+      ? `UPDATE interviews
+         SET session_state = $1, updated_at = NOW()
+         WHERE id = $2 AND user_id = $4
+           AND (
+             (session_state->>'currentTurn')::int = $3
+             OR session_state->>'currentTurn' IS NULL
+           )
+         RETURNING session_state;`
+      : `UPDATE interviews
+         SET session_state = $1, updated_at = NOW()
+         WHERE id = $2 
+           AND (
+             (session_state->>'currentTurn')::int = $3
+             OR session_state->>'currentTurn' IS NULL
+           )
+         RETURNING session_state;`;
+    const params = userId 
+      ? [JSON.stringify(updatedState), sessionId, expectedTurn, userId]
+      : [JSON.stringify(updatedState), sessionId, expectedTurn];
+
+    const res = await queryPostgres(query, params);
 
     if (res.rows.length === 0) {
-      // Concurrency conflict: another Cloud Run instance already advanced this turn
-      const fresh = await findInterviewById(sessionId);
+      // Concurrency conflict or unauthorized
+      const fresh = userId ? await findInterviewByIdAndUser(sessionId, userId) : await findInterviewById(sessionId);
       return {
         success: false,
         currentState: fresh?.sessionState
@@ -783,7 +824,7 @@ export async function updateInterviewTurnAtomically(
   }
 
   const db = loadDatabase();
-  const existing = db.interviews.find(i => i.id === sessionId);
+  const existing = db.interviews.find(i => i.id === sessionId && (!userId || i.userId === userId));
   if (!existing) return { success: false };
   existing.sessionState = updatedState;
   existing.updatedAt = new Date().toISOString();

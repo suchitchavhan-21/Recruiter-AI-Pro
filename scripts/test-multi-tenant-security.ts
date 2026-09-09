@@ -56,6 +56,21 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
   });
 }
 
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  return extractCookieFromHeaders(headers, "access_token");
+}
+
+function extractCookieFromHeaders(headers: http.IncomingHttpHeaders, name: string): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(new RegExp(`${name}=([^;]+)`));
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
 let passedCount = 0;
 let failedCount = 0;
 
@@ -165,9 +180,13 @@ async function runSecurityAudit() {
       email: emailA,
       password
     }));
-    const tokenA = loginA.data?.accessToken;
+    check(
+      loginA.data?.accessToken === undefined && loginA.data?.refreshToken === undefined,
+      "Zero-Trust Security: User A login response does NOT leak tokens in JSON body"
+    );
+    const tokenA = extractTokenFromCookies(loginA.headers);
     const headersA = { Authorization: `Bearer ${tokenA}` };
-    check(Boolean(tokenA), "User A registered and authenticated successfully");
+    check(Boolean(tokenA), "User A registered and authenticated successfully via HttpOnly cookie");
 
     // 2. Register and Login User B
     const regB = await fetchJson(`${BASE}/api/auth/register`, { method: "POST" }, JSON.stringify({
@@ -188,9 +207,13 @@ async function runSecurityAudit() {
       email: emailB,
       password
     }));
-    const tokenB = loginB.data?.accessToken;
+    check(
+      loginB.data?.accessToken === undefined && loginB.data?.refreshToken === undefined,
+      "Zero-Trust Security: User B login response does NOT leak tokens in JSON body"
+    );
+    const tokenB = extractTokenFromCookies(loginB.headers);
     const headersB = { Authorization: `Bearer ${tokenB}` };
-    check(Boolean(tokenB), "User B registered and authenticated successfully");
+    check(Boolean(tokenB), "User B registered and authenticated successfully via HttpOnly cookie");
 
     // 3. User A creates a Resume
     const scanA = await fetchJson(`${BASE}/api/scan-resume`, { method: "POST", headers: headersA }, JSON.stringify({
@@ -316,13 +339,16 @@ async function runSecurityAudit() {
       email: emailA,
       password
     }));
-    const freshRefreshToken = loginFresh.data?.refreshToken;
-    check(Boolean(freshRefreshToken), "Issued fresh refresh token for concurrency testing");
+    const freshRefreshToken = extractCookieFromHeaders(loginFresh.headers, "refresh_token");
+    check(Boolean(freshRefreshToken), "Issued fresh refresh token via HttpOnly cookie for concurrency testing");
 
     if (freshRefreshToken) {
       // Fire 5 concurrent refresh attempts with the exact same refresh token
       const refreshPromises = Array.from({ length: 5 }).map(() =>
-        fetchJson(`${BASE}/api/auth/refresh`, { method: "POST" }, JSON.stringify({ refreshToken: freshRefreshToken }))
+        fetchJson(`${BASE}/api/auth/refresh`, {
+          method: "POST",
+          headers: { Cookie: `refresh_token=${freshRefreshToken}` }
+        }, JSON.stringify({ refreshToken: freshRefreshToken }))
       );
       const refreshResults = await Promise.all(refreshPromises);
       const successCount = refreshResults.filter(r => r.status === 200).length;

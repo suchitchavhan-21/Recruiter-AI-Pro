@@ -633,7 +633,11 @@ export async function executeInSandbox(
   testCases: TestCase[],
   expectedOptimal: { time: string; space: string } = { time: "O(n)", space: "O(n)" }
 ): Promise<SandboxExecutionResult> {
+  const isProd = process.env.NODE_ENV === "production";
   const useInProcess = process.env.USE_IN_PROCESS_SANDBOX === "true";
+  if (isProd && useInProcess) {
+    throw new Error("[SECURITY FATAL] In-process sandbox execution is strictly forbidden in production mode.");
+  }
   if (useInProcess) {
     return executeInRestrictedDevRunner(userCode, entryFunctionName, testCases, expectedOptimal);
   }

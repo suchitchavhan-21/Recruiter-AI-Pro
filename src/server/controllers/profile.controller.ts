@@ -7,10 +7,15 @@ import {
   deleteUserById, 
   listActivitiesByUserId, 
   listActiveSessionsByUserId, 
-  revokeSessionById, 
+  revokeSessionById,
+  revokeAllUserSessions,
+  insertSession,
+  generateUUID,
+  hashToken, 
   insertActivity 
 } from "../db/repository";
-import { AuthenticatedRequest, clearAuthCookies } from "../middleware/auth";
+import { UserSession } from "../db/schema";
+import { AuthenticatedRequest, clearAuthCookies, signAccessToken, signRefreshToken, setAuthCookies } from "../middleware/auth";
 
 export const updateProfileSchema = z.object({
   fullName: z.string().min(1, "Full name must not be empty").optional().nullable(),
@@ -95,11 +100,32 @@ export async function updateProfileHandler(req: AuthenticatedRequest, res: Respo
 
   const updatedUser = await updateUserById(user.id, updates);
 
+  if (updates.passwordHash) {
+    await revokeAllUserSessions(user.id);
+    const refreshToken = signRefreshToken({ userId: user.id });
+    const newSession: UserSession = {
+      id: generateUUID(),
+      userId: user.id,
+      device: "Browser",
+      browser: req.headers["user-agent"] || "Browser Session",
+      operatingSystem: "Unknown",
+      ipAddress: req.ip || "unknown",
+      country: "US",
+      loginTime: new Date().toISOString(),
+      refreshTokenHash: hashToken(refreshToken),
+      isActive: true,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    };
+    await insertSession(newSession);
+    const accessToken = signAccessToken({ userId: user.id, email: user.email, role: user.role });
+    setAuthCookies(res, accessToken, refreshToken);
+  }
+
   await insertActivity({
     userId: user.id,
     activityType: "PROFILE_UPDATED",
     activityName: "Profile Update",
-    description: "User profile settings updated."
+    description: updates.passwordHash ? "Password changed and all prior sessions revoked." : "User profile settings updated."
   });
 
   const finalUser = updatedUser || user;

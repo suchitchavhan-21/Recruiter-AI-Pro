@@ -10,7 +10,8 @@ import {
 import { 
   insertInterview, 
   listInterviewsByUserId, 
-  findInterviewById, 
+  findInterviewById,
+  findInterviewByIdAndUser, 
   insertSTARStory, 
   listSTARStoriesByUserId, 
   deleteSTARStoryById, 
@@ -290,10 +291,14 @@ export async function listInterviewsHandler(req: AuthenticatedRequest, res: Resp
 
 // 6. GET SINGLE INTERVIEW
 export async function getInterviewByIdHandler(req: AuthenticatedRequest, res: Response) {
-  const id = req.params.id;
-  const interview = await findInterviewById(id);
+  if (!req.user?.userId) {
+    return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
+  }
 
-  if (!interview || interview.userId !== req.user?.userId) {
+  const id = req.params.id;
+  const interview = await findInterviewByIdAndUser(id, req.user.userId);
+
+  if (!interview) {
     return res.status(404).json({ success: false, error: { code: "INTERVIEW_NOT_FOUND", message: "Interview session not found." } });
   }
 
@@ -408,6 +413,12 @@ export async function startAdaptiveInterviewHandler(req: AuthenticatedRequest, r
     });
   } catch (err: any) {
     console.error("[ORCHESTRATOR ERROR] startAdaptiveInterviewHandler failed:", err);
+    if (err.message?.includes("Unauthorized")) {
+      return res.status(404).json({
+        success: false,
+        error: { code: "SESSION_NOT_FOUND", message: "Interview session state not found or access denied." }
+      });
+    }
     return res.status(500).json({
       success: false,
       error: { code: "START_SESSION_FAILED", message: err.message || "Failed to initialize adaptive interview session." }
@@ -467,7 +478,7 @@ export async function getAdaptiveInterviewStateHandler(req: AuthenticatedRequest
   }
 
   const sessionId = req.params.sessionId || req.params.id;
-  const state = await InterviewOrchestrator.loadOrRestoreState(sessionId);
+  const state = await InterviewOrchestrator.loadOrRestoreState(sessionId, req.user.userId);
 
   if (!state || state.userId !== req.user.userId) {
     return res.status(404).json({

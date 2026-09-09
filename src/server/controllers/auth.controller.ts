@@ -261,8 +261,6 @@ export async function loginHandler(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     message: "Login successful.",
-    accessToken,
-    refreshToken,
     user: {
       id: user.id,
       fullName: user.fullName,
@@ -370,8 +368,6 @@ export async function refreshTokenHandler(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     message: "Tokens successfully refreshed.",
-    accessToken: newAccessToken,
-    refreshToken: newRefreshToken,
     user: {
       id: user.id,
       fullName: user.fullName,

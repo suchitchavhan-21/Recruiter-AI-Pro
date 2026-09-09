@@ -84,16 +84,27 @@ function fetchJson(
       });
     });
 
+    req.on("error", reject);
     req.on("timeout", () => {
-      req.destroy(new Error(`[TIMEOUT] HTTP request timed out after ${timeoutMs}ms: ${url}`));
+      req.destroy(new Error(`Request timed out after ${timeoutMs}ms`));
     });
 
-    req.on("error", reject);
     if (postData) {
       req.write(postData);
     }
     req.end();
   });
+}
+
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 }
 
 async function startProductionServer(port: number, envOverrides: Record<string, string> = {}): Promise<ChildProcess> {
@@ -268,7 +279,8 @@ async function runProductionVerification() {
     await queryPostgres("UPDATE users SET email_verified = true WHERE email = $1;", [emailA]);
 
     const loginResA = await fetchJson(`${baseA}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailA, password: passwordA }));
-    const tokenA = loginResA.data?.accessToken;
+    assert("ZERO_TRUST", loginResA.data?.accessToken === undefined && loginResA.data?.refreshToken === undefined, "Zero-Trust: Tokens not leaked in JSON response");
+    const tokenA = extractTokenFromCookies(loginResA.headers);
     const headersA = { Authorization: `Bearer ${tokenA}` };
     assert("AUTHENTICATION", Boolean(tokenA), "Production User A authenticated via JWT with secure token issuance");
 
@@ -408,8 +420,9 @@ Responsibilities:
 
     // Re-authenticate User A against Revision B
     const loginResB = await fetchJson(`${baseB}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailA, password: passwordA }));
-    assert("REVISION_SURVIVAL", loginResB.status === 200 && Boolean(loginResB.data?.accessToken), "User A logged into Revision B process");
-    const tokenB = loginResB.data?.accessToken;
+    assert("ZERO_TRUST", loginResB.data?.accessToken === undefined && loginResB.data?.refreshToken === undefined, "Zero-Trust: Tokens not leaked in JSON response");
+    const tokenB = extractTokenFromCookies(loginResB.headers);
+    assert("REVISION_SURVIVAL", loginResB.status === 200 && Boolean(tokenB), "User A logged into Revision B process");
     const headersB = { Authorization: `Bearer ${tokenB}` };
 
     // Verify all records in Revision B
@@ -457,7 +470,8 @@ Responsibilities:
     await queryPostgres("UPDATE users SET email_verified = true WHERE email = $1;", [emailB]);
 
     const loginUserB = await fetchJson(`${baseB}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailB, password: passwordA }));
-    const tokenUserB = loginUserB.data?.accessToken;
+    assert("ZERO_TRUST", loginUserB.data?.accessToken === undefined && loginUserB.data?.refreshToken === undefined, "Zero-Trust: Tokens not leaked in JSON response");
+    const tokenUserB = extractTokenFromCookies(loginUserB.headers);
     const headersUserB = { Authorization: `Bearer ${tokenUserB}` };
 
     const userBJobs = await fetchJson(`${baseB}/api/jobs`, { headers: headersUserB });

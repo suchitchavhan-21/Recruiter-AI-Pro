@@ -76,8 +76,8 @@ async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance:
           max: 20,
           idleTimeoutMillis: 30000,
           connectionTimeoutMillis: 5000,
-          ssl: process.env.DATABASE_SSL === "true" || dbUrl.includes("sslmode=require")
-            ? { rejectUnauthorized: false }
+          ssl: process.env.DATABASE_SSL === "true" || dbUrl.includes("sslmode=require") || dbUrl.includes("sslmode=verify-full") || dbUrl.includes("sslmode=verify-ca")
+            ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === "false" ? false : true }
             : undefined
         };
 

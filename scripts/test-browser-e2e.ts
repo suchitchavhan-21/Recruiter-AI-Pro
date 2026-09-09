@@ -75,9 +75,9 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
-          resolve({ status: res.statusCode || 200, data: parsedData });
+          resolve({ status: res.statusCode || 200, data: parsedData, headers: res.headers });
         } catch {
-          resolve({ status: res.statusCode || 200, data: null });
+          resolve({ status: res.statusCode || 200, data: null, headers: res.headers });
         }
       });
     });
@@ -88,6 +88,17 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
     }
     req.end();
   });
+}
+
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 }
 
 let serverProcess: ChildProcess | null = null;
@@ -269,7 +280,7 @@ async function runBrowserE2E() {
     console.log("\n[TEST SCENARIO 3] User Profile Update & Persistence across Refresh...");
     // Direct API + UI sync verification
     const loginData = await fetchJson(`${baseUrl}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailA, password: passwordA }));
-    const tokenA = loginData.data?.accessToken;
+    const tokenA = extractTokenFromCookies(loginData.headers);
     const authHeaders = { Authorization: `Bearer ${tokenA}` };
 
     const updateProfileRes = await fetchJson(`${baseUrl}/api/profile`, { method: "PUT", headers: authHeaders }, JSON.stringify({
@@ -451,7 +462,7 @@ async function runBrowserE2E() {
     }
 
     const loginResB = await fetchJson(`${baseUrl}/api/auth/login`, { method: "POST" }, JSON.stringify({ email: emailB, password: passwordA }));
-    const tokenB = loginResB.data?.accessToken;
+    const tokenB = extractTokenFromCookies(loginResB.headers);
     const headersB = { Authorization: `Bearer ${tokenB}` };
 
     const userBJobs = await fetchJson(`${baseUrl}/api/jobs`, { headers: headersB });

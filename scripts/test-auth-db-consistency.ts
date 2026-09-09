@@ -57,6 +57,17 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
   });
 }
 
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
 async function runAuthDbConsistencyTests() {
   console.log("=================================================================");
   console.log("🔒 DATABASE ROUTING, PERSISTENCE & AUTHENTICATION CONSISTENCY TEST");
@@ -92,7 +103,9 @@ async function runAuthDbConsistencyTests() {
       password: "CandidatePassword123!"
     }));
     check(candLogin.status === 200 && candLogin.data.success, "Seeded candidate@example.com logs in successfully with HTTP 200");
-    check(Boolean(candLogin.data.accessToken), "Login response returns valid JWT accessToken");
+    check(candLogin.data.accessToken === undefined && candLogin.data.refreshToken === undefined, "Zero-Trust: Login response does not leak tokens in JSON");
+    const candToken = extractTokenFromCookies(candLogin.headers);
+    check(Boolean(candToken), "Login response returns valid JWT in HttpOnly cookie");
 
     const adminLogin = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/login`, { method: "POST" }, JSON.stringify({
       email: "admin@coach.ai",
@@ -151,7 +164,9 @@ async function runAuthDbConsistencyTests() {
       password: testPassword
     }));
     check(loginRes.status === 200 && loginRes.data.success, "Registered user logs in successfully with HTTP 200 OK");
-    const userToken = loginRes.data.accessToken;
+    check(loginRes.data.accessToken === undefined && loginRes.data.refreshToken === undefined, "Zero-Trust: Registered user login does not leak tokens in JSON");
+    const userToken = extractTokenFromCookies(loginRes.headers);
+    check(Boolean(userToken), "Registered user receives valid JWT in HttpOnly cookie");
 
     // Test: Authenticated Request
     const profileRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/profile`, {

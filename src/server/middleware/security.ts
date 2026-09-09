@@ -31,8 +31,7 @@ export interface RateLimitOptions {
 
 export function createRateLimiter(options: RateLimitOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const forwarded = req.headers["x-forwarded-for"];
-    const ip = (typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.socket.remoteAddress) || "unknown_ip";
+    const ip = req.ip || req.socket.remoteAddress || "unknown_ip";
     const prefix = options.keyPrefix || "rl";
     const userId = options.userAware ? (req as any).user?.userId : undefined;
     const key = userId ? `${prefix}:u:${userId}` : `${prefix}:${ip}`;
@@ -154,39 +153,45 @@ export function applyCorsMiddleware(req: Request, res: Response, next: NextFunct
   const origin = req.headers.origin;
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
 
-  const configuredExtra = (process.env.CORS_ALLOWED_ORIGINS || "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
+  const configuredOrigins = [
+    ...(process.env.CORS_ALLOWED_ORIGINS || "").split(","),
+    ...(process.env.ALLOWED_ORIGINS || "").split(",")
+  ].map(s => s.trim()).filter(Boolean);
 
-  const allowedOrigins = [
-    ENV.APP_URL,
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-    ...configuredExtra
-  ].filter(Boolean);
+  const allowedOriginsSet = new Set<string>();
+  if (ENV.APP_URL) {
+    allowedOriginsSet.add(ENV.APP_URL);
+  }
+  for (const o of configuredOrigins) {
+    allowedOriginsSet.add(o);
+  }
+
+  // In non-production, allow common local development origins
+  if (!isProd) {
+    allowedOriginsSet.add("http://localhost:3000");
+    allowedOriginsSet.add("http://localhost:5173");
+    allowedOriginsSet.add("http://127.0.0.1:3000");
+    allowedOriginsSet.add("http://127.0.0.1:5173");
+  }
 
   if (origin) {
-    const isLocalDev = !isProd && (origin.includes("localhost") || origin.includes("127.0.0.1"));
-    const isGoogleCloudRun = origin.endsWith(".run.app") || origin.includes("run.app");
-    const isGoogleAIStudio = origin.endsWith(".google.com") || origin.endsWith(".googleusercontent.com");
-    const isSameHost = Boolean(req.headers.host && origin.includes(req.headers.host));
-
-    const isAllowed = allowedOrigins.includes(origin) || isLocalDev || isGoogleCloudRun || isGoogleAIStudio || isSameHost;
+    const isAllowed = allowedOriginsSet.has(origin);
 
     if (isAllowed) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, X-Refresh-Token");
-    } else if (isProd && req.method === "OPTIONS") {
-      return res.status(403).json({ error: "CORS_FORBIDDEN", message: "Origin not allowed by CORS policy." });
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+      }
+    } else {
+      if (req.method === "OPTIONS") {
+        return res.status(403).json({ success: false, error: { code: "CORS_FORBIDDEN", message: "Origin not allowed by CORS policy." } });
+      }
+      // For simple/actual cross-origin requests that are not allowed, omit Access-Control-Allow-Origin so browser blocks response
     }
-  }
-
-  if (req.method === "OPTIONS") {
+  } else if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
 

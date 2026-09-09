@@ -37,16 +37,30 @@ function getJwtRefreshSecret(): string {
 }
 
 export function signAccessToken(payload: { userId: string; email: string; role: "candidate" | "admin" }): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: "15m" });
+  return jwt.sign(payload, getJwtSecret(), {
+    algorithm: "HS256",
+    expiresIn: "15m",
+    issuer: "recruiter-ai-pro",
+    audience: "recruiter-ai-pro-client"
+  });
 }
 
 export function signRefreshToken(payload: { userId: string }): string {
-  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, getJwtRefreshSecret(), { expiresIn: "7d" });
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, getJwtRefreshSecret(), {
+    algorithm: "HS256",
+    expiresIn: "7d",
+    issuer: "recruiter-ai-pro",
+    audience: "recruiter-ai-pro-client"
+  });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload | null {
   try {
-    return jwt.verify(token, getJwtSecret()) as AccessTokenPayload;
+    return jwt.verify(token, getJwtSecret(), {
+      algorithms: ["HS256"],
+      issuer: "recruiter-ai-pro",
+      audience: "recruiter-ai-pro-client"
+    }) as AccessTokenPayload;
   } catch {
     return null;
   }
@@ -54,7 +68,11 @@ export function verifyAccessToken(token: string): AccessTokenPayload | null {
 
 export function verifyRefreshToken(token: string): { userId: string } | null {
   try {
-    return jwt.verify(token, getJwtRefreshSecret()) as { userId: string };
+    return jwt.verify(token, getJwtRefreshSecret(), {
+      algorithms: ["HS256"],
+      issuer: "recruiter-ai-pro",
+      audience: "recruiter-ai-pro-client"
+    }) as { userId: string };
   } catch {
     return null;
   }

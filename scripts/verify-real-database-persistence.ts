@@ -33,9 +33,9 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
-          resolve({ status: res.statusCode || 200, data: parsedData, raw: data });
+          resolve({ status: res.statusCode || 200, data: parsedData, raw: data, headers: res.headers });
         } catch {
-          resolve({ status: res.statusCode || 200, data: null, raw: data });
+          resolve({ status: res.statusCode || 200, data: null, raw: data, headers: res.headers });
         }
       });
     });
@@ -46,6 +46,17 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
     }
     req.end();
   });
+}
+
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 }
 
 function delay(ms: number) {
@@ -208,7 +219,12 @@ async function runPersistenceVerification() {
     }
 
     const loginResA = await fetchJson("http://127.0.0.1:3020/api/auth/login", { method: "POST" }, JSON.stringify({ email, password }));
-    const tokenA = loginResA.data?.accessToken;
+    assert(
+      loginResA.data?.accessToken === undefined && loginResA.data?.refreshToken === undefined,
+      "Zero-Trust Security: Login Process A response does NOT leak tokens in JSON body"
+    );
+    const tokenA = extractTokenFromCookies(loginResA.headers);
+    assert(Boolean(tokenA), "Process A: Logged in via HttpOnly cookie");
     const headersA = { Authorization: `Bearer ${tokenA}` };
 
     // Process A creates Resume
@@ -273,8 +289,12 @@ async function runPersistenceVerification() {
 
     // Login via Process B
     const loginResB = await fetchJson("http://127.0.0.1:3021/api/auth/login", { method: "POST" }, JSON.stringify({ email, password }));
-    assert(loginResB.status === 200 && Boolean(loginResB.data?.accessToken), "Process B: Logged in as existing user created by Process A");
-    const tokenB = loginResB.data?.accessToken;
+    assert(
+      loginResB.data?.accessToken === undefined && loginResB.data?.refreshToken === undefined,
+      "Zero-Trust Security: Login Process B response does NOT leak tokens in JSON body"
+    );
+    const tokenB = extractTokenFromCookies(loginResB.headers);
+    assert(loginResB.status === 200 && Boolean(tokenB), "Process B: Logged in as existing user created by Process A via HttpOnly cookie");
     const headersB = { Authorization: `Bearer ${tokenB}` };
 
     // Verify Profile

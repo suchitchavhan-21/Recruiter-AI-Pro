@@ -135,6 +135,10 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
         errors.push(`ADMIN_PASSCODE cannot use weak or default value in production (minimum 16 characters high-entropy secret required). Provide a secure secret or leave unset.`);
       }
     }
+
+    if (process.env.USE_IN_PROCESS_SANDBOX === "true") {
+      errors.push("USE_IN_PROCESS_SANDBOX is strictly prohibited in production. An external isolated sandbox runner is required.");
+    }
   }
 
   return {

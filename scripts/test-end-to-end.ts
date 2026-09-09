@@ -59,6 +59,17 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
 let serverProcess: ChildProcess | null = null;
 
 const capturedE2ELinks: string[] = [];
@@ -165,8 +176,12 @@ async function runEndToEndTests() {
       email: emailA,
       password: passwordA
     }));
-    const authTokenA = loginResA.data?.accessToken;
-    assert(Boolean(authTokenA), "Journey A: Candidate Login returns valid JWT access token");
+    assert(
+      loginResA.data?.accessToken === undefined && loginResA.data?.refreshToken === undefined,
+      "Zero-Trust Security: Login User A response does NOT leak tokens in JSON body"
+    );
+    const authTokenA = extractTokenFromCookies(loginResA.headers);
+    assert(Boolean(authTokenA), "Journey A: Candidate Login returns valid JWT access token via HttpOnly cookie");
     const authHeadersA = { Authorization: `Bearer ${authTokenA}` };
 
     // Register User B for Tenant Isolation
@@ -191,7 +206,12 @@ async function runEndToEndTests() {
       email: emailB,
       password: passwordB
     }));
-    const authTokenB = loginResB.data?.accessToken;
+    assert(
+      loginResB.data?.accessToken === undefined && loginResB.data?.refreshToken === undefined,
+      "Zero-Trust Security: Login User B response does NOT leak tokens in JSON body"
+    );
+    const authTokenB = extractTokenFromCookies(loginResB.headers);
+    assert(Boolean(authTokenB), "Journey A: Candidate B Login returns valid JWT access token via HttpOnly cookie");
     const authHeadersB = { Authorization: `Bearer ${authTokenB}` };
 
     // 3. Journey B: Authenticated Profile & Update

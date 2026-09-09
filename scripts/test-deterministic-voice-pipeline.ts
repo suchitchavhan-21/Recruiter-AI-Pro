@@ -144,12 +144,13 @@ async function runDeterministicVoiceTests() {
         password: testPassword
       })
     });
-    const loginData: any = await loginRes.json();
-    const token = loginData.accessToken;
+    const setCookie = loginRes.headers.get("set-cookie") || "";
+    const cookieMatch = setCookie.match(/access_token=([^;]+)/);
+    const token = cookieMatch ? cookieMatch[1] : undefined;
     if (!token) {
-      throw new Error(`Failed to authenticate test user: ${JSON.stringify(loginData)}`);
+      throw new Error(`Failed to authenticate test user: missing access_token in set-cookie header`);
     }
-    console.log("  ✓ PASS: Test user authenticated successfully with valid JWT\n");
+    console.log("  ✓ PASS: Test user authenticated successfully with valid JWT via HttpOnly cookie\n");
     const authHeaders = {
       Authorization: `Bearer ${token}`
     };

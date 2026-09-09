@@ -47,6 +47,20 @@ async function parseDocxBuffer(buffer: Buffer): Promise<string> {
   }
 }
 
+async function withParseTimeout<T>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`PARSE_TIMEOUT: Document parsing timed out after ${timeoutMs}ms. File may be malformed or excessively complex.`));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
 export interface ExtractedDocument {
   text: string;
   wordCount: number;
@@ -88,13 +102,13 @@ export async function extractDocumentText(
     if (!headerPrefix.includes("%PDF")) {
       throw new Error("INVALID_PDF: File claims to be PDF but lacks valid '%PDF' header magic signature.");
     }
-    extractedText = await parsePdfBuffer(buffer);
+    extractedText = await withParseTimeout(parsePdfBuffer(buffer));
   } else if (isDocxClaimed) {
     // Verify ZIP container magic bytes 'PK\x03\x04'
     if (buffer.length >= 4 && !(buffer[0] === 0x50 && buffer[1] === 0x4B && (buffer[2] === 0x03 || buffer[2] === 0x05))) {
       throw new Error("INVALID_DOCX: File claims to be Word Document but lacks valid ZIP magic signature.");
     }
-    extractedText = await parseDocxBuffer(buffer);
+    extractedText = await withParseTimeout(parseDocxBuffer(buffer));
   } else {
     // Plain text validation: ensure buffer does not contain high ratios of null bytes (binary disguised as text)
     let nullBytes = 0;

@@ -90,13 +90,15 @@ async function runTTSSecuritySuite() {
       })
     });
     const loginData: any = await loginRes.json();
-    const token = loginData.accessToken;
+    const setCookie = loginRes.headers.get("set-cookie") || "";
+    const cookieMatch = setCookie.match(/access_token=([^;]+)/);
+    const token = cookieMatch ? cookieMatch[1] : undefined;
     const testUserId = loginData.user?.id;
     if (!token) {
       console.log(`[AUTH DEBUG] reg status: ${regRes.status}, regData:`, JSON.stringify(regData));
-      console.log(`[AUTH DEBUG] login status: ${loginRes.status}, loginData:`, JSON.stringify(loginData));
+      console.log(`[AUTH DEBUG] login status: ${loginRes.status}, setCookie:`, setCookie);
     }
-    check(Boolean(token && testUserId), "Test user authenticated and received valid JWT Bearer token");
+    check(Boolean(token && testUserId), "Test user authenticated and received valid JWT cookie");
 
     const authHeaders = {
       Authorization: `Bearer ${token}`

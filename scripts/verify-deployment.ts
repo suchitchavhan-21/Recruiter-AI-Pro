@@ -164,8 +164,18 @@ async function runAllVerifications() {
       }
     );
 
-    loginOk = loginRes.statusCode === 200 && Boolean(loginRes.json?.accessToken);
-    loginToken = loginRes.json?.accessToken || "";
+    const setCookie = loginRes.headers["set-cookie"];
+    const cookieList = Array.isArray(setCookie) ? setCookie : (setCookie ? [setCookie] : []);
+    let extractedCookieToken = "";
+    for (const item of cookieList) {
+      const match = item.match(/access_token=([^;]+)/);
+      if (match) {
+        extractedCookieToken = match[1];
+        break;
+      }
+    }
+    loginOk = loginRes.statusCode === 200 && Boolean(extractedCookieToken) && loginRes.json?.accessToken === undefined;
+    loginToken = extractedCookieToken;
 
     results.push({
       name: "Authenticated login works",

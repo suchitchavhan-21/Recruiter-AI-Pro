@@ -21,6 +21,7 @@
     "test:adversarial": "tsx scripts/test-adversarial-boundaries.ts",
     "verify:production": "tsx scripts/verify-production-environment.ts",
     "verify-production-fail-fast": "tsx scripts/verify-production-fail-fast.ts",
+    "test:security-remediation": "tsx scripts/test-security-remediation.ts",
     "verify-deployment": "tsx scripts/verify-deployment.ts"
   },
   "dependencies": {

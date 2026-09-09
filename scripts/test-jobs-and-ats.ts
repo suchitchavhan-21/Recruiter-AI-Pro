@@ -45,9 +45,9 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
       res.on("end", () => {
         try {
           const parsedData = JSON.parse(data);
-          resolve({ status: res.statusCode || 200, data: parsedData, raw: data });
+          resolve({ status: res.statusCode || 200, data: parsedData, raw: data, headers: res.headers });
         } catch {
-          resolve({ status: res.statusCode || 200, data: null, raw: data });
+          resolve({ status: res.statusCode || 200, data: null, raw: data, headers: res.headers });
         }
       });
     });
@@ -58,6 +58,17 @@ function fetchJson(url: string, options: http.RequestOptions = {}, postData?: st
     }
     req.end();
   });
+}
+
+function extractTokenFromCookies(headers: http.IncomingHttpHeaders): string | undefined {
+  const setCookie = headers["set-cookie"];
+  if (!setCookie) return undefined;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const item of list) {
+    const match = item.match(/access_token=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 }
 
 function delay(ms: number) {
@@ -252,8 +263,12 @@ Skills: Go, PostgreSQL, Distributed Systems, Concurrency, Kafka, mTLS, Idempoten
     email: userAEmail,
     password: userAPassword
   }));
-  const tokenA = loginARes.data?.accessToken;
-  assert(Boolean(tokenA), "Login User A returns valid access token");
+  assert(
+    loginARes.data?.accessToken === undefined && loginARes.data?.refreshToken === undefined,
+    "Zero-Trust Security: Login User A response does NOT leak tokens in JSON body"
+  );
+  const tokenA = extractTokenFromCookies(loginARes.headers);
+  assert(Boolean(tokenA), "Login User A returns valid access token via HttpOnly cookie");
 
   // 2. Register & Login User B
   const userBEmail = `applicant_b_${Date.now()}@example.com`;
@@ -280,8 +295,12 @@ Skills: Go, PostgreSQL, Distributed Systems, Concurrency, Kafka, mTLS, Idempoten
     email: userBEmail,
     password: userBPassword
   }));
-  const tokenB = loginBRes.data?.accessToken;
-  assert(Boolean(tokenB), "Login User B returns valid access token");
+  assert(
+    loginBRes.data?.accessToken === undefined && loginBRes.data?.refreshToken === undefined,
+    "Zero-Trust Security: Login User B response does NOT leak tokens in JSON body"
+  );
+  const tokenB = extractTokenFromCookies(loginBRes.headers);
+  assert(Boolean(tokenB), "Login User B returns valid access token via HttpOnly cookie");
 
   // 3. User A records an application
   const applyRes = await fetchJson(`${baseUrl}/api/jobs`, {
