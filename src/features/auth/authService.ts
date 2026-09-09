@@ -119,6 +119,25 @@ export class AuthService {
   }
 
   /**
+   * Resend email verification instructions
+   */
+  static async resendVerification(email: string): Promise<AuthResponse> {
+    const res = await apiFetch("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.toLowerCase().trim() })
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const message = body?.error?.message || body?.message || "Failed to resend verification email.";
+      throw new Error(message);
+    }
+
+    return body as AuthResponse;
+  }
+
+  /**
    * Log out active session
    */
   static async logout(): Promise<void> {

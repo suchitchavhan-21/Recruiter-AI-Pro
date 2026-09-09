@@ -84,19 +84,31 @@ function check(condition: boolean, title: string, details?: string) {
   }
 }
 
+const TEST_SEC_DIR = path.join(process.cwd(), "data", "test_security_data");
+
 async function startServer(port: number): Promise<ChildProcess> {
-  const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
-  const proc = spawn(npxCmd, ["tsx", "server.ts"], {
+  if (fs.existsSync(TEST_SEC_DIR)) {
+    try { fs.rmSync(TEST_SEC_DIR, { recursive: true, force: true }); } catch {}
+  }
+
+  const tsxCli = path.resolve(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs");
+  const isTsxCli = fs.existsSync(tsxCli);
+  const execCmd = isTsxCli ? process.execPath : (process.platform === "win32" ? "npx.cmd" : "npx");
+  const execArgs = isTsxCli ? [tsxCli, "server.ts"] : ["tsx", "server.ts"];
+
+  const proc = spawn(execCmd, execArgs, {
     env: {
       ...process.env,
       NODE_ENV: "development",
       PORT: String(port),
+      POSTGRES_DATA_DIR: TEST_SEC_DIR,
+      DATABASE_URL: "",
       JWT_SECRET: "test_multi_tenant_secret_access_key_123456!",
       JWT_REFRESH_SECRET: "test_multi_tenant_secret_refresh_key_123456!"
     },
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
-    shell: true
+    shell: false
   });
 
   proc.stdout?.on("data", d => {
@@ -477,10 +489,15 @@ async function runSecurityAudit() {
         if (process.platform === "win32") {
           spawn("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { shell: true });
         } else {
-          proc.kill();
+          try { process.kill(proc.pid, "SIGKILL"); } catch {}
+          try { proc.kill("SIGKILL"); } catch {}
         }
       }
     } catch {}
+    await delay(1000);
+    if (fs.existsSync(TEST_SEC_DIR)) {
+      try { fs.rmSync(TEST_SEC_DIR, { recursive: true, force: true }); } catch {}
+    }
   }
 
   console.log("=================================================================");

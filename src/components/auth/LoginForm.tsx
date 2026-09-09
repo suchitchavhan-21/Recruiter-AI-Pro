@@ -59,7 +59,7 @@ export function LoginForm({
       )}
 
       {/* Main Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} method="POST" action="#" className="space-y-4">
         
         {/* Email Address */}
         <AuthInput

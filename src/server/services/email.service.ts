@@ -3,17 +3,35 @@ import { ENV } from "../config/env";
 
 let transporter: nodemailer.Transporter | null = null;
 
+function getFromAddress(): string {
+  if (ENV.SMTP_FROM) return ENV.SMTP_FROM;
+  if (ENV.SMTP_USER) return `"Recruiter AI Pro" <${ENV.SMTP_USER}>`;
+  return '"Recruiter AI Coach" <noreply@recruiter-ai-pro.local>';
+}
+
+export function isSmtpConfigured(): boolean {
+  return Boolean((ENV.SMTP_HOST || ENV.SMTP_SERVICE) && ENV.SMTP_USER && ENV.SMTP_PASS);
+}
+
 function getEmailTransporter(): nodemailer.Transporter {
   if (!transporter) {
-    if (ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS) {
-      transporter = nodemailer.createTransport({
-        host: ENV.SMTP_HOST,
-        port: ENV.SMTP_PORT,
+    if (isSmtpConfigured()) {
+      const transportConfig: any = {
         auth: {
           user: ENV.SMTP_USER,
           pass: ENV.SMTP_PASS
         }
-      });
+      };
+
+      if (ENV.SMTP_SERVICE) {
+        transportConfig.service = ENV.SMTP_SERVICE;
+      } else {
+        transportConfig.host = ENV.SMTP_HOST;
+        transportConfig.port = ENV.SMTP_PORT;
+        transportConfig.secure = ENV.SMTP_SECURE || ENV.SMTP_PORT === 465;
+      }
+
+      transporter = nodemailer.createTransport(transportConfig);
     } else {
       // Safe fallback console transporter for development / testing
       transporter = {
@@ -39,7 +57,7 @@ export async function sendVerificationEmail(email: string, token: string, appUrl
   const verifyLink = `${appUrl}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
 
   await carrier.sendMail({
-    from: '"Recruiter AI Coach" <noreply@recruiter-ai-pro.local>',
+    from: getFromAddress(),
     to: email,
     subject: "Verify Your Email Address - Recruiter AI Pro",
     text: `Welcome to Recruiter AI Pro!\n\nPlease click the following link to verify your email address:\n${verifyLink}\n\nThis verification link will expire in 24 hours.`,
@@ -61,7 +79,7 @@ export async function sendPasswordResetEmail(email: string, token: string, appUr
   const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
 
   await carrier.sendMail({
-    from: '"Recruiter AI Coach" <noreply@recruiter-ai-pro.local>',
+    from: getFromAddress(),
     to: email,
     subject: "Password Reset Request - Recruiter AI Pro",
     text: `You requested a password reset.\n\nPlease click the following link to choose a new password:\n${resetLink}\n\nThis reset link will expire in 1 hour.`,

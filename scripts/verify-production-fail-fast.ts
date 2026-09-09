@@ -82,6 +82,9 @@ function testServerProcess(
     if (!("STRICT_FAIL_FAST" in envVars)) {
       delete cleanEnv.STRICT_FAIL_FAST;
     }
+    delete cleanEnv.K_SERVICE;
+    delete cleanEnv.K_REVISION;
+    delete cleanEnv.K_CONFIGURATION;
 
     const proc = spawn(cmd, args, {
       env: cleanEnv,

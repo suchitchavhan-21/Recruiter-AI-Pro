@@ -7,7 +7,7 @@ import { ENV, validateEnvironment } from "./src/server/config/env";
 import { runDatabaseSeed } from "./src/server/db/seed";
 import { initPostgresSchema, getPostgresPool } from "./src/server/db/postgres";
 
-const PORT = ENV.PORT || 3000;
+const PORT = 3000;
 
 async function startServer() {
   const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
@@ -27,10 +27,12 @@ async function startServer() {
 
   // 2. Initialize PostgreSQL schema and pgvector
   console.log("🐘 [STARTUP] Verifying PostgreSQL connection, relational schema, and pgvector extension...");
+  const isCloudRun = Boolean(process.env.K_SERVICE);
+  const isStrict = process.env.STRICT_FAIL_FAST === "true" || (!isCloudRun && isProd);
   try {
     const schemaReady = await initPostgresSchema();
     if (!schemaReady) {
-      if (isProd) {
+      if (isStrict) {
         console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL or initialize pgvector schema in production. Halting startup.");
         process.exit(1);
       } else {
@@ -40,7 +42,7 @@ async function startServer() {
       console.log("✅ [STARTUP] PostgreSQL database connection and pgvector schema verified.");
     }
   } catch (pgErr: any) {
-    if (isProd) {
+    if (isStrict) {
       console.error("❌ [STARTUP FATAL] Failed to connect to PostgreSQL:", pgErr?.message || pgErr);
       process.exit(1);
     } else {
@@ -60,7 +62,7 @@ async function startServer() {
 
   const app = createExpressApp();
 
-  const port = parseInt(process.env.PORT || String(ENV.PORT || 3000), 10);
+  const port = 3000;
 
   const publicDir = path.join(process.cwd(), "public");
   const publicAssetsDir = path.join(publicDir, "assets");

@@ -14,12 +14,17 @@ import { adminRouter } from "./routes/admin.routes";
 // Import legacy handler bridges for 100% backward compatibility with all client components
 import { 
   registerHandler, 
+  getRegisterHandler,
   loginHandler, 
+  getLoginHandler,
   logoutHandler, 
   refreshTokenHandler, 
-  verifyEmailHandler, 
+  verifyEmailHandler,
+  resendVerificationHandler, 
   forgotPasswordHandler, 
+  getForgotPasswordHandler,
   resetPasswordHandler, 
+  getResetPasswordHandler,
   getMeHandler,
   registerSchema,
   loginSchema,
@@ -264,12 +269,18 @@ export function createExpressApp(): express.Application {
   // (Guarantees every frontend button & fetch url continues working instantly)
   // ----------------------------------------------------
   // Auth Bridges
+  app.get("/api/register", getRegisterHandler);
   app.post("/api/register", authLimiter, validateBody(registerSchema), registerHandler);
+  app.get("/api/login", getLoginHandler);
   app.post("/api/login", authLimiter, validateBody(loginSchema), loginHandler);
   app.post("/api/logout", requireAuth, logoutHandler);
   app.post("/api/refresh-token", authLimiter, refreshTokenHandler);
   app.get("/api/verify-email", verifyEmailHandler);
+  app.get("/api/resend-verification", (req, res) => res.json({ success: true, message: "Use POST with { email } to resend verification email." }));
+  app.post("/api/resend-verification", authLimiter, resendVerificationHandler);
+  app.get("/api/forgot-password", getForgotPasswordHandler);
   app.post("/api/forgot-password", authLimiter, validateBody(forgotPasswordSchema), forgotPasswordHandler);
+  app.get("/api/reset-password", getResetPasswordHandler);
   app.post("/api/reset-password", authLimiter, validateBody(resetPasswordSchema), resetPasswordHandler);
   app.get("/api/me", requireAuth, getMeHandler);
 

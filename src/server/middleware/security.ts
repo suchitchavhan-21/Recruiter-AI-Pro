@@ -130,7 +130,9 @@ export function applySecurityHeaders(req: Request, res: Response, next: NextFunc
   res.setHeader("X-Content-Type-Options", "nosniff");
 
   // Clickjacking protection compatible with preview environment
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  // NOTE: The application is embedded within an iframe in Google AI Studio (ai.studio / aistudio.google.com).
+  // X-Frame-Options: SAMEORIGIN blocks cross-origin iframe embedding and triggers "refused to connect" in Chrome.
+  // Modern CSP frame-ancestors is used instead to securely restrict embedding to self and Google AI Studio origins.
 
   // XSS protection filter
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -141,7 +143,7 @@ export function applySecurityHeaders(req: Request, res: Response, next: NextFunc
   // Permissions policy for camera & microphone access
   res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), display-capture=(self)");
 
-  // Content-Security-Policy (allows local self, fonts, wasm, and required API assets)
+  // Content-Security-Policy (allows local self, fonts, wasm, AI Studio embedding, and required API assets)
   res.setHeader(
     "Content-Security-Policy",
     "default-src 'self'; " +
@@ -151,7 +153,7 @@ export function applySecurityHeaders(req: Request, res: Response, next: NextFunc
     "img-src 'self' data: blob: https:; " +
     "media-src 'self' blob: data:; " +
     "connect-src 'self' https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://storage.googleapis.com; " +
-    "frame-ancestors 'self';"
+    "frame-ancestors 'self' https://*.google.com https://ai.studio https://aistudio.google.com https://*.run.app https://localhost.corp.google.com:26001;"
   );
 
   // HSTS in production
@@ -187,8 +189,19 @@ export function applyCorsMiddleware(req: Request, res: Response, next: NextFunct
     allowedOriginsSet.add("http://127.0.0.1:5173");
   }
 
+  const host = req.get("host");
+  if (host) {
+    allowedOriginsSet.add(`http://${host}`);
+    allowedOriginsSet.add(`https://${host}`);
+  }
+
   if (origin) {
-    const isAllowed = allowedOriginsSet.has(origin);
+    const isGoogleOrAiStudio = 
+      origin === "https://ai.studio" ||
+      origin.endsWith(".google.com") ||
+      origin.endsWith(".run.app");
+
+    const isAllowed = allowedOriginsSet.has(origin) || isGoogleOrAiStudio;
 
     if (isAllowed) {
       res.setHeader("Access-Control-Allow-Origin", origin);

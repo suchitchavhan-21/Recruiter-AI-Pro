@@ -64,7 +64,7 @@ export function ResetPasswordForm({
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-3.5">
+      <form onSubmit={handleSubmit} method="POST" action="#" className="space-y-3.5">
         
         {/* Token Input */}
         <AuthInput

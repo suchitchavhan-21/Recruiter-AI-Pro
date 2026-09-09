@@ -13,8 +13,10 @@ function getOrGenerateSecret(envVarName: string): string {
     return value.trim();
   }
   
-  if (process.env.NODE_ENV === "production" || isProduction || process.env.STRICT_FAIL_FAST === "true") {
-    // Under production or explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
+  const isCloudRun = Boolean(process.env.K_SERVICE);
+  const isStrict = process.env.STRICT_FAIL_FAST === "true" || (!isCloudRun && (process.env.NODE_ENV === "production" || isProduction));
+  if (isStrict) {
+    // Under strict standalone production or explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
     // Cloud Run containers are horizontally scaled; instance-local ephemeral keys cause immediate
     // authentication failures across replicas.
     return "";
@@ -74,9 +76,12 @@ export const ENV = {
   
   // SMTP Email Server (Optional)
   SMTP_HOST: process.env.SMTP_HOST || "",
-  SMTP_PORT: parseInt(process.env.SMTP_PORT || "2525", 10),
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || "587", 10),
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
+  SMTP_SECURE: process.env.SMTP_SECURE === "true",
+  SMTP_FROM: process.env.SMTP_FROM || "",
+  SMTP_SERVICE: process.env.SMTP_SERVICE || "",
 
   // Rate Limiting Config
   RATE_LIMIT_WINDOW_MS: 60 * 1000, // 1 minute
@@ -109,21 +114,40 @@ export function validateEnvironment(): { valid: boolean; warnings: string[]; err
   }
 
   if (isProd) {
+    const isCloudRun = Boolean(process.env.K_SERVICE);
+    const isStrict = process.env.STRICT_FAIL_FAST === "true" || !isCloudRun;
+
     const jwtSecret = (process.env.JWT_SECRET || "").trim();
     if (!jwtSecret || jwtSecret.length < 16) {
-      errors.push("Mandatory JWT_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
+      if (isStrict) {
+        errors.push("Mandatory JWT_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
+      } else {
+        warnings.push("JWT_SECRET not configured in Cloud Run; using persistent instance secret. Configure JWT_SECRET for distributed multi-replica deployment.");
+      }
     }
     
     const jwtRefreshSecret = (process.env.JWT_REFRESH_SECRET || "").trim();
     if (!jwtRefreshSecret || jwtRefreshSecret.length < 16) {
-      errors.push("Mandatory JWT_REFRESH_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
+      if (isStrict) {
+        errors.push("Mandatory JWT_REFRESH_SECRET is missing or too short (minimum 16 characters required in production). Ephemeral secrets are strictly prohibited.");
+      } else {
+        warnings.push("JWT_REFRESH_SECRET not configured in Cloud Run; using persistent instance secret. Configure JWT_REFRESH_SECRET for distributed multi-replica deployment.");
+      }
     }
 
     const dbUrl = (process.env.DATABASE_URL || "").trim();
     if (!dbUrl) {
-      errors.push("Mandatory DATABASE_URL is missing in production. External PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
+      if (isStrict) {
+        errors.push("Mandatory DATABASE_URL is missing in production. External PostgreSQL with pgvector is strictly required; file-backed persistence is prohibited.");
+      } else {
+        warnings.push("DATABASE_URL not configured in Cloud Run; defaulting to container PGlite. Configure DATABASE_URL (Cloud SQL) for durable cross-instance storage.");
+      }
     } else if (dbUrl.includes("embedded") || dbUrl.includes("postgres_data")) {
-      errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
+      if (isStrict) {
+        errors.push("In production mode, an external persistent PostgreSQL DATABASE_URL is required. Embedded container-local database storage is strictly prohibited.");
+      } else {
+        warnings.push("DATABASE_URL uses container-local embedded database in Cloud Run.");
+      }
     } else if (!dbUrl.startsWith("postgres://") && !dbUrl.startsWith("postgresql://")) {
       errors.push("DATABASE_URL must be a valid PostgreSQL connection string starting with 'postgres://' or 'postgresql://'.");
     }

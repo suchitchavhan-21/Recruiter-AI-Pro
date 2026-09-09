@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AuthBrandPanel } from "./AuthBrandPanel";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm, COUNTRY_CODES } from "./RegisterForm";
@@ -11,7 +11,7 @@ import {
   LoginRequest, 
   RegisterRequest, 
   ForgotPasswordRequest, 
-  ResetPasswordRequest,
+  ResetPasswordRequest, 
   User 
 } from "../../features/auth/authTypes";
 
@@ -23,7 +23,21 @@ export interface AuthPageProps {
 }
 
 export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
-  const [view, setView] = useState<AuthView>("login");
+  // Initialize view from URL query params or browser pathname
+  const [view, setView] = useState<AuthView>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const viewParam = params.get("view") || params.get("auth");
+      const path = window.location.pathname;
+
+      if (viewParam === "register" || path === "/register" || path === "/api/register") return "register";
+      if (viewParam === "forgot" || path === "/forgot-password") return "forgot";
+      if (viewParam === "reset" || params.get("token") || path === "/reset-password") return "reset";
+      if (viewParam === "admin") return "admin";
+    }
+    return "login";
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [registerErrors, setRegisterErrors] = useState<string[]>([]);
@@ -31,10 +45,41 @@ export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
   const [resetError, setResetError] = useState("");
   
   // Recovery & verification state
-  const [resetToken, setResetToken] = useState("");
+  const [resetToken, setResetToken] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token") || "";
+    }
+    return "";
+  });
   const [forgotSuccessNotice, setForgotSuccessNotice] = useState("");
   const [unverifiedUser, setUnverifiedUser] = useState<{ email: string; verificationLink?: string } | null>(null);
   const [temporaryPassword, setTemporaryPassword] = useState("");
+
+  // Inspect URL parameters on mount for email verification callback or direct reset tokens
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "true") {
+      const verifiedEmail = params.get("email");
+      showNotification(
+        verifiedEmail 
+          ? `Email address ${verifiedEmail} successfully verified! You may now sign in.`
+          : "Email verified successfully! You may now sign in.",
+        "success"
+      );
+      setView("login");
+      // Clean query string from URL address bar
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const token = params.get("token");
+    if (token) {
+      setResetToken(token);
+      setView("reset");
+    }
+  }, [showNotification]);
 
   // 1. Handle Login
   const handleLogin = async (data: LoginRequest) => {
@@ -108,6 +153,15 @@ export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
     }
   };
 
+  // 3.1 Handle Resend Verification Email
+  const handleResendVerificationEmail = async (email: string) => {
+    const res = await AuthService.resendVerification(email);
+    if (res.verificationLink) {
+      setUnverifiedUser(prev => prev ? { ...prev, verificationLink: res.verificationLink } : { email, verificationLink: res.verificationLink });
+    }
+    return res.message || "Verification email dispatched. Please check your inbox and spam folder.";
+  };
+
   // 4. Handle Forgot Password
   const handleForgotPassword = async (data: ForgotPasswordRequest) => {
     setForgotError("");
@@ -178,6 +232,7 @@ export function AuthPage({ onLoginSuccess, showNotification }: AuthPageProps) {
                 verificationLink={unverifiedUser.verificationLink}
                 isLoading={isLoading}
                 onVerifyAndLogin={handleInstantVerifyAndLogin}
+                onResendEmail={handleResendVerificationEmail}
                 onDismiss={() => setUnverifiedUser(null)}
               />
             )}

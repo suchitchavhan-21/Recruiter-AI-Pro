@@ -36,7 +36,7 @@ const CANDIDATE_MODELS = [
 async function executeWithModelFallback<T>(
   actionName: string,
   caller: (client: GoogleGenAI, modelName: string) => Promise<T>,
-  timeoutMs: number = 8000
+  timeoutMs: number = 15000
 ): Promise<T> {
   const client = getGeminiClient();
   let lastError: any = null;
@@ -56,11 +56,31 @@ async function executeWithModelFallback<T>(
       if (timer) clearTimeout(timer);
       lastError = err;
       const status = err?.status || err?.code || (err?.message?.includes("503") ? 503 : 0);
-      const isTransient = status === 503 || status === 429 || err?.message?.includes("high demand") || err?.message?.includes("UNAVAILABLE") || err?.message?.includes("Timeout");
+      const errMsg = (err?.message || "").toLowerCase();
+      const errStatus = String(err?.status || err?.code || "").toLowerCase();
+
+      const isQuotaOrRateLimit =
+        status === 429 ||
+        errStatus === "429" ||
+        errStatus.includes("resource_exhausted") ||
+        errMsg.includes("resource_exhausted") ||
+        errMsg.includes("quota") ||
+        errMsg.includes("rate limit") ||
+        errMsg.includes("rate-limit") ||
+        errMsg.includes("too many requests");
+
+      const isTransient =
+        status === 503 ||
+        status === 429 ||
+        isQuotaOrRateLimit ||
+        errMsg.includes("high demand") ||
+        errMsg.includes("unavailable") ||
+        errMsg.includes("timeout") ||
+        errMsg.includes("overloaded");
 
       if (isTransient && i < CANDIDATE_MODELS.length - 1) {
         console.warn(`[GEMINI RETRY] ${actionName} on model '${model}' encountered transient issue (${status || err?.message}). Switching to fallback model '${CANDIDATE_MODELS[i + 1]}'...`);
-        await new Promise(res => setTimeout(res, 200 * (i + 1)));
+        await new Promise(res => setTimeout(res, 350 * (i + 1)));
         continue;
       }
       break;

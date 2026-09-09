@@ -29,7 +29,7 @@ import {
   clearAuthCookies, 
   AuthenticatedRequest 
 } from "../middleware/auth";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email.service";
+import { sendVerificationEmail, sendPasswordResetEmail, isSmtpConfigured } from "../services/email.service";
 import { ENV } from "../config/env";
 
 export const registerSchema = z.object({
@@ -84,6 +84,82 @@ export function parseClientAgent(req: Request) {
   const ipAddress = (typeof forwarded === "string" ? forwarded.split(",")[0] : req.socket.remoteAddress) || "127.0.0.1";
 
   return { browser, operatingSystem, device, ipAddress };
+}
+
+/**
+ * GET handler for /api/register and /api/auth/register
+ * Gracefully handles browser navigation and API metadata inspection.
+ */
+export function getRegisterHandler(req: Request, res: Response) {
+  // If request accepts HTML (e.g. browser navigation to /api/register), redirect smoothly to registration view
+  if (req.accepts("html") && !req.xhr && !req.headers["x-requested-with"]) {
+    return res.redirect("/?view=register");
+  }
+
+  return res.status(200).json({
+    success: true,
+    endpoint: "/api/register",
+    method: "POST",
+    message: "Candidate and administrator account registration service. Submit a POST request to register.",
+    fields: {
+      fullName: "Full legal name (string, required)",
+      email: "Valid email address (string, required)",
+      phoneNumber: "E.164 phone number with country code (string, required)",
+      password: "Password with min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char (string, required)",
+      confirmPassword: "Must match password (string, required)",
+      agreeTerms: "Must be true (boolean, required)",
+      adminKey: "Optional security clearance key for administrator accounts (string, optional)"
+    }
+  });
+}
+
+/**
+ * GET handler for /api/login and /api/auth/login
+ */
+export function getLoginHandler(req: Request, res: Response) {
+  if (req.accepts("html") && !req.xhr && !req.headers["x-requested-with"]) {
+    return res.redirect("/?view=login");
+  }
+
+  return res.status(200).json({
+    success: true,
+    endpoint: "/api/login",
+    method: "POST",
+    message: "Authentication service ready. Submit a POST request with email and password credentials."
+  });
+}
+
+/**
+ * GET handler for /api/forgot-password and /api/auth/forgot-password
+ */
+export function getForgotPasswordHandler(req: Request, res: Response) {
+  if (req.accepts("html") && !req.xhr && !req.headers["x-requested-with"]) {
+    return res.redirect("/?view=forgot");
+  }
+
+  return res.status(200).json({
+    success: true,
+    endpoint: "/api/forgot-password",
+    method: "POST",
+    message: "Password recovery service ready. Submit a POST request with your account email."
+  });
+}
+
+/**
+ * GET handler for /api/reset-password and /api/auth/reset-password
+ */
+export function getResetPasswordHandler(req: Request, res: Response) {
+  const token = req.query.token as string | undefined;
+  if (req.accepts("html") && !req.xhr && !req.headers["x-requested-with"]) {
+    return res.redirect(token ? `/?view=reset&token=${encodeURIComponent(token)}` : "/?view=reset");
+  }
+
+  return res.status(200).json({
+    success: true,
+    endpoint: "/api/reset-password",
+    method: "POST",
+    message: "Password reset service ready. Submit a POST request with token, password, and confirmPassword."
+  });
 }
 
 // 1. REGISTER
@@ -160,14 +236,22 @@ export async function registerHandler(req: Request, res: Response) {
     console.warn("[MAIL WARNING] Failed to deliver verification email:", mailErr);
   }
 
-  // In development, log the link exclusively to the secure server console; never leak in HTTP JSON body
+  // In development, log the link exclusively to the secure server console
   if (process.env.NODE_ENV !== "production") {
     console.log(`[DEV EMAIL LINK] ${appUrl}/api/auth/verify-email?token=${verificationToken}`);
   }
 
+  const isSmtpConfigured = Boolean(ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS);
+  const verificationLink = !isSmtpConfigured
+    ? `${appUrl}/api/auth/verify-email?token=${encodeURIComponent(verificationToken)}`
+    : undefined;
+
   return res.status(201).json({
     success: true,
-    message: "Registration successful. Please verify your email address to complete activation.",
+    message: isSmtpConfigured
+      ? "Registration successful. Please verify your email address to complete activation."
+      : "Registration successful. Since no external SMTP mail provider is configured, click the instant verification button below to activate your account.",
+    verificationLink,
     user: {
       id: newUser.id,
       fullName: newUser.fullName,
@@ -206,11 +290,17 @@ export async function loginHandler(req: Request, res: Response) {
   }
 
   if (!user.emailVerified) {
+    const isSmtpConfigured = Boolean(ENV.SMTP_HOST && ENV.SMTP_USER && ENV.SMTP_PASS);
+    const verificationLink = !isSmtpConfigured && user.verificationToken
+      ? `${req.protocol}://${req.get("host") || "localhost:3000"}/api/auth/verify-email?token=${encodeURIComponent(user.verificationToken)}`
+      : undefined;
+
     return res.status(403).json({
       success: false,
       error: { code: "EMAIL_NOT_VERIFIED", message: "Please verify your email address before logging in." },
       unverifiedUser: {
-        email: user.email
+        email: user.email,
+        verificationLink
       }
     });
   }
@@ -411,6 +501,63 @@ export async function verifyEmailHandler(req: Request, res: Response) {
 
   const redirectUrl = `/?verified=true&email=${encodeURIComponent(user.email)}`;
   return res.redirect(redirectUrl);
+}
+
+// 5.1 RESEND VERIFICATION EMAIL
+export async function resendVerificationHandler(req: Request, res: Response) {
+  const email = (req.body?.email || req.query?.email || "") as string;
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({
+      success: false,
+      error: { code: "EMAIL_REQUIRED", message: "Please provide your email address." }
+    });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await findUserByEmail(normalizedEmail);
+
+  // If user does not exist, return generic success to prevent email enumeration
+  if (!user) {
+    return res.status(200).json({
+      success: true,
+      message: "If an account exists with this email address, verification instructions have been dispatched."
+    });
+  }
+
+  if (user.emailVerified) {
+    return res.status(200).json({
+      success: true,
+      alreadyVerified: true,
+      message: "This account has already been verified. You can sign in directly."
+    });
+  }
+
+  // Ensure user has an active verification token
+  let token = user.verificationToken;
+  if (!token) {
+    token = crypto.randomBytes(32).toString("hex");
+    await updateUserById(user.id, { verificationToken: token });
+  }
+
+  const appUrl = `${req.protocol}://${req.get("host") || "localhost:3000"}`;
+  try {
+    await sendVerificationEmail(user.email, token, appUrl);
+  } catch (err) {
+    console.warn("[MAIL WARNING] Resend verification email failed:", err);
+  }
+
+  const isConfigured = isSmtpConfigured();
+  const verificationLink = !isConfigured
+    ? `${appUrl}/api/auth/verify-email?token=${encodeURIComponent(token)}`
+    : undefined;
+
+  return res.status(200).json({
+    success: true,
+    message: isConfigured
+      ? `A fresh verification link has been sent to ${user.email}. Please check your inbox and spam folder.`
+      : "Verification link generated for instant activation.",
+    verificationLink
+  });
 }
 
 // 6. FORGOT PASSWORD

@@ -42,7 +42,9 @@ export function isPostgresActive(): boolean {
     return true;
   }
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  if (isProd) {
+  const isCloudRun = Boolean(process.env.K_SERVICE);
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || (isProd && !isCloudRun);
+  if (isStrictFailFast) {
     const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
     return Boolean(pool || (dbUrl && !dbUrl.includes("embedded")));
   }
@@ -54,7 +56,8 @@ export function isPostgresActive(): boolean {
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
   const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || isProd;
+  const isCloudRun = Boolean(process.env.K_SERVICE);
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || (isProd && !isCloudRun);
   const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isStrictFailFast ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     if (isStrictFailFast) {
@@ -109,7 +112,7 @@ async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance:
   }
 
   if (!pgliteDb) {
-    const dataDir = path.join(process.cwd(), "data", "postgres_data");
+    const dataDir = process.env.POSTGRES_DATA_DIR || path.join(process.cwd(), "data", "postgres_data");
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
