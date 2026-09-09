@@ -172,7 +172,7 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
 
     const currentVersion = user.tokenVersion ?? 1;
     const tokenVersion = payload.tokenVersion ?? 1;
-    if (tokenVersion < currentVersion) {
+    if (tokenVersion !== currentVersion) {
       return res.status(401).json({
         success: false,
         error: {

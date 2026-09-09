@@ -10,7 +10,7 @@ import { initPostgresSchema, getPostgresPool } from "./src/server/db/postgres";
 const PORT = 3000;
 
 async function startServer() {
-  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
+  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production") || Boolean(process.env.K_SERVICE);
 
   // 1. Validate Environment Configuration
   const envCheck = validateEnvironment();

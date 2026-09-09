@@ -5,7 +5,7 @@ import path from "path";
 
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === "production" || Boolean(process.env.K_SERVICE);
 
 function getOrGenerateSecret(envVarName: string): string {
   const value = process.env[envVarName];
@@ -13,10 +13,8 @@ function getOrGenerateSecret(envVarName: string): string {
     return value.trim();
   }
   
-  const isCloudRun = Boolean(process.env.K_SERVICE);
-  const isStrict = process.env.STRICT_FAIL_FAST === "true" || (!isCloudRun && (process.env.NODE_ENV === "production" || isProduction));
-  if (isStrict) {
-    // Under strict standalone production or explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
+  if (process.env.NODE_ENV === "production" || isProduction || process.env.STRICT_FAIL_FAST === "true" || Boolean(process.env.K_SERVICE)) {
+    // Under production or explicit strict fail-fast testing, ephemeral random keys are strictly forbidden.
     // Cloud Run containers are horizontally scaled; instance-local ephemeral keys cause immediate
     // authentication failures across replicas.
     return "";
@@ -102,7 +100,7 @@ export const ENV = {
 export function validateEnvironment(): { valid: boolean; warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
-  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production");
+  const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production") || Boolean(process.env.K_SERVICE);
 
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim() || ENV.GEMINI_API_KEY?.trim());
   if (!hasGeminiKey) {

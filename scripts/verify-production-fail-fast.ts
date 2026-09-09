@@ -307,7 +307,45 @@ async function runFailFastTests() {
       "Weak default ADMIN_PASSCODE ('ADMINSECRET2026') strictly halts production startup with code 1",
       `Exit code: ${proc9.exitCode}, Output: ${proc9.output.slice(0, 150)}`
     );
-    console.log(`[STAGE 9/9 DONE in ${Date.now() - t9}ms]`);
+    console.log(`[STAGE 9/11 DONE in ${Date.now() - t9}ms]`);
+
+    // -------------------------------------------------------------
+    // Test 10: Cloud Run (K_SERVICE set) with NO JWT_SECRET -> MUST FAIL
+    // -------------------------------------------------------------
+    console.log("\n[STAGE 10/11 START] Testing Cloud Run (K_SERVICE) startup failure when JWT_SECRET is missing...");
+    const t10 = Date.now();
+    const proc10 = await testServerProcess({
+      NODE_ENV: "production",
+      K_SERVICE: "recruiter-ai-pro-cloudrun",
+      JWT_SECRET: "",
+      JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
+      DATABASE_URL: "postgres://valid_user:secret@localhost:5432/db"
+    }, 3100, TIMEOUT_MS);
+    check(
+      proc10.exitCode === 1 && (proc10.output.includes("JWT_SECRET") || proc10.output.includes("CONFIG FATAL")),
+      "Cloud Run (K_SERVICE set) without JWT_SECRET strictly halts startup with exit code 1",
+      `Exit code: ${proc10.exitCode}`
+    );
+    console.log(`[STAGE 10/11 DONE in ${Date.now() - t10}ms]`);
+
+    // -------------------------------------------------------------
+    // Test 11: Cloud Run (K_SERVICE set) with NO DATABASE_URL -> MUST FAIL
+    // -------------------------------------------------------------
+    console.log("\n[STAGE 11/11 START] Testing Cloud Run (K_SERVICE) startup failure when DATABASE_URL is missing...");
+    const t11 = Date.now();
+    const proc11 = await testServerProcess({
+      NODE_ENV: "production",
+      K_SERVICE: "recruiter-ai-pro-cloudrun",
+      JWT_SECRET: "ValidAccessSecret1234567890!",
+      JWT_REFRESH_SECRET: "ValidRefreshSecret1234567890!",
+      DATABASE_URL: ""
+    }, 3101, TIMEOUT_MS);
+    check(
+      proc11.exitCode === 1 && (proc11.output.includes("DATABASE_URL") || proc11.output.includes("CONFIG FATAL")),
+      "Cloud Run (K_SERVICE set) without DATABASE_URL strictly halts startup with exit code 1",
+      `Exit code: ${proc11.exitCode}`
+    );
+    console.log(`[STAGE 11/11 DONE in ${Date.now() - t11}ms]`);
 
   } finally {
     process.env = originalEnv;

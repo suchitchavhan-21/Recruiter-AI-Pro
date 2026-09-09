@@ -26,7 +26,10 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Typecheck & Lint
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
         run: npm run lint
 
       - name: Build Application & Server
@@ -69,3 +72,6 @@ jobs:
 
       - name: Run Production Fail-Fast & Startup Safety Tests
         run: npm run verify-production-fail-fast
+
+      - name: Run Security Remediation Tests
+        run: npm run test:security-remediation

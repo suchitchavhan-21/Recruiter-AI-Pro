@@ -384,7 +384,7 @@ export default function EnterpriseResumeScanner({ currentUser, onActivityLog }: 
 
   // Original Resume visual text state (Editable / interactive)
   const renderOriginalText = () => {
-    let text = `JOHN DOE
+    const text = `JOHN DOE
 San Francisco, CA | john.doe@email.com | +1 555-019-2834
 github.com/johndoe | linkedin.com/in/johndoe
 
@@ -412,39 +412,39 @@ B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026`;
 
   // Optimized Resume text state (Editable/interactive based on applied modifications)
   const getOptimizedText = () => {
-    let summaryText = appliedRoadmap.includes("r1") 
+    const summaryText = appliedRoadmap.includes("r1") 
       ? "Results-driven Backend Engineer with specialized expertise in Node.js, Express, SQL, and Docker containerization. Proven track record architecting secure microservices and optimizing relational query schemas for peak user concurrency."
       : "Hardworking engineering student with experience in node, databases, and looking for a backend role to grow.";
 
-    let b1 = appliedGrammar.includes("g1")
+    const b1 = appliedGrammar.includes("g1")
       ? "Responsible for deploying APIs and speeding up query execution."
       : "Responsable for deploying APIs and sped up queries.";
 
-    let b2 = appliedGrammar.includes("g2")
+    const b2 = appliedGrammar.includes("g2")
       ? "Implemented responsive web components that operate seamlessly across all web browsers."
       : "Implemented dynamic components that works on all browsers.";
 
-    let b3 = appliedRoadmap.includes("r2")
+    const b3 = appliedRoadmap.includes("r2")
       ? "Refactored Node.js REST endpoints and structured Postgres index keys, reducing API request latency by 42% (from 180ms to 104ms) and supporting up to 15,000 concurrent peak socket connections."
       : "Created backend API endpoints and made SQL database queries run faster.";
 
-    let b4 = appliedGrammar.includes("g3")
+    const b4 = appliedGrammar.includes("g3")
       ? "Led a cross-functional squad of 3 junior engineers."
       : "Lead a group of 3 junior devs.";
 
-    let b5 = appliedGrammar.includes("g5")
+    const b5 = appliedGrammar.includes("g5")
       ? "Configured relational PostgreSQL database performance tuning metrics."
       : "Worked on SQL database tuning.";
 
-    let b6 = appliedGrammar.includes("g4")
+    const b6 = appliedGrammar.includes("g4")
       ? "Spearheaded third-party API integration and authored test automation coverage matrices."
       : "Spearheaded integration of third party APIs, also wrote tests.";
 
-    let b7 = appliedRoadmap.includes("r3")
+    const b7 = appliedRoadmap.includes("r3")
       ? "Instrumented distributed request tracing with OpenTelemetry and configured Prometheus metrics and Grafana alerts to AWS."
       : "Added standard system log lines and monitored system console outputs during peak deployments.";
 
-    let educationBlock = "B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026";
+    const educationBlock = "B.S. Computer Science | Stanford University | GPA: 3.8/4.0 | Grad June 2026";
 
     return {
       header: `JOHN DOE\nSan Francisco, CA | john.doe@email.com | +1 555-019-2834\ngithub.com/johndoe | linkedin.com/in/johndoe`,

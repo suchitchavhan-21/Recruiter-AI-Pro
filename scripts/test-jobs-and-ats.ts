@@ -418,7 +418,7 @@ Skills: Go, PostgreSQL, Distributed Systems, Concurrency, Kafka, mTLS, Idempoten
   const srcFiles = searchFilesRecursively(path.resolve(__dirname, "../src"));
 
   for (const check of prohibitedPatterns) {
-    let foundIn: string[] = [];
+    const foundIn: string[] = [];
     for (const file of srcFiles) {
       const content = fs.readFileSync(file, "utf8");
       if (content.includes(check.pattern)) {

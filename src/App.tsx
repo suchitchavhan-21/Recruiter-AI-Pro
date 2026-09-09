@@ -461,7 +461,7 @@ export default function App() {
     if (!activeSessionQuestions) return;
 
     const currentQ = activeSessionQuestions[currentQuestionIndex];
-    let finalAnswers = [...activeAnswers, {
+    const finalAnswers = [...activeAnswers, {
       questionId: currentQ.id,
       questionText: currentQ.text,
       type: currentQ.type,

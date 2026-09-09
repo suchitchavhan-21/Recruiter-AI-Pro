@@ -72,8 +72,8 @@ export function synthesizeAcousticSpeech(
     }
 
     // Punctuation produces real acoustic silence
-    if (/[,\.\?!;—\-]/.test(token)) {
-      const isSentenceEnd = /[\.\?!]/.test(token);
+    if (/[,.?!\s;—-]/u.test(token)) {
+      const isSentenceEnd = /[.?!]/.test(token);
       segments.push({ type: "silence", durationMs: isSentenceEnd ? 420 / rate : 220 / rate });
       return;
     }

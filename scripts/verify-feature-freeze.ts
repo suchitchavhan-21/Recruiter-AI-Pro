@@ -104,6 +104,8 @@ export function isAllowedNonFeatureFile(filePath: string): boolean {
     "bun.lock",
     "tsconfig.json",
     "vite.config.ts",
+    "eslint.config.mjs",
+    "eslint.config.js",
     ".gitignore",
     ".env.example"
   ];

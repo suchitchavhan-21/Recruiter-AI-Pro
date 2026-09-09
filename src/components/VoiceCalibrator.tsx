@@ -298,8 +298,8 @@ export default function VoiceCalibrator({ onCalibrationComplete }: VoiceCalibrat
       }
 
       // 1. Calculate accuracy/fidelity score
-      const tWords = targetSentence.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(/\s+/);
-      const cWords = currTranscript.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(/\s+/);
+      const tWords = targetSentence.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
+      const cWords = currTranscript.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
 
       let matches = 0;
       tWords.forEach(w => {

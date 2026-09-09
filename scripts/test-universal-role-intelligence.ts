@@ -224,7 +224,7 @@ async function runUniversalRoleIntelligenceTests() {
   };
   const switcherBlueprint = generateInterviewBlueprint(switcherInput);
   assert(switcherBlueprint.isCareerSwitcher === true, "Career switcher successfully detected from resume background vs target role");
-  assert(switcherBlueprint.transferableDomains?.length! > 0, `Detected transferable domains: ${switcherBlueprint.transferableDomains?.join(", ")}`);
+  assert((switcherBlueprint.transferableDomains?.length ?? 0) > 0, `Detected transferable domains: ${switcherBlueprint.transferableDomains?.join(", ")}`);
 
   // Verify evidence classification for career switcher
   console.log("\nTest Group 2: Career Switcher Transferable Evidence Classification");

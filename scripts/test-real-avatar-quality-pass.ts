@@ -47,7 +47,7 @@ async function runRealAvatarQualityPass() {
     process.exit(1);
   }
 
-  let allPassed = true;
+  const allPassed = true;
   const artifactsDir = "C:\\Users\\hp\\.gemini\\antigravity\\brain\\c31b163c-e7e7-43fd-b0b1-0a2febdd6496";
   const framesDir = path.join(artifactsDir, "perceptual_quality_frames");
   if (!fs.existsSync(framesDir)) {

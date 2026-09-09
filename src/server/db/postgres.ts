@@ -41,10 +41,8 @@ export function isPostgresActive(): boolean {
   if (pool || pgliteDb) {
     return true;
   }
-  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const isCloudRun = Boolean(process.env.K_SERVICE);
-  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || (isProd && !isCloudRun);
-  if (isStrictFailFast) {
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production" || Boolean(process.env.K_SERVICE);
+  if (isProd) {
     const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL;
     return Boolean(pool || (dbUrl && !dbUrl.includes("embedded")));
   }
@@ -55,9 +53,8 @@ export function isPostgresActive(): boolean {
  * Initializes PostgreSQL database connection (either via TCP Pool or embedded PGlite with pgvector).
  */
 async function getOrInitDatabase(): Promise<{ type: "pool" | "pglite"; instance: Pool | PGlite } | null> {
-  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production";
-  const isCloudRun = Boolean(process.env.K_SERVICE);
-  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || (isProd && !isCloudRun);
+  const isProd = process.env.NODE_ENV === "production" || ENV.NODE_ENV === "production" || Boolean(process.env.K_SERVICE);
+  const isStrictFailFast = process.env.STRICT_FAIL_FAST === "true" || isProd;
   const dbUrl = process.env.DATABASE_URL?.trim() || ENV.DATABASE_URL || (isStrictFailFast ? "" : "embedded://postgres_data");
   if (!dbUrl) {
     if (isStrictFailFast) {
