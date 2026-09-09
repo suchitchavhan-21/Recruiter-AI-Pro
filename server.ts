@@ -7,7 +7,7 @@ import { ENV, validateEnvironment } from "./src/server/config/env";
 import { runDatabaseSeed } from "./src/server/db/seed";
 import { initPostgresSchema, getPostgresPool } from "./src/server/db/postgres";
 
-const PORT = 3000;
+const PORT = Number.parseInt(process.env.PORT ?? "", 10) || 3000;
 
 async function startServer() {
   const isProd = (process.env.NODE_ENV === "production") || (ENV.NODE_ENV === "production") || Boolean(process.env.K_SERVICE);
@@ -62,7 +62,7 @@ async function startServer() {
 
   const app = createExpressApp();
 
-  const port = 3000;
+  const port = PORT;
 
   const publicDir = path.join(process.cwd(), "public");
   const publicAssetsDir = path.join(publicDir, "assets");
